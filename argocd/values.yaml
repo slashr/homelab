@@ -1,0 +1,17 @@
+# from https://github.com/argoproj/argo-helm/tree/master/charts/argo-cd#ha-mode-with-autoscaling
+redis-ha:
+  enabled: true
+
+controller:
+  enableStatefulSet: true
+
+server:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+
+repoServer:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+

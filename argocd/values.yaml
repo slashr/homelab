@@ -15,3 +15,9 @@ repoServer:
     enabled: true
     minReplicas: 2
 
+configs:
+  repositories:
+    podinfo-helm-repo:
+      url: https://stefanprodan.github.io/podinfo
+      name: podinfo
+      type: helm

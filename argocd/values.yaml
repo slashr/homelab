@@ -9,6 +9,21 @@ server:
   autoscaling:
     enabled: true
     minReplicas: 2
+  additionalApplications:
+    - destination:
+        namespace: "default"
+        server: "https://kubernetes.default.svc"
+      finalizers:
+        - "resources-finalizer.argocd.argoproj.io"
+      name: "app-of-apps"
+      namespace: "argo-cd"
+      project: "default"
+      source:
+        directory:
+          recurse: true
+        path: "."
+        repoURL: "https://github.com/slashr/app-manifests.git"
+        targetRevision: "main" #should correspond to the active branch name
 
 repoServer:
   autoscaling:
@@ -21,3 +36,7 @@ configs:
       url: https://stefanprodan.github.io/podinfo
       name: podinfo
       type: helm
+    app-manifests-repo:
+      url: https://github.com/slashr/app-manifests.git
+      name: app-manifests
+      type: git

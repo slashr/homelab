@@ -1,5 +1,5 @@
-resource "kubernetes_namespace" "monitoring" {
+resource "kubernetes_namespace" "argo-cd" {
   metadata {
-    name = "monitoring"
+    name = "argo-cd"
   }
 }

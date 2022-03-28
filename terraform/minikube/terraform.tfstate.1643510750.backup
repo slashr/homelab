@@ -1,0 +1,110 @@
+{
+  "version": 4,
+  "terraform_version": "1.0.4",
+  "serial": 56,
+  "lineage": "195ecbc6-ae4e-5596-fd55-b6f2d32a0834",
+  "outputs": {},
+  "resources": [
+    {
+      "module": "module.argo-cd",
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "argo-cd",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "atomic": false,
+            "chart": "argo-cd",
+            "cleanup_on_fail": false,
+            "create_namespace": false,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "argo-cd",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": [
+              {
+                "app_version": "v2.2.3",
+                "chart": "argo-cd",
+                "name": "argo-cd",
+                "namespace": "argo-cd",
+                "revision": 1,
+                "values": "{\"configs\":{\"repositories\":{\"app-manifests-repo\":{\"name\":\"app-manifests\",\"type\":\"git\",\"url\":\"https://github.com/slashr/app-manifests.git\"},\"podinfo-helm-repo\":{\"name\":\"podinfo\",\"type\":\"helm\",\"url\":\"https://stefanprodan.github.io/podinfo\"}}},\"controller\":{\"enableStatefulSet\":true},\"repoServer\":{\"autoscaling\":{\"enabled\":true,\"minReplicas\":2}},\"server\":{\"additionalApplications\":[{\"destination\":{\"namespace\":\"default\",\"server\":\"https://kubernetes.default.svc\"},\"finalizers\":[\"resources-finalizer.argocd.argoproj.io\"],\"name\":\"app-of-apps\",\"namespace\":\"argo-cd\",\"project\":\"default\",\"source\":{\"directory\":{\"recurse\":true},\"path\":\".\",\"repoURL\":\"https://github.com/slashr/app-manifests.git\",\"targetRevision\":\"main\"}}],\"autoscaling\":{\"enabled\":true,\"minReplicas\":2}}}",
+                "version": "3.32.1"
+              }
+            ],
+            "name": "argo-cd",
+            "namespace": "argo-cd",
+            "postrender": [],
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": "https://argoproj.github.io/argo-helm",
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "reuse_values": false,
+            "set": [],
+            "set_sensitive": [],
+            "skip_crds": false,
+            "status": "uninstalling",
+            "timeout": 300,
+            "values": [
+              "controller:\n  enableStatefulSet: true\n\nserver:\n  autoscaling:\n    enabled: true\n    minReplicas: 2\n  additionalApplications:\n    - destination:\n        namespace: \"default\"\n        server: \"https://kubernetes.default.svc\"\n      finalizers:\n        - \"resources-finalizer.argocd.argoproj.io\"\n      name: \"app-of-apps\"\n      namespace: \"argo-cd\"\n      source:\n        directory:\n          recurse: true\n        path: \".\"\n        repoURL: \"https://github.com/slashr/app-manifests.git\"\n        targetRevision: \"main\" #should correspond to the active branch name\n\nrepoServer:\n  autoscaling:\n    enabled: true\n    minReplicas: 2\n\nconfigs:\n  repositories:\n    podinfo-helm-repo:\n      url: https://stefanprodan.github.io/podinfo\n      name: podinfo\n      type: helm\n    app-manifests-repo:\n      url: https://github.com/slashr/app-manifests.git\n      name: app-manifests\n      type: git\n"
+            ],
+            "verify": false,
+            "version": "3.32.1",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "module.argo-cd.kubernetes_namespace.argo-cd"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "module.argo-cd",
+      "mode": "managed",
+      "type": "kubernetes_namespace",
+      "name": "argo-cd",
+      "provider": "provider[\"registry.terraform.io/hashicorp/kubernetes\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "argo-cd",
+            "metadata": [
+              {
+                "annotations": {},
+                "generate_name": "",
+                "generation": 0,
+                "labels": {},
+                "name": "argo-cd",
+                "resource_version": "45908",
+                "uid": "4ebce6c4-16f2-4e1f-86b1-3c8818e42f9e"
+              }
+            ],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiZGVsZXRlIjozMDAwMDAwMDAwMDB9fQ=="
+        }
+      ]
+    }
+  ]
+}

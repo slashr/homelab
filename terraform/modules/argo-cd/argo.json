@@ -1,0 +1,58 @@
+{
+    "apiVersion": "v1",
+    "kind": "Namespace",
+    "metadata": {
+        "creationTimestamp": "2022-01-30T00:43:56Z",
+        "deletionTimestamp": "2022-01-30T02:00:59Z",
+        "labels": {
+            "kubernetes.io/metadata.name": "argo-cd"
+        },
+        "name": "argo-cd",
+        "resourceVersion": "42155",
+        "uid": "7118f5e3-5329-441f-9744-f3b97a30bb7c"
+    },
+    "spec": {
+        "finalizers": [
+        ]
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2022-01-30T02:01:18Z",
+                "message": "All resources successfully discovered",
+                "reason": "ResourcesDiscovered",
+                "status": "False",
+                "type": "NamespaceDeletionDiscoveryFailure"
+            },
+            {
+                "lastTransitionTime": "2022-01-30T02:01:18Z",
+                "message": "All legacy kube types successfully parsed",
+                "reason": "ParsedGroupVersions",
+                "status": "False",
+                "type": "NamespaceDeletionGroupVersionParsingFailure"
+            },
+            {
+                "lastTransitionTime": "2022-01-30T02:02:25Z",
+                "message": "All content successfully deleted, may be waiting on finalization",
+                "reason": "ContentDeleted",
+                "status": "False",
+                "type": "NamespaceDeletionContentFailure"
+            },
+            {
+                "lastTransitionTime": "2022-01-30T02:01:18Z",
+                "message": "Some resources are remaining: applications.argoproj.io has 1 resource instances",
+                "reason": "SomeResourcesRemain",
+                "status": "True",
+                "type": "NamespaceContentRemaining"
+            },
+            {
+                "lastTransitionTime": "2022-01-30T02:01:18Z",
+                "message": "Some content in the namespace has finalizers remaining: resources-finalizer.argocd.argoproj.io in 1 resource instances",
+                "reason": "SomeFinalizersRemain",
+                "status": "True",
+                "type": "NamespaceFinalizersRemaining"
+            }
+        ],
+        "phase": "Terminating"
+    }
+}

@@ -2,5 +2,5 @@
 
 .terraformrc
 terraform.rc
-terraform.tfstate.backup
+terraform.tfstate.*.backup
 .terraform/

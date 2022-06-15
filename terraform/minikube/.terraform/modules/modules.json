@@ -1,1 +1,1 @@
-{"Modules":[{"Key":"argo-cd","Source":"../modules/argo-cd","Dir":"../modules/argo-cd"},{"Key":"","Source":"","Dir":"."},{"Key":"ingress-nginx","Source":"../modules/ingress-nginx","Dir":"../modules/ingress-nginx"}]}
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"ingress-nginx","Source":"../modules/ingress-nginx","Dir":"../modules/ingress-nginx"},{"Key":"metallb","Source":"../modules/metallb","Dir":"../modules/metallb"},{"Key":"argo-cd","Source":"../modules/argo-cd","Dir":"../modules/argo-cd"}]}

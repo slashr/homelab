@@ -3,8 +3,8 @@ controller:
 
 server:
   autoscaling:
-    enabled: true
-    minReplicas: 2
+    enabled: false
+    minReplicas: 1
   additionalApplications:
     - destination:
         namespace: "default"
@@ -19,10 +19,25 @@ server:
         repoURL: "https://github.com/slashr/app-manifests.git"
         targetRevision: "main" #should correspond to the active branch name
 
-epoServer:
+
+## The following addons are not really necessarily for a homelab setup
+## Enable if you have enough CPU/Memory resources and need them for some purpose 
+dex:
+  enabled: false
+
+redis:
+  enabled: false
+
+notifications:
+  enabled: false
+
+applicationSet:
+  enabled: false
+
+repoServer:
   autoscaling:
-    enabled: true
-    minReplicas: 2
+    enabled: false
+    minReplicas: 1
 
 configs:
   secret:

@@ -1,1 +1,0 @@
-{"Modules":[{"Key":"argo-cd","Source":"../modules/argo-cd","Dir":"../modules/argo-cd"},{"Key":"","Source":"","Dir":"."},{"Key":"ingress-nginx","Source":"../modules/ingress-nginx","Dir":"../modules/ingress-nginx"}]}

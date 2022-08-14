@@ -5,3 +5,4 @@
 terraform.rc
 terraform.tfstate.*.backup
 terraform/*/.terraform
+.terraform/

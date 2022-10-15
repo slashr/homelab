@@ -1,4 +1,7 @@
-steps:
-- name: HashiCorp - Setup Terraform
-  uses: hashicorp/setup-terraform@v2.0.2
+jobs:
+  Terraform-Pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: HashiCorp - Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.2
 

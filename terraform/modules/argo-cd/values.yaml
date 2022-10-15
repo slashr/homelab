@@ -5,19 +5,6 @@ server:
   autoscaling:
     enabled: false
     minReplicas: 1
-  additionalApplications:
-    - destination:
-        namespace: "default"
-        server: "https://kubernetes.default.svc"
-      name: "app-of-appss"
-      project: "default"
-      namespace: "argo-cd"
-      source:
-        directory:
-          recurse: true
-        path: "."
-        repoURL: "https://github.com/slashr/app-manifests.git"
-        targetRevision: "main" #should correspond to the active branch name
 
 
 ## The following addons are not really necessarily for a homelab setup

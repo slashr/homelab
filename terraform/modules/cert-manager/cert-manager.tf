@@ -27,7 +27,6 @@ resource "helm_release" "cert-manager" {
 
 resource "kubectl_manifest" "issuer-lets-encrypt-staging" {
   yaml_body = <<YAML
-# issuer-lets-encrypt-staging.yaml
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -38,6 +37,27 @@ spec:
     email: akashon1@gmail.com
     privateKeySecretRef:
       name: letsencrypt-staging
+    solvers:
+    - dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cloudflare-api-token-secret
+            key: api-token
+YAML
+}
+
+resource "kubectl_manifest" "issuer-lets-encrypt-prod" {
+  yaml_body = <<YAML
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: akashon1@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
     solvers:
     - dns01:
         cloudflare:
@@ -75,4 +95,7 @@ resource "kubernetes_secret" "cloudflare-api-token" {
   data = {
    api-token = var.cloudflare_api_token 
   }
+  depends_on = [
+    kubernetes_namespace.cert-manager
+  ]
 }

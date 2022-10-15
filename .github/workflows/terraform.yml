@@ -5,4 +5,10 @@ jobs:
     steps:
       - name: HashiCorp - Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - run: terraform init
+      - id: plan
+        run: terraform plan -no-color
+
 

@@ -1,3 +1,4 @@
+on: [push]
 jobs:
   Terraform-Pipeline:
     runs-on: ubuntu-latest

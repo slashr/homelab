@@ -1,7 +1,7 @@
 on: [push]
 jobs:
-  terraform:
-    name: "Terraform"
+  terraform-validate:
+    name: "Terraform Validate"
     runs-on: ubuntu-latest
     steps:
       - name: HashiCorp - Setup Terraform
@@ -27,6 +27,14 @@ jobs:
           kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
           EOF
 
+  terraform-plan:
+    name: "Terraform Plan"
+    runs-on: ubuntu-latest
+    steps:
+      - name: HashiCorp - Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color

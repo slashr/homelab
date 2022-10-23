@@ -59,9 +59,9 @@ jobs:
         id: plan
         run: terraform plan -no-color
 
-terraform-apply:
-  name: "Terraform Apply"
-  needs: terraform-plan
-  - name: Terraform Plan
-    id: plan
-    run: terraform plan -no-color
+  terraform-apply:
+    name: "Terraform Apply"
+    needs: terraform-plan
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -no-color

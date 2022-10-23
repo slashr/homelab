@@ -11,6 +11,6 @@ module "metallb" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/slashr/terraform-modules.git//apps/cert-manager?ref=main"
+  source               = "git::https://github.com/slashr/terraform-modules.git//apps/cert-manager?ref=main"
   cloudflare_api_token = var.cloudflare_api_token
 }

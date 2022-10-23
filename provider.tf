@@ -16,26 +16,26 @@ terraform {
 }
 
 provider "kubectl" {
-  host = "https://130.162.50.22:6443"
-  load_config_file       = false
-  insecure = "true"
+  host               = "https://130.162.50.22:6443"
+  load_config_file   = false
+  insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
-  client_key = base64decode(var.kube_client_key)
+  client_key         = base64decode(var.kube_client_key)
 }
 
 provider "kubernetes" {
-  host = "https://130.162.50.22:6443"
-  insecure = "true"
+  host               = "https://130.162.50.22:6443"
+  insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
-  client_key = base64decode(var.kube_client_key)
+  client_key         = base64decode(var.kube_client_key)
 }
 
 provider "helm" {
   kubernetes {
-    host = "https://130.162.50.22:6443"
-    insecure = "true"
+    host               = "https://130.162.50.22:6443"
+    insecure           = "true"
     client_certificate = base64decode(var.kube_client_cert)
-    client_key = base64decode(var.kube_client_key)
+    client_key         = base64decode(var.kube_client_key)
   }
 }
 

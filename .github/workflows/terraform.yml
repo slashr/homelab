@@ -63,6 +63,7 @@ jobs:
     name: "Terraform Apply"
     runs-on: ubuntu-latest
     needs: terraform-plan
-    - name: Terraform Plan
-      id: plan
-      run: terraform plan -no-color
+    steps:
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color

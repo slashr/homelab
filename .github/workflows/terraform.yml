@@ -8,9 +8,9 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
         env:
-          TF_VAR_CLOUDFLARE_API_TOKEN: ${{ secrets.TF_CLOUDFLARE_API_TOKEN }}
-          TF_VAR_KUBE_CLIENT_CERT: ${{ secrets.TF_KUBE_CLIENT_CERT }}
-          TF_VAR_KUBE_CLIENT_KEY: ${{ secrets.TF_KUBE_CLIENT_KEY }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.TF_CLOUDFLARE_API_TOKEN }}
+          TF_VAR_kube_client_cert: ${{ secrets.TF_KUBE_CLIENT_CERT }}
+          TF_VAR_kube_client_key: ${{ secrets.TF_KUBE_CLIENT_KEY }}
       - name: Checkout
         uses: actions/checkout@v3
       - run: terraform init

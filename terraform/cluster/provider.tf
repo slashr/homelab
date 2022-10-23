@@ -1,5 +1,11 @@
 terraform {
-  required_version = ">= 0.13"
+  cloud {
+    organization = "formcloud"
+    workspaces {
+      tags = ["dev"]
+    }
+  }
+  required_version = ">= 1.0"
 
   required_providers {
     kubectl = {
@@ -10,19 +16,26 @@ terraform {
 }
 
 provider "kubectl" {
-  config_path            = "~/.kube/cretus-config"
-  config_context_cluster = "default"
+  host = "https://130.162.50.22:6443"
+  load_config_file       = false
+  insecure = "true"
+  client_certificate = base64decode(var.kube_client_cert)
+  client_key = base64decode(var.kube_client_key)
 }
 
 provider "kubernetes" {
-  config_path            = "~/.kube/cretus-config"
-  config_context_cluster = "default"
+  host = "https://130.162.50.22:6443"
+  insecure = "true"
+  client_certificate = base64decode(var.kube_client_cert)
+  client_key = base64decode(var.kube_client_key)
 }
 
 provider "helm" {
   kubernetes {
-    config_path            = "~/.kube/cretus-config"
-    config_context_cluster = "default"
+    host = "https://130.162.50.22:6443"
+    insecure = "true"
+    client_certificate = base64decode(var.kube_client_cert)
+    client_key = base64decode(var.kube_client_key)
   }
 }
 

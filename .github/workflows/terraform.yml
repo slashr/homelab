@@ -7,12 +7,17 @@ jobs:
         uses: hashicorp/setup-terraform@v2.0.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-        env:
-          TF_VAR_cloudflare_api_token: ${{ secrets.TF_CLOUDFLARE_API_TOKEN }}
-          TF_VAR_kube_client_cert: ${{ secrets.TF_KUBE_CLIENT_CERT }}
-          TF_VAR_kube_client_key: ${{ secrets.TF_KUBE_CLIENT_KEY }}
       - name: Checkout
         uses: actions/checkout@v3
       - run: terraform init
+      - name: Setup Terraform variables
+        working-directory: ./terraform
+        id: vars
+        run: |-
+          cat > terraform.tfvars <<EOF
+          cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
+          kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
+          kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
+          EOF
       - id: plan
         run: terraform plan -no-color

@@ -9,14 +9,8 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Terraform Format
-        id: fmt
-        run: terraform fmt -check
-
-      - name: Checkout
+        - name: Checkout
         uses: actions/checkout@v3
-      - name: Terraform Init
-        run: terraform init
 
       - name: Setup Terraform variables
         id: vars
@@ -26,6 +20,16 @@ jobs:
           kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
           kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
           EOF
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+        
+      - name: Terraform Validate
+        run: terraform validate
 
   terraform-plan:
     name: "Terraform Plan"
@@ -35,8 +39,10 @@ jobs:
         uses: hashicorp/setup-terraform@v2.0.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Setup Terraform variables
         id: vars
         run: |-
@@ -45,6 +51,10 @@ jobs:
           kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
           kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
           EOF
+
+      - name: Terraform Init
+        run: terraform init
+
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color

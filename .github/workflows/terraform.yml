@@ -1,6 +1,6 @@
 on: [push]
 jobs:
-  Terraform-Pipeline:
+  Terraform-Validate:
     runs-on: ubuntu-latest
     steps:
       - name: HashiCorp - Setup Terraform
@@ -18,5 +18,6 @@ jobs:
           kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
           kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
           EOF
+  Terraform-Plan:
       - id: plan
         run: terraform plan -no-color

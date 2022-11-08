@@ -1,0 +1,82 @@
+- name: Install Wireguard on all hosts
+  hosts: all
+  tasks:
+  - name: Update packages
+    ansible.builtin.apt:
+      name: wireguard
+      state: present
+      update_cache: yes
+    become: yes
+
+- name: Enable IP forwarding
+  hosts: oracle-wireguard
+  tasks:
+  - ansible.posix.sysctl:
+      name: net.ipv4.ip_forward
+      value: '1'
+      sysctl_set: yes
+      state: present
+      reload: yes
+  become: yes
+
+- name: Configure iptables on Oracle
+  hosts: oracle-wireguard
+  tasks:
+  - name: Copy configuration to /etc/iptables/rules.v4
+    copy:
+      src: ./iptables.conf
+      dest: "/etc/iptables/rules.v4"
+  - name: Load iptables rules
+    command: iptables-restore /etc/iptables/rules.v4
+  - name: Save iptables configuration persistently
+    command: netfilter-persistent save
+  become: yes
+
+
+- name: Create wg0 config on Oracle
+  hosts: oracle-wireguard
+  tasks:
+  - name: Create a wg0 interface config file
+    copy: 
+      dest: "/etc/wireguard/wg0.conf"
+      content: |
+        [Interface]
+        PrivateKey = sDMpEGPtUqV2zlIwJCu4KBYVvgVW09T09OGxk6GB/0U=
+        Address = 172.20.0.1/24
+        PostUp = iptables -I FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE
+        PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ens3 -j MASQUERADE
+        ListenPort = 51820
+
+        [Peer]
+        PublicKey = N2xPaMzydiNhSKIHPKfXyqusry6jUZUhfI7duoXPTEI=
+        AllowedIPs = 172.20.0.2/32
+    become: yes
+
+- name: Create wg0 config on Pi
+  hosts: pi-wireguard
+  tasks:
+  - name: Create a wg0 interface config file
+    copy:
+      dest: "/etc/wireguard/wg0.conf"
+      content: |
+        [Interface]
+        PrivateKey = QA7trEGyrLYjea0A2CzuXVudo2LZIwDBuxJW1JzLPko=
+        Address = 172.20.0.2/24
+        DNS = 1.1.1.1
+        PostUp = ping -c1 172.20.0.1
+        
+        [Peer]
+        PublicKey = IpPmmvbk0VGc07FT5HEcouoiCUt4bFfc43fZNdTCqQc=
+        AllowedIPs = 172.20.0.1/32
+        Endpoint = 130.162.50.22:51820
+        PersistentKeepalive = 25
+    become: yes
+
+- name: Restart wireguard on both hosts
+  hosts: all
+  tasks:
+    #- name: Bring down wg0 interface
+    #command: wg-quick down wg0
+  - name: Bring up wg0 interface
+    command: ip link set up dev wg0
+  become: yes

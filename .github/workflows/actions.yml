@@ -34,7 +34,9 @@ jobs:
 
       - name: Run ansible-playbook
         working-directory: ./ansible
-        run: ansible-playbook --private-key /home/runner/.ssh/id_rsa -e 'StrictHostKeyChecking=no' -i hosts.ini playbook.yml
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbook.yml
 
   terraform:
     name: "Terraform"

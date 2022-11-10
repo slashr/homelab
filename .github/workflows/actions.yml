@@ -35,6 +35,7 @@ jobs:
       - name: Run ansible-playbook
         working-directory: ./ansible
         run: |
+          # Host key checking has to be disabled because Rpi authentication is password based. Remove it after changing to key based auth
           export ANSIBLE_HOST_KEY_CHECKING=False
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbook.yml
 

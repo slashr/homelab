@@ -1,0 +1,79 @@
+on: [push]
+jobs:
+  ansible:
+    name: Ansible
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Set up Python 3.7.
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install test dependencies.
+        run: pip3 install ansible-lint ansible
+
+      - name: Run ansible-lint.
+        working-directory: ./ansible
+        run: ansible-lint
+
+      - name: Setup SSH 
+        shell: bash
+        run: |
+         eval `ssh-agent -s`
+         mkdir -p /home/runner/.ssh/
+         touch /home/runner/.ssh/id_rsa
+         echo -e "${{secrets.WIREGUARD_SSH_KEY}}" > /home/runner/.ssh/id_rsa
+         chmod 700 /home/runner/.ssh/id_rsa
+         ssh-keyscan -t rsa,dsa,ecdsa,ed25519 "${{secrets.WIREGUARD_IP}}" >> /home/runner/.ssh/known_hosts
+
+      - name: Run ansible-playbook
+        working-directory: ./ansible
+        run: |
+          # Host key checking has to be disabled because Rpi authentication is password based. Remove it after changing to key based auth
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbook.yml
+
+  terraform:
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup Terraform variables
+        id: vars
+        run: |-
+          cat > terraform.tfvars <<EOF
+          cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
+          kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
+          kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
+          EOF
+
+      - name: "Terraform Plan"
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false

@@ -26,11 +26,13 @@ variable "config_file_profile" {
 variable "ampere_source_image_id" {
   description = "OCID of the ampere image"
   type        = string
+  default     = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaaj6g2lci5ed7nfhk46olwkhmwkzrobyo3jntnhkk7fnm2vqflorna"
 }
 
 variable "amd_source_image_id" {
   description = "OCID of the amd image"
   type        = string
+  default     = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaab7wzikexyvn5vv5goyi3sgq7bx4ndwjiw6out2rvnheuaupwopba"
 }
 
 variable "compartment_id" {

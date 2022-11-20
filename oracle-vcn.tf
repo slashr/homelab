@@ -6,6 +6,24 @@ resource "oci_core_vcn" "vcn" {
   dns_label      = "vcn"
 }
 
+# Fetches the private IP of the Wireguard OCI instance
+data "oci_core_private_ips" "wireguard_private_ip" {
+  ip_address = oci_core_instance.amd1.private_ip
+  subnet_id  = oci_core_subnet.public_subnet.id
+}
+
+resource "oci_core_public_ip" "reserved_public_ip" {
+    #Required
+    compartment_id = var.compartment_id
+    lifetime = "RESERVED"
+    display_name = "Groundhog"
+    # This basically binds the reserved public IP with the private IP belonging to the wireguard instance
+    private_ip_id = data.oci_core_private_ips.wireguard_private_ip.private_ips[0]["id"]
+    lifecycle {
+      prevent_destroy = true
+    }
+}
+
 resource "oci_core_default_security_list" "default_security_list" {
   manage_default_resource_id = oci_core_vcn.vcn.default_security_list_id
 
@@ -24,11 +42,32 @@ resource "oci_core_default_security_list" "default_security_list" {
   }
 
   ingress_security_rules {
+  protocol    = "17"
+  description = "Allow Wireguard traffic"
+  udp_options {
+    min = 51820
+    max = 51820
+  }
+  source      = "0.0.0.0/0"
+  }
+
+  ingress_security_rules {
   protocol    = "6"
   description = "Allow SSH traffic"
   tcp_options {
     min = 22
     max = 22
+  }
+  source      = "0.0.0.0/0"
+  }
+
+
+  ingress_security_rules {
+  protocol    = "6"
+  description = "Allow SSH port-forwarding traffic"
+  tcp_options {
+    min = 2244
+    max = 2244
   }
   source      = "0.0.0.0/0"
   }

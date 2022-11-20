@@ -16,7 +16,7 @@ terraform {
 }
 
 provider "kubectl" {
-  host               = "https://130.162.50.22:6443"
+  host               = "https://130.61.64.164:6443"
   load_config_file   = false
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
@@ -24,7 +24,7 @@ provider "kubectl" {
 }
 
 provider "kubernetes" {
-  host               = "https://130.162.50.22:6443"
+  host               = "https://130.61.64.164:6443"
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
   client_key         = base64decode(var.kube_client_key)
@@ -32,7 +32,7 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes {
-    host               = "https://130.162.50.22:6443"
+    host               = "https://130.61.64.164:6443"
     insecure           = "true"
     client_certificate = base64decode(var.kube_client_cert)
     client_key         = base64decode(var.kube_client_key)

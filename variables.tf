@@ -33,16 +33,6 @@ variable "amd_source_image_id" {
   type        = string
 }
 
-variable "ampere_boot_volume_size" {
-  description = "Size of the boot volume in GBs"
-  type        = number
-}
-
-variable "amd_boot_volume_size" {
-  description = "Size of the boot volume in GBs"
-  type        = number
-}
-
 variable "compartment_id" {
   description = "OCI Compartment ID"
   type        = string
@@ -51,4 +41,9 @@ variable "compartment_id" {
 
 variable "private_key" {
   type = string
+}
+
+variable "ssh_authorized_keys" {
+  description = "Public SSH key added to authorized_keys file of new instances"
+  type        = string
 }

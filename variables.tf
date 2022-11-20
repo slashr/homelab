@@ -41,7 +41,19 @@ variable "compartment_id" {
   sensitive   = true
 }
 
-variable "private_key" {
+variable "oci_private_key" {
+  type = string
+}
+
+variable "tenancy_ocid" {
+  type = string
+}
+
+variable "user_ocid" {
+  type = string
+}
+
+variable "fingerprint" {
   type = string
 }
 

@@ -48,78 +48,20 @@ resource "oci_core_default_security_list" "default_security_list" {
       min = 51820
       max = 51820
     }
-    source = "0.0.0.0/0"
+    source      = "0.0.0.0/0"
   }
 
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow SSH traffic"
-    tcp_options {
-      min = 22
-      max = 22
+  dynamic "ingress_security_rules" {
+    for_each = local.tcp_rules
+    content {
+      protocol    = ingress_security_rules.value.protocol
+      description = ingress_security_rules.value.description
+      tcp_options {
+        min = ingress_security_rules.value.port_min
+        max = ingress_security_rules.value.port_max
+      }
+      source = ingress_security_rules.value.source
     }
-    source = "0.0.0.0/0"
-  }
-
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow SSH port-forwarding traffic"
-    tcp_options {
-      min = 2244
-      max = 2244
-    }
-    source = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow HTTP traffic"
-    tcp_options {
-      min = 80
-      max = 80
-    }
-    source = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow HTTPS traffic"
-    tcp_options {
-      min = 443
-      max = 443
-    }
-    source = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow K3S API traffic"
-    tcp_options {
-      min = 6443
-      max = 6443
-    }
-    source = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow MicroK8S API traffic"
-    tcp_options {
-      min = 16443
-      max = 16443
-    }
-    source = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol    = "6"
-    description = "Allow K8S NodePort traffic"
-    tcp_options {
-      min = 30000
-      max = 32767
-    }
-    source = "0.0.0.0/0"
   }
 
 }

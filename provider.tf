@@ -40,7 +40,6 @@ provider "helm" {
 }
 
 provider "oci" {
-  #  config_file_profile=var.config_file_profile
   user_ocid    = var.user_ocid
   fingerprint  = var.fingerprint
   tenancy_ocid = var.tenancy_ocid

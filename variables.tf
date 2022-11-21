@@ -2,11 +2,14 @@ variable "cloudflare_api_token" {
   type = string
 }
 
+# Raspberry Pi variables
 variable "kube_client_cert" {
+  description = "Rpi Kube cluster certificate base64 encoded" 
   type = string
 }
 
 variable "kube_client_key" {
+  description = "Rpi Kube client key base64 encoded"
   type = string
 }
 
@@ -15,12 +18,6 @@ variable "oci_region" {
   description = "The region to connect to. Default: eu-frankfurt-1"
   type        = string
   default     = "eu-frankfurt-1"
-}
-
-variable "config_file_profile" {
-  description = "The config profile to use for OCI authentication"
-  type        = string
-  default     = "DEFAULT"
 }
 
 variable "ampere_source_image_id" {
@@ -42,22 +39,26 @@ variable "compartment_id" {
 }
 
 variable "oci_private_key" {
+  description = "Private key of the public-private key pair added to OCI account. Used for accessing the OCI API"
   type = string
 }
 
 variable "tenancy_ocid" {
+  description = "ID of the OCI tenancy"
   type = string
 }
 
 variable "user_ocid" {
+  description = "ID of the OCI user"
   type = string
 }
 
 variable "fingerprint" {
+  description = "Fingerprint of the private key being used for OCI API authentication"
   type = string
 }
 
 variable "ssh_authorized_keys" {
-  description = "Public SSH key added to authorized_keys file of new instances"
+  description = "Public SSH key added to authorized_keys file of new instances on OCI"
   type        = string
 }

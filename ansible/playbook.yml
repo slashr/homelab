@@ -76,10 +76,13 @@
         mode: 0640
       become: true
 
-- name: Restart wireguard on both hosts
+- name: Start wireguard on both hosts
   hosts: all
   tasks:
     - name: Bring up wg0 interface
-      ansible.builtin.command: ip link set up dev wg0
+      ansible.builtin.systemd:
+        name: wg-quick@wg0.service
+        state: started
+        enabled: true
       changed_when: false
   become: true

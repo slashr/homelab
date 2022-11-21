@@ -94,8 +94,7 @@ resource "oci_core_instance" "arm1" {
   }
 }
 
-## Disabled because no capacity available. Keep retrying 
-/*resource "oci_core_instance" "arm2" {
+resource "oci_core_instance" "arm2" {
 
     availability_domain = data.oci_identity_availability_domains.availability_domains.availability_domains[0].name
     compartment_id = var.compartment_id
@@ -125,4 +124,4 @@ resource "oci_core_instance" "arm1" {
     source_id = var.ampere_source_image_id
     source_type = "image"
     }
-}*/
+}

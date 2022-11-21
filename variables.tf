@@ -4,13 +4,13 @@ variable "cloudflare_api_token" {
 
 # Raspberry Pi variables
 variable "kube_client_cert" {
-  description = "Rpi Kube cluster certificate base64 encoded" 
-  type = string
+  description = "Rpi Kube cluster certificate base64 encoded"
+  type        = string
 }
 
 variable "kube_client_key" {
   description = "Rpi Kube client key base64 encoded"
-  type = string
+  type        = string
 }
 
 # Oracle Cloud Infrastructure Variables
@@ -40,22 +40,22 @@ variable "compartment_id" {
 
 variable "oci_private_key" {
   description = "Private key of the public-private key pair added to OCI account. Used for accessing the OCI API"
-  type = string
+  type        = string
 }
 
 variable "tenancy_ocid" {
   description = "ID of the OCI tenancy"
-  type = string
+  type        = string
 }
 
 variable "user_ocid" {
   description = "ID of the OCI user"
-  type = string
+  type        = string
 }
 
 variable "fingerprint" {
   description = "Fingerprint of the private key being used for OCI API authentication"
-  type = string
+  type        = string
 }
 
 variable "ssh_authorized_keys" {

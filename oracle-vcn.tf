@@ -48,7 +48,7 @@ resource "oci_core_default_security_list" "default_security_list" {
       min = 51820
       max = 51820
     }
-    source      = "0.0.0.0/0"
+    source = "0.0.0.0/0"
   }
 
   dynamic "ingress_security_rules" {

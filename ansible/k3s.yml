@@ -1,0 +1,114 @@
+---
+
+- name: Initialising cluster
+  hosts: arm2
+  become: yes
+  tasks:
+    - name: Updating instances
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    #- name: Rebooting instances
+    #  reboot:
+
+    - name: Downloading k3s script
+      get_url:
+        url: https://get.k3s.io
+        dest: /tmp/k3s.sh
+        mode: "0555"
+
+- name: Configuring Worker node
+  hosts: arm2
+  become: true
+  vars:
+    os_environment:
+      - key: K3S_URL
+        value: "https://130.61.64.164:6443"
+      - key: K3S_TOKEN
+        value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653" 
+  tasks:
+    - name: Add env vars
+      ansible.builtin.lineinfile:
+        dest: "/etc/environment"
+        state: present
+        regexp: "^{{ item.key }}="
+        line: "{{ item.key }}={{ item.value }}"
+      with_items: "{{ os_environment }}"
+
+- name: Finalising
+  hosts: arm2
+  become: true
+  tasks:
+    - name: Installing k3s
+      shell: /tmp/k3s.sh
+    - name: Sleep for 10 seconds
+      ansible.builtin.wait_for:
+        timeout: 10
+    - name: Enable k3s-agent
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: started
+        enabled: true
+      changed_when: false
+
+# - name: Configuring Master node
+#   hosts: ocarm1
+#   become: yes
+#   environment: 
+#     INSTALL_K3S_EXEC: "server --tls-san {{ ansible_host }}"
+
+#   tasks:
+#     - name: Installing k3s
+#       shell: /tmp/k3s.sh
+
+#     - name: Waiting for k3s node token file
+#       ansible.builtin.wait_for:
+#         path: /var/lib/rancher/k3s/server/node-token
+
+#     - name: Copying k3s node token
+#       ansible.builtin.command: cat /var/lib/rancher/k3s/server/node-token
+#       register: nodetoken
+
+#     - name: Store node-token
+#       set_fact:
+#         token: "{{ nodetoken.stdout }}"
+
+# - name: Finalising
+#   hosts: ocarm1
+#   become: yes
+#   tasks:
+#     - name: Sleep for 10 seconds
+#       ansible.builtin.wait_for:
+#         timeout: 10
+
+#     - name: Adding role to worker node
+#       command: kubectl label node ocarm2 kubernetes.io/role=worker
+
+#     - name: Write kube config to tmp file
+#       shell: "cp /etc/rancher/k3s/k3s.yaml /tmp/conf-with-external-ip; chmod 600 /tmp/conf-with-external-ip"
+
+#     - name: Replace IP in config file
+#       replace:
+#         path: "/tmp/conf-with-external-ip"
+#         regexp: 'server: https://[0-9\\.]+:6443'
+#         replace: "server: https://{{ ansible_host }}:6443"
+
+#     - name: Download kubeconf
+#       fetch:
+#         src: /tmp/conf-with-external-ip
+#         dest: ../kubeconfig
+#         flat: yes
+#         fail_on_missing: yes
+
+#     #- name: Linking Control Plane IP to DuckDNS
+#     #  uri:
+#     #    url: "{{ kube_duckdns_url }}"
+
+
+# - name: Rebooting
+#   hosts: nodes
+#   become: yes
+#   tasks:
+#     - name: Rebooting instances
+#       reboot:

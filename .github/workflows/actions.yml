@@ -1,8 +1,57 @@
 on: [push]
 jobs:
+  terraform-oracle:
+    name: "Terraform Oracle Infra"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./oracle
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup Terraform variables
+        id: vars
+        run: |-
+          cat > terraform.tfvars <<EOF
+          user_ocid = "${{ secrets.TF_USER_OCID }}"
+          tenancy_ocid = "${{ secrets.TF_TENANCY_OCID }}"
+          ssh_authorized_keys = "${{ secrets.TF_SSH_AUTHORIZED_KEYS }}"
+          oci_private_key = "${{ secrets.TF_OCI_PRIVATE_KEY }}"
+          fingerprint = "${{ secrets.TF_FINGERPRINT }}"
+          compartment_id = "${{ secrets.TF_COMPARTMENT_ID }}"
+          EOF
+
+      - name: "Terraform Plan"
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
   ansible:
     name: Ansible
+    needs: terraform-oracle
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ansible
 
     steps:
       - name: Check out the codebase.
@@ -11,7 +60,7 @@ jobs:
           submodules: true
 
       - name: Set up Python 3.7.
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
@@ -19,7 +68,6 @@ jobs:
         run: pip3 install ansible-lint ansible
 
       - name: Run ansible-lint.
-        working-directory: ./ansible
         run: ansible-lint
 
       - name: Setup SSH 
@@ -37,21 +85,23 @@ jobs:
          ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts
 
       - name: Run vpn-playbook
-        working-directory: ./ansible
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml
 
       - name: Run k3s-playbook
-        working-directory: ./ansible
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml
 
-  terraform:
-    name: "Terraform"
+  terraform-kubernetes:
+    name: "Terraform Kubernetes Cluster"
+    needs: [terraform-oracle, ansible]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kubernetes
     steps:
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.2
+        uses: hashicorp/setup-terraform@v2.0.3
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -75,12 +125,6 @@ jobs:
           cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
           kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
           kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
-          user_ocid = "${{ secrets.TF_USER_OCID }}"
-          tenancy_ocid = "${{ secrets.TF_TENANCY_OCID }}"
-          ssh_authorized_keys = "${{ secrets.TF_SSH_AUTHORIZED_KEYS }}"
-          oci_private_key = "${{ secrets.TF_OCI_PRIVATE_KEY }}"
-          fingerprint = "${{ secrets.TF_FINGERPRINT }}"
-          compartment_id = "${{ secrets.TF_COMPARTMENT_ID }}"
           EOF
 
       - name: "Terraform Plan"

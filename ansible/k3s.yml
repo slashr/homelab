@@ -60,9 +60,9 @@
         #      changed_when: false
 
 - name: Enabling Nodes
-  hosts: cretus 
+  hosts: cretus
   become: true
-  tasks: 
+  tasks:
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10

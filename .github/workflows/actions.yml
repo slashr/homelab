@@ -1,5 +1,50 @@
 on: [push]
 jobs:
+  terraform-oracle:
+    name: "Terraform Oracle Infra"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./oracle
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup Terraform variables
+        id: vars
+        run: |-
+          cat > terraform.tfvars <<EOF
+          user_ocid = "${{ secrets.TF_USER_OCID }}"
+          tenancy_ocid = "${{ secrets.TF_TENANCY_OCID }}"
+          ssh_authorized_keys = "${{ secrets.TF_SSH_AUTHORIZED_KEYS }}"
+          oci_private_key = "${{ secrets.TF_OCI_PRIVATE_KEY }}"
+          fingerprint = "${{ secrets.TF_FINGERPRINT }}"
+          compartment_id = "${{ secrets.TF_COMPARTMENT_ID }}"
+          EOF
+
+      - name: "Terraform Plan"
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
   ansible:
     name: Ansible
     runs-on: ubuntu-latest
@@ -46,8 +91,8 @@ jobs:
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml
 
-  terraform:
-    name: "Terraform"
+  terraform-kubernetes:
+    name: "Terraform Kubernetes Cluster"
     runs-on: ubuntu-latest
     steps:
       - name: Setup Terraform

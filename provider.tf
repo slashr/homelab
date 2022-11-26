@@ -38,11 +38,3 @@ provider "helm" {
     client_key         = base64decode(var.kube_client_key)
   }
 }
-
-provider "oci" {
-  user_ocid    = var.user_ocid
-  fingerprint  = var.fingerprint
-  tenancy_ocid = var.tenancy_ocid
-  region       = "eu-frankfurt-1"
-  private_key  = base64decode(var.oci_private_key)
-}

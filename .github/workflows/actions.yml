@@ -49,6 +49,9 @@ jobs:
     name: Ansible
     needs: terraform-oracle
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ansible
 
     steps:
       - name: Check out the codebase.
@@ -65,7 +68,6 @@ jobs:
         run: pip3 install ansible-lint ansible
 
       - name: Run ansible-lint.
-        working-directory: ./ansible
         run: ansible-lint
 
       - name: Setup SSH 
@@ -83,12 +85,10 @@ jobs:
          ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts
 
       - name: Run vpn-playbook
-        working-directory: ./ansible
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml
 
       - name: Run k3s-playbook
-        working-directory: ./ansible
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml
 
@@ -96,6 +96,9 @@ jobs:
     name: "Terraform Kubernetes Cluster"
     needs: [terraform-oracle, ansible]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kubernetes
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.2

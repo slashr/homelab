@@ -8,7 +8,7 @@ jobs:
         working-directory: ./oracle
     steps:
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.2
+        uses: hashicorp/setup-terraform@v2.0.3
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -101,7 +101,7 @@ jobs:
         working-directory: ./kubernetes
     steps:
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.2
+        uses: hashicorp/setup-terraform@v2.0.3
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -125,12 +125,6 @@ jobs:
           cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
           kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
           kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
-          user_ocid = "${{ secrets.TF_USER_OCID }}"
-          tenancy_ocid = "${{ secrets.TF_TENANCY_OCID }}"
-          ssh_authorized_keys = "${{ secrets.TF_SSH_AUTHORIZED_KEYS }}"
-          oci_private_key = "${{ secrets.TF_OCI_PRIVATE_KEY }}"
-          fingerprint = "${{ secrets.TF_FINGERPRINT }}"
-          compartment_id = "${{ secrets.TF_COMPARTMENT_ID }}"
           EOF
 
       - name: "Terraform Plan"

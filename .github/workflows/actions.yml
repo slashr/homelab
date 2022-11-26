@@ -47,6 +47,7 @@ jobs:
 
   ansible:
     name: Ansible
+    needs: terraform-oracle
     runs-on: ubuntu-latest
 
     steps:
@@ -93,6 +94,7 @@ jobs:
 
   terraform-kubernetes:
     name: "Terraform Kubernetes Cluster"
+    needs: [terraform-oracle, ansible]
     runs-on: ubuntu-latest
     steps:
       - name: Setup Terraform

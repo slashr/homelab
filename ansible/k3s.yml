@@ -2,14 +2,14 @@
 
 - name: Initialising cluster
   hosts: arm2
-  become: yes
+  become: true
   tasks:
     - name: Updating instances
       apt:
-        update_cache: yes
+        update_cache: true
         upgrade: dist
 
-    #- name: Rebooting instances
+    # - name: Rebooting instances
     #  reboot:
 
     - name: Downloading k3s script
@@ -26,7 +26,7 @@
       - key: K3S_URL
         value: "https://130.61.64.164:6443"
       - key: K3S_TOKEN
-        value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653" 
+        value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
   tasks:
     - name: Add env vars
       ansible.builtin.lineinfile:
@@ -51,11 +51,10 @@
         state: started
         enabled: true
       changed_when: false
-
 # - name: Configuring Master node
 #   hosts: ocarm1
-#   become: yes
-#   environment: 
+#   become: true
+#   environment:
 #     INSTALL_K3S_EXEC: "server --tls-san {{ ansible_host }}"
 
 #   tasks:
@@ -76,7 +75,7 @@
 
 # - name: Finalising
 #   hosts: ocarm1
-#   become: yes
+#   become: true
 #   tasks:
 #     - name: Sleep for 10 seconds
 #       ansible.builtin.wait_for:
@@ -98,8 +97,8 @@
 #       fetch:
 #         src: /tmp/conf-with-external-ip
 #         dest: ../kubeconfig
-#         flat: yes
-#         fail_on_missing: yes
+#         flat: true
+#         fail_on_missing: true
 
 #     #- name: Linking Control Plane IP to DuckDNS
 #     #  uri:
@@ -108,7 +107,7 @@
 
 # - name: Rebooting
 #   hosts: nodes
-#   become: yes
+#   become: true
 #   tasks:
 #     - name: Rebooting instances
 #       reboot:

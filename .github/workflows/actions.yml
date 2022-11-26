@@ -28,16 +28,23 @@ jobs:
          eval `ssh-agent -s`
          mkdir -p /home/runner/.ssh/
          touch /home/runner/.ssh/id_rsa
-         echo -e "${{secrets.WIREGUARD_SSH_KEY}}" > /home/runner/.ssh/id_rsa
+         # Create a file containing IP addresses of all servers
+         echo -e "${{secrets.HOST_IPS}}" > /home/runner/.ssh/host_ips
+         # Create the SSH Private Key used to connect to all the servers using the Secret
+         echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
          chmod 700 /home/runner/.ssh/id_rsa
-         ssh-keyscan -t rsa,dsa,ecdsa,ed25519 "${{secrets.WIREGUARD_IP}}" >> /home/runner/.ssh/known_hosts
+         # Add the public keys of all servers to known_hosts file to avoid getting authenticity prompt
+         ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts
 
-      - name: Run ansible-playbook
+      - name: Run vpn-playbook
         working-directory: ./ansible
         run: |
-          # Host key checking has to be disabled because Rpi authentication is password based. Remove it after changing to key based auth
-          export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbook.yml
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml
+
+      - name: Run k3s-playbook
+        working-directory: ./ansible
+        run: |
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml
 
   terraform:
     name: "Terraform"

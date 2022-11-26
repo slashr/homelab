@@ -1,7 +1,7 @@
 ---
 
 - name: Initialising cluster
-  hosts: arm2
+  hosts: workers
   become: true
   tasks:
     - name: Updating instances
@@ -19,7 +19,7 @@
         mode: "0555"
 
 - name: Configuring Worker node
-  hosts: arm2
+  hosts: workers
   become: true
   vars:
     os_environment:
@@ -28,6 +28,8 @@
       - key: K3S_TOKEN
         value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
   tasks:
+    # Not sure if this task to set the env explicitly is required
+    # Test if Starting K3S Agent step works without this task
     - name: Add env vars
       ansible.builtin.lineinfile:
         dest: "/etc/environment"
@@ -36,78 +38,37 @@
         line: "{{ item.key }}={{ item.value }}"
       with_items: "{{ os_environment }}"
 
-- name: Finalising
-  hosts: arm2
+- name: Starting K3S Agent
+  hosts: workers
   become: true
+  environment:
+    - key: K3S_URL
+      value: "https://130.61.64.164:6443"
+    - key: K3S_TOKEN
+      value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
   tasks:
     - name: Installing k3s
-      shell: /tmp/k3s.sh
+      ansible.builtin.command: /tmp/k3s.sh
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10
-    - name: Enable k3s-agent
-      ansible.builtin.systemd:
-        name: k3s-agent
-        state: started
-        enabled: true
-      changed_when: false
-# - name: Configuring Master node
-#   hosts: ocarm1
-#   become: true
-#   environment:
-#     INSTALL_K3S_EXEC: "server --tls-san {{ ansible_host }}"
+        #    - name: Enable k3s-agent
+        #      ansible.builtin.systemd:
+        #        name: k3s-agent
+        #        state: started
+        #        enabled: true
+        #      changed_when: false
 
-#   tasks:
-#     - name: Installing k3s
-#       shell: /tmp/k3s.sh
-
-#     - name: Waiting for k3s node token file
-#       ansible.builtin.wait_for:
-#         path: /var/lib/rancher/k3s/server/node-token
-
-#     - name: Copying k3s node token
-#       ansible.builtin.command: cat /var/lib/rancher/k3s/server/node-token
-#       register: nodetoken
-
-#     - name: Store node-token
-#       set_fact:
-#         token: "{{ nodetoken.stdout }}"
-
-# - name: Finalising
-#   hosts: ocarm1
-#   become: true
-#   tasks:
-#     - name: Sleep for 10 seconds
-#       ansible.builtin.wait_for:
-#         timeout: 10
-
-#     - name: Adding role to worker node
-#       command: kubectl label node ocarm2 kubernetes.io/role=worker
-
-#     - name: Write kube config to tmp file
-#       shell: "cp /etc/rancher/k3s/k3s.yaml /tmp/conf-with-external-ip; chmod 600 /tmp/conf-with-external-ip"
-
-#     - name: Replace IP in config file
-#       replace:
-#         path: "/tmp/conf-with-external-ip"
-#         regexp: 'server: https://[0-9\\.]+:6443'
-#         replace: "server: https://{{ ansible_host }}:6443"
-
-#     - name: Download kubeconf
-#       fetch:
-#         src: /tmp/conf-with-external-ip
-#         dest: ../kubeconfig
-#         flat: true
-#         fail_on_missing: true
-
-#     #- name: Linking Control Plane IP to DuckDNS
-#     #  uri:
-#     #    url: "{{ kube_duckdns_url }}"
-
-
-# - name: Rebooting
-#   hosts: nodes
-#   become: true
-#   tasks:
-#     - name: Rebooting instances
-#       reboot:
+- name: Enabling Nodes
+  hosts: cretus 
+  become: true
+  tasks: 
+    - name: Sleep for 10 seconds
+      ansible.builtin.wait_for:
+        timeout: 10
+    - name: Adding role to worker node arm1
+      command: kubectl label node arm1 kubernetes.io/role=worker
+    - name: Adding role to worker node arm2
+      command: kubectl label node arm2 kubernetes.io/role=worker
+    - name: Adding role to worker node amd2
+      command: kubectl label node amd2 kubernetes.io/role=worker

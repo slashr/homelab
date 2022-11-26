@@ -11,14 +11,14 @@
 - name: Enable IP forwarding
   hosts: amd1
   tasks:
-    - name: Set IP forward to true
+    - name: Set ip_forward flag to 1
       ansible.posix.sysctl:
         name: net.ipv4.ip_forward
         value: '1'
         sysctl_set: true
         state: present
         reload: true
-  become: true
+      become: true
 
 - name: Configure iptables on Oracle
   hosts: amd1

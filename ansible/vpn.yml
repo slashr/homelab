@@ -71,7 +71,7 @@
           [Peer]
           PublicKey = IpPmmvbk0VGc07FT5HEcouoiCUt4bFfc43fZNdTCqQc=
           AllowedIPs = 172.20.0.1/32
-          Endpoint = 130.162.50.22:51820
+          Endpoint = 130.61.64.164:51820
           PersistentKeepalive = 25
         mode: 0640
       become: true

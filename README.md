@@ -22,3 +22,5 @@ My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspb
 - ARM instances will not have always free tag as they are flexible shape.
 - ARM instances will be deleted after one-month trial. They have to be then recreated
 
+## Diagram
+https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ

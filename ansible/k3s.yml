@@ -18,25 +18,36 @@
         dest: /tmp/k3s.sh
         mode: "0555"
 
-- name: Configuring Worker node
-  hosts: workers
-  become: true
-  vars:
-    os_environment:
-      - key: K3S_URL
-        value: "https://130.61.64.164:6443"
-      - key: K3S_TOKEN
-        value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
-  tasks:
+        #- name: Configuring Worker node
+        #  hosts: workers
+        #  become: true
+        #  vars:
+        #    os_environment:
+        #      - key: K3S_URL
+        #        value: "https://130.61.64.164:6443"
+        #      - key: K3S_TOKEN
+        #        value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
+        #  tasks:
     # Not sure if this task to set the env explicitly is required
     # Test if Starting K3S Agent step works without this task
-    - name: Add env vars
-      ansible.builtin.lineinfile:
-        dest: "/etc/environment"
-        state: present
-        regexp: "^{{ item.key }}="
-        line: "{{ item.key }}={{ item.value }}"
-      with_items: "{{ os_environment }}"
+    #- name: Add env vars
+    #  ansible.builtin.lineinfile:
+    #    dest: "/etc/environment"
+    #    state: present
+    #    regexp: "^{{ item.key }}="
+    #    line: "{{ item.key }}={{ item.value }}"
+    #  with_items: "{{ os_environment }}"
+
+- name: Set environment variables
+  hosts: workers
+  become: true
+  tasks:
+    - name: Set K3S_URL
+      environment:
+        K3S_URL: "https://130.61.64.164:6443"
+    - name: Set K3S_TOKEN
+      environment:
+        K3S_TOKEN: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653" 
 
 - name: Starting K3S Agent
   hosts: workers

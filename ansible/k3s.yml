@@ -9,43 +9,15 @@
         update_cache: true
         upgrade: dist
 
-    # - name: Rebooting instances
-    #  reboot:
-
     - name: Downloading k3s script
       ansible.builtin.get_url:
         url: https://get.k3s.io
         dest: /tmp/k3s.sh
         mode: "0555"
 
-        #- name: Configuring Worker node
-        #  hosts: workers
-        #  become: true
-        #  vars:
-        #    os_environment:
-        #      - key: K3S_URL
-        #        value: "https://130.61.64.164:6443"
-        #      - key: K3S_TOKEN
-        #        value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
-        #  tasks:
-    # Not sure if this task to set the env explicitly is required
-    # Test if Starting K3S Agent step works without this task
-    #- name: Add env vars
-    #  ansible.builtin.lineinfile:
-    #    dest: "/etc/environment"
-    #    state: present
-    #    regexp: "^{{ item.key }}="
-    #    line: "{{ item.key }}={{ item.value }}"
-    #  with_items: "{{ os_environment }}"
-
 - name: Starting K3S Agent
   hosts: workers
   become: true
-  environment:
-    - key: K3S_URL
-      value: "https://130.61.64.164:6443"
-    - key: K3S_TOKEN
-      value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
   tasks:
     - name: Installing k3s
       ansible.builtin.command: /tmp/k3s.sh
@@ -59,6 +31,9 @@
         state: started
         enabled: true
         changed_when: false
+      environment:
+        K3S_URL: "https://130.61.64.164:6443"
+        K3S_TOKEN: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
 
 - name: Enabling Nodes
   hosts: cretus

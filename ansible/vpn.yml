@@ -27,7 +27,7 @@
       ansible.builtin.copy:
         src: ./iptables.conf
         dest: "/etc/iptables/rules.v4"
-        mode: 0640
+        mode: '640'
     - name: Load iptables rules
       ansible.builtin.command: iptables-restore /etc/iptables/rules.v4
       changed_when: false
@@ -53,7 +53,7 @@
           [Peer]
           PublicKey = N2xPaMzydiNhSKIHPKfXyqusry6jUZUhfI7duoXPTEI=
           AllowedIPs = 172.20.0.2/32
-        mode: 0640
+        mode: '640'
       become: true
 
 - name: Create wg0 config on Pi
@@ -73,7 +73,7 @@
           AllowedIPs = 172.20.0.1/32
           Endpoint = 130.162.50.22:51820
           PersistentKeepalive = 25
-        mode: 0640
+        mode: '640'
       become: true
 
 - name: Start wireguard on both hosts

@@ -48,7 +48,8 @@
       value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
   tasks:
     - name: Installing k3s
-      ansible.builtin.command: /tmp/k3s.sh
+      ansible.builtin.shell: /tmp/k3s.sh
+      changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10
@@ -68,7 +69,10 @@
         timeout: 10
     - name: Adding role to worker node arm1
       ansible.builtin.command: kubectl label node arm1 kubernetes.io/role=worker
+      changed_when: false
     - name: Adding role to worker node arm2
       ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
+      changed_when: false
     - name: Adding role to worker node amd2
       ansible.builtin.command: kubectl label node amd2 kubernetes.io/role=worker
+      changed_when: false

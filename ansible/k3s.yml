@@ -21,6 +21,7 @@
   tasks:
     - name: Installing k3s
       ansible.builtin.command: /tmp/k3s.sh
+      changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10

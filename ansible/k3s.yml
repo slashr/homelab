@@ -59,17 +59,17 @@
       value: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
   tasks:
     - name: Installing k3s
-      ansible.builtin.shell: /tmp/k3s.sh
+      ansible.builtin.command: /tmp/k3s.sh
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10
-        #    - name: Enable k3s-agent
-        #      ansible.builtin.systemd:
-        #        name: k3s-agent
-        #        state: started
-        #        enabled: true
-        #      changed_when: false
+    - name: Enable k3s-agent
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: started
+        enabled: true
+        changed_when: false
 
 - name: Enabling Nodes
   hosts: cretus

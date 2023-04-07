@@ -28,11 +28,11 @@
     - name: Enable k3s-agent
       ansible.builtin.systemd:
         name: k3s-agent
-        state: started
+        state: restarted
         enabled: true
       environment:
         K3S_URL: "https://130.61.64.164:6443"
-        K3S_TOKEN: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653test"
+        K3S_TOKEN: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
 
 - name: Enabling Nodes
   hosts: cretus

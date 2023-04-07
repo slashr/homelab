@@ -31,7 +31,7 @@
     - name: Enable k3s-agent
       ansible.builtin.systemd:
         name: k3s-agent
-        state: restarted
+        state: started
         enabled: true
 
 - name: Enabling Nodes

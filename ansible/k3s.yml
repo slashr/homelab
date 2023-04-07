@@ -5,7 +5,7 @@
   become: true
   tasks:
     - name: Updating instances
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         upgrade: dist
 
@@ -13,7 +13,7 @@
     #  reboot:
 
     - name: Downloading k3s script
-      get_url:
+      ansible.builtin.get_url:
         url: https://get.k3s.io
         dest: /tmp/k3s.sh
         mode: "0555"
@@ -67,8 +67,8 @@
       ansible.builtin.wait_for:
         timeout: 10
     - name: Adding role to worker node arm1
-      command: kubectl label node arm1 kubernetes.io/role=worker
+      ansible.builtin.command: kubectl label node arm1 kubernetes.io/role=worker
     - name: Adding role to worker node arm2
-      command: kubectl label node arm2 kubernetes.io/role=worker
+      ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
     - name: Adding role to worker node amd2
-      command: kubectl label node amd2 kubernetes.io/role=worker
+      ansible.builtin.command: kubectl label node amd2 kubernetes.io/role=worker

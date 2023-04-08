@@ -20,7 +20,7 @@
   become: true
   tasks:
     - name: Installing k3s
-      ansible.builtin.command: bash /tmp/k3s.sh
+      ansible.builtin.shell: bash /tmp/k3s.sh
       environment:
         K3S_URL: "https://130.61.64.164:6443"
         K3S_TOKEN: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"

@@ -35,11 +35,11 @@
         enabled: true
       notify:
         - Restart k3s-agent
-      handlers:
-        - name: Restart k3s-agent
-          ansible.builtin.systemd:
-            name: k3s-agent
-            state: restarted
+  handlers:
+    - name: Restart k3s-agent
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: restarted
 
 - name: Enabling Nodes
   hosts: cretus

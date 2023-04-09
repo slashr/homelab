@@ -27,19 +27,12 @@
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
-        timeout: 10
+        timeout: 20
     - name: Check if service is running
       ansible.builtin.systemd:
         name: k3s-agent
-        state: started
+        state: restarted
         enabled: true
-      notify:
-        - Restart k3s-agent
-  handlers:
-    - name: Restart k3s-agent
-      ansible.builtin.systemd:
-        name: k3s-agent
-        state: restarte
 
 - name: Enabling Nodes
   hosts: cretus

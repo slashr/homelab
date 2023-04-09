@@ -41,6 +41,7 @@
         name: k3s-agent
         state: restarted
 
+
 - name: Enabling Nodes
   hosts: cretus
   become: true

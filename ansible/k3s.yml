@@ -13,7 +13,7 @@
       ansible.builtin.get_url:
         url: https://get.k3s.io
         dest: /tmp/k3s.sh
-        mode: "u+x"
+        mode: "0555"
 
 - name: Starting K3S Agent
   hosts: workers
@@ -39,7 +39,7 @@
     - name: Restart k3s-agent
       ansible.builtin.systemd:
         name: k3s-agent
-        state: restarted
+        state: restarte
 
 - name: Enabling Nodes
   hosts: cretus

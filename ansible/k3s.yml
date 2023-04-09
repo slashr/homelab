@@ -39,7 +39,7 @@
     - name: Restart k3s-agent
       ansible.builtin.systemd:
         name: k3s-agent
-        state: restarte
+        state: restarted
 
 - name: Enabling Nodes
   hosts: cretus

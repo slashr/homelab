@@ -24,8 +24,6 @@
     - name: Installing k3s
       ansible.builtin.command: /tmp/k3s.sh
       environment:
-        K3S_URL: "https://130.61.64.164:6443"
-        K3S_TOKEN: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
         INSTALL_K3S_VERSION: "v1.26.3+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds
@@ -33,8 +31,8 @@
         timeout: 20
     - name: Check if service is running
       ansible.builtin.systemd:
-        name: k3s-agent
-        state: restarted
+        name: k3s
+        state: started
         enabled: true
 
 - name: Starting K3S Agent

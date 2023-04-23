@@ -1,7 +1,9 @@
 ---
 
 - name: Initialising cluster
-  hosts: workers
+  hosts:
+    - workers
+    - cretus
   become: true
   tasks:
     - name: Updating instances

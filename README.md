@@ -25,9 +25,5 @@ My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspb
 ## Diagram
 https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 36d199a (Staging (#15))
 ## Secrets
 1. HOST_IPS: List of Cloud IPs that the Github Actions Runner will add to the known_hosts file in order to avoid getting a authenticity prompt. Whenever a new Node is added or recreated, update this Secret accordingly with the new IP

@@ -21,6 +21,10 @@
   hosts: cretus
   become: true
   tasks:
+    - name: Copy over config.yaml
+      ansible.builtin.copy:
+        src: ./k3s-master-config.yaml
+        dest: /etc/rancher/k3s/config.yaml
     - name: Installing k3s
       ansible.builtin.command: /tmp/k3s.sh
       environment:

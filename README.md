@@ -1,5 +1,7 @@
 # Homelab Architecture
 
+added a temp=temp:PreferNoSchedule taint to cretus master node to avoid scheduling pods on master
+ 
 My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup. There are 3 Oracle Free Tier instances that are added to the Pi K8S Master API. 
 
 ## Terraform Oracle Job

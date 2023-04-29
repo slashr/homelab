@@ -1,5 +1,29 @@
 on: [push]
 jobs:
+  terraform-gcp:
+    name: "Terraform GCP Infra"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./gcp
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
   terraform-oracle:
     name: "Terraform Oracle Infra"
     runs-on: ubuntu-latest

@@ -27,6 +27,8 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   terraform-oracle:
     name: "Terraform Oracle Infra"

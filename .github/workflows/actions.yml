@@ -6,11 +6,11 @@ jobs:
     defaults:
       run:
         working-directory: ./gcp
+    env:
+      GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.3
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -21,14 +21,10 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   terraform-oracle:
     name: "Terraform Oracle Infra"

@@ -1,4 +1,4 @@
-on: [push]
+on: [push, fork]
 jobs:
   terraform-gcp:
     name: "Terraform GCP Infra"
@@ -96,7 +96,7 @@ jobs:
       - name: Run ansible-lint.
         run: ansible-lint
 
-      - name: Setup SSH 
+      - name: Setup SSH
         shell: bash
         run: |
          eval `ssh-agent -s`

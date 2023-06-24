@@ -1,5 +1,31 @@
-on: [push]
+on: [push, fork]
 jobs:
+  terraform-gcp:
+    name: "Terraform GCP Infra"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./gcp
+    env:
+      GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
   terraform-oracle:
     name: "Terraform Oracle Infra"
     runs-on: ubuntu-latest
@@ -70,7 +96,7 @@ jobs:
       - name: Run ansible-lint.
         run: ansible-lint
 
-      - name: Setup SSH 
+      - name: Setup SSH
         shell: bash
         run: |
          eval `ssh-agent -s`

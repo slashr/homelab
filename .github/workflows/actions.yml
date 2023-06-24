@@ -104,6 +104,7 @@ jobs:
          touch /home/runner/.ssh/id_rsa
          # Create a file containing IP addresses of all servers
          echo -e "${{secrets.HOST_IPS}}" > /home/runner/.ssh/host_ips
+         cat /home/runner/.ssh/host_ips
          # Create the SSH Private Key used to connect to all the servers using the Secret
          echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
          chmod 700 /home/runner/.ssh/id_rsa

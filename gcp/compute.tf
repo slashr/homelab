@@ -7,8 +7,8 @@ resource "google_compute_instance" "gcp1" {
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-11"
-      size = 30
-      type = "pd-standard"
+      size  = 30
+      type  = "pd-standard"
     }
   }
 

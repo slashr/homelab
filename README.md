@@ -19,6 +19,7 @@ My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspb
 
 ## GCP
 - GCP SA Key is added as a environment variable in Terraform Cloud so that Terraform can access GCP infra
+- The username for SSH login is the username provided in the public key in gcp/compute.tf under "ssh-keys". Can be set to any username desired
 
 ## Notes
 ### Oracle Free Tier

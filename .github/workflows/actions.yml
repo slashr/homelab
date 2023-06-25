@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -25,6 +27,10 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
 
   terraform-oracle:
     name: "Terraform Oracle Infra"
@@ -73,7 +79,7 @@ jobs:
 
   ansible:
     name: Ansible
-    needs: terraform-oracle
+    needs: [terraform-oracle, terraform-gcp]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -101,14 +107,11 @@ jobs:
         run: |
          eval `ssh-agent -s`
          mkdir -p /home/runner/.ssh/
-         touch /home/runner/.ssh/host_ips
          touch /home/runner/.ssh/id_rsa
          # Create a file containing IP addresses of all servers
          echo -e "${{secrets.HOST_IPS}}" > /home/runner/.ssh/host_ips
-         cat /home/runner/.ssh/host_ips
          # Create the SSH Private Key used to connect to all the servers using the Secret
          echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-         cat /home/runner/.ssh/id_rsa
          chmod 700 /home/runner/.ssh/id_rsa
          # Add the public keys of all servers to known_hosts file to avoid getting authenticity prompt
          ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts

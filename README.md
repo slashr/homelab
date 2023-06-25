@@ -1,8 +1,8 @@
 # Homelab Architecture
 
 added a temp=temp:PreferNoSchedule taint to cretus master node to avoid scheduling pods on master
- 
-My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup. There are 3 Oracle Free Tier instances that are added to the Pi K8S Master API. 
+
+My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup. There are 3 Oracle Free Tier instances that are added to the Pi K8S Master API.
 
 ## Terraform Oracle Job
 - Creates 4 Free Tier servers
@@ -16,6 +16,10 @@ My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspb
 ## Terraform Kubernetes Job
 - Deploys ArgoCD, Cert Manager, Ingress Nginx and MetalLB on the K3S cluster
 - ArgoCD then deploys a app-of-apps which consists currently of Podinfo
+
+## GCP
+- GCP SA Key is added as a environment variable in Terraform Cloud so that Terraform can access GCP infra
+- The username for SSH login is the username provided in the public key in gcp/compute.tf under "ssh-keys". Can be set to any username desired
 
 ## Notes
 ### Oracle Free Tier

@@ -5,7 +5,7 @@ resource "google_compute_instance" "gcp1" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11"
+      image = "ubuntu-os-cloud/ubuntu-2204-lts"
       size  = 30
       type  = "pd-standard"
     }

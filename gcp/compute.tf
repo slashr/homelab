@@ -2,7 +2,6 @@ resource "google_compute_instance" "gcp1" {
   name         = "gcp1"
   machine_type = "e2-micro"
   zone         = "us-central1-c"
-  cpu_platform = "AMD Rome"
 
   boot_disk {
     initialize_params {

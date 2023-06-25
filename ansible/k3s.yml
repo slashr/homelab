@@ -2,7 +2,8 @@
 
 - name: Initialising cluster
   hosts:
-    - workers
+    - oracle-workers
+    - gcp-workers
     - cretus
   become: true
   tasks:
@@ -29,7 +30,7 @@
     - name: Installing k3s
       ansible.builtin.command: /tmp/k3s.sh
       environment:
-        INSTALL_K3S_VERSION: "v1.26.3+k3s1"
+        INSTALL_K3S_VERSION: "v1.27.2+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
@@ -41,7 +42,9 @@
         enabled: true
 
 - name: Starting K3S Agent
-  hosts: workers
+  hosts:
+    - oracle-workers
+    - gcp-workers
   become: true
   tasks:
     - name: Installing k3s
@@ -49,7 +52,7 @@
       environment:
         K3S_URL: "https://130.61.64.164:6443"
         K3S_TOKEN: "K10a338dc6c873ea250faca274a6f3b1f097a1201e8b1de4f42b5421f1eb9582886::server:548163aa2312d8a670ce1522d8ce5653"
-        INSTALL_K3S_VERSION: "v1.26.3+k3s1"
+        INSTALL_K3S_VERSION: "v1.27.2+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:

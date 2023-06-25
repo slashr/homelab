@@ -11,6 +11,12 @@ resource "google_compute_instance" "gcp1" {
     }
   }
 
+  metadata = {
+    "ssh-keys" = <<EOT
+      dev:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ5Ysv6PF3HbWQ/JfP2vWEBHtH8wPv6ysbyosEREXpO3 dev
+     EOT
+  }
+
   network_interface {
     network = "default"
 

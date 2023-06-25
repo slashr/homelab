@@ -79,7 +79,7 @@ jobs:
 
   ansible:
     name: Ansible
-    needs: terraform-oracle
+    needs: [terraform-oracle, terraform-gcp]
     runs-on: ubuntu-latest
     defaults:
       run:

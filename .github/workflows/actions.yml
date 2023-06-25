@@ -26,6 +26,10 @@ jobs:
         id: plan
         run: terraform plan -no-color
 
+      - name: Terraform Apply
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
   terraform-oracle:
     name: "Terraform Oracle Infra"
     runs-on: ubuntu-latest

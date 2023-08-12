@@ -50,7 +50,7 @@
         path: /var/lib/rancher/k3s/server/agent-token
       register: agent_token
     - name: Set variable agent_token_fact
-      set_fact:
+      ansible.builtin.set_fact:
         agent_token_fact: "{{ agent_token.content | b64decode | trim}}"
 
 - name: Starting K3S Agent

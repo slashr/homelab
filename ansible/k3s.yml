@@ -45,19 +45,13 @@
   become: true
   hosts: cretus
   tasks:
-    - name: Copy token
+    - name: Copy agent token
       slurp:
         path: /var/lib/rancher/k3s/server/agent-token
       register: agent_token
-    - name: Print token
-      debug:
-        var: agent_token
-    - name: Read File Content
+    - name: Set variable agent_token_fact
       set_fact:
         agent_token_fact: "{{ agent_token.content | b64decode | trim}}"
-    - name: Print token
-      debug:
-        var: agent_token_fact
 
 - name: Starting K3S Agent
   hosts:

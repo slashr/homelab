@@ -51,7 +51,7 @@
       register: agent_token
     - name: Set variable agent_token_fact
       ansible.builtin.set_fact:
-        agent_token_fact: "{{ agent_token.content | b64decode | trim}}"
+        agent_token_fact: "{{ agent_token.content | b64decode | trim }}"
 
 - name: Starting K3S Agent
   hosts:

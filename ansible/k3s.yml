@@ -46,7 +46,7 @@
   hosts: cretus
   tasks:
     - name: Copy agent token
-      slurp:
+      ansible.builtin.slurp:
         path: /var/lib/rancher/k3s/server/agent-token
       register: agent_token
     - name: Set variable agent_token_fact

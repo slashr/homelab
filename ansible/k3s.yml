@@ -53,27 +53,27 @@
       ansible.builtin.set_fact:
         agent_token_fact: "{{ agent_token.content | b64decode | trim }}"
 
-- name: Starting K3S Agent
-  hosts:
-    - oracle-workers
-    - gcp-workers
-  become: true
-  tasks:
-    - name: Installing k3s
-      ansible.builtin.command: /tmp/k3s.sh
-      environment:
-        K3S_TOKEN: "{{ hostvars['cretus']['agent_token_fact'] }}"
-        K3S_URL: "https://130.61.64.164:6443"
-        INSTALL_K3S_VERSION: "v1.27.4+k3s1"
-      changed_when: false
-    - name: Sleep for 10 seconds
-      ansible.builtin.wait_for:
-        timeout: 20
-    - name: Check if service is running
-      ansible.builtin.systemd:
-        name: k3s-agent
-        state: restarted
-        enabled: true
+# - name: Starting K3S Agent
+#   hosts:
+#     - oracle-workers
+#     - gcp-workers
+#   become: true
+#   tasks:
+#     - name: Installing k3s
+#       ansible.builtin.command: /tmp/k3s.sh
+#       environment:
+#         K3S_TOKEN: "{{ hostvars['cretus']['agent_token_fact'] }}"
+#         K3S_URL: "https://130.61.64.164:6443"
+#         INSTALL_K3S_VERSION: "v1.27.4+k3s1"
+#       changed_when: false
+#     - name: Sleep for 10 seconds
+#       ansible.builtin.wait_for:
+#         timeout: 20
+#     - name: Check if service is running
+#       ansible.builtin.systemd:
+#         name: k3s-agent
+#         state: restarted
+#         enabled: true
 
 # - name: Enabling Nodes
 #   hosts: cretus

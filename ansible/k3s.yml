@@ -75,22 +75,22 @@
         state: restarted
         enabled: true
 
-          #- name: Enabling Nodes
-          #  hosts: cretus
-          #  become: true
-          #  tasks:
-          #    - name: Sleep for 10 seconds
-          #      ansible.builtin.wait_for:
-          #        timeout: 10
-          #    - name: Adding role to worker node arm1
-          #      ansible.builtin.command: kubectl label node arm1 kubernetes.io/role=worker
-          #      changed_when: false
-          #    - name: Adding role to worker node arm2
-          #      ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
-          #      changed_when: false
-          #    - name: Adding role to worker node amd2
-          #      ansible.builtin.command: kubectl label node amd2 kubernetes.io/role=worker
-          #      changed_when: false
-          #    - name: Adding role to worker node gcp1
-          #      ansible.builtin.command: kubectl label node gcp1 kubernetes.io/role=worker
-          #      changed_when: false
+# - name: Enabling Nodes
+#   hosts: cretus
+#   become: true
+#   tasks:
+#     - name: Sleep for 10 seconds
+#       ansible.builtin.wait_for:
+#         timeout: 10
+#     - name: Adding role to worker node arm1
+#       ansible.builtin.command: kubectl label node arm1 kubernetes.io/role=worker
+#       changed_when: false
+#     - name: Adding role to worker node arm2
+#       ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
+#       changed_when: false
+#     - name: Adding role to worker node amd2
+#       ansible.builtin.command: kubectl label node amd2 kubernetes.io/role=worker
+#       changed_when: false
+#     - name: Adding role to worker node gcp1
+#       ansible.builtin.command: kubectl label node gcp1 kubernetes.io/role=worker
+#       changed_when: false

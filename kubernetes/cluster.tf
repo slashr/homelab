@@ -2,9 +2,10 @@ module "argo-cd" {
   source = "git::https://github.com/slashr/terraform-modules.git//apps/argo-cd?ref=main"
 }
 
-module "ingress-nginx" {
-  source = "git::https://github.com/slashr/terraform-modules.git//apps/ingress-nginx?ref=main"
-}
+# Disable and try and use traefik
+# module "ingress-nginx" {
+#   source = "git::https://github.com/slashr/terraform-modules.git//apps/ingress-nginx?ref=main"
+# }
 
 module "metallb" {
   source = "git::https://github.com/slashr/terraform-modules.git//apps/metallb?ref=main"

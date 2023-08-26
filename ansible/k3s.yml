@@ -23,7 +23,7 @@
   become: true
   tasks:
     - name: Create /etc/rancher/k3s director
-      file:
+      ansible.builtin.file:
         path: /etc/rancher/k3s
         state: directory
         mode: '0755'

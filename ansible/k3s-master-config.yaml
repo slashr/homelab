@@ -1,3 +1,1 @@
-# advertise-address: 130.61.64.164 Maybe enable fixing connectivity issues of a remote worker Node setup.
-# It's the address the worker Nodes try to contact https://docs.k3s.io/cli/server#listeners
-advertise-address: 192.168.60.11
+advertise-address: 130.61.64.164

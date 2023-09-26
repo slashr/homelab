@@ -25,7 +25,8 @@
   tasks:
     - name: Copy configuration to /etc/iptables/rules.v4
       ansible.builtin.copy:
-        src: ./iptables.conf
+        src: ./confs/iptables.conf
+        decrypt: true
         dest: "/etc/iptables/rules.v4"
         mode: '640'
     - name: Load iptables rules
@@ -41,18 +42,20 @@
   tasks:
     - name: Create a wg0 interface config file
       ansible.builtin.copy:
+        src: ./confs/amd1-wg0.conf
+        decrypt: true
         dest: "/etc/wireguard/wg0.conf"
-        content: |
-          [Interface]
-          PrivateKey = sDMpEGPtUqV2zlIwJCu4KBYVvgVW09T09OGxk6GB/0U=
-          Address = 172.20.0.1/24
-          PostUp = iptables -I FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE
-          PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ens3 -j MASQUERADE
-          ListenPort = 51820
+        # content: |
+        #   [Interface]
+        #   PrivateKey = sDMpEGPtUqV2zlIwJCu4KBYVvgVW09T09OGxk6GB/0U=
+        #   Address = 172.20.0.1/24
+        #   PostUp = iptables -I FORWARD -i wg0 -j ACCEPT; iptables -A FORWARD -o wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE
+        #   PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ens3 -j MASQUERADE
+        #   ListenPort = 51820
 
-          [Peer]
-          PublicKey = N2xPaMzydiNhSKIHPKfXyqusry6jUZUhfI7duoXPTEI=
-          AllowedIPs = 172.20.0.2/32
+        #   [Peer]
+        #   PublicKey = N2xPaMzydiNhSKIHPKfXyqusry6jUZUhfI7duoXPTEI=
+        #   AllowedIPs = 172.20.0.2/32
         mode: '640'
       become: true
 
@@ -61,18 +64,20 @@
   tasks:
     - name: Create a wg0 interface config file
       ansible.builtin.copy:
+        src: ./confs/rpi-wg0.conf
+        decrypt: true
         dest: "/etc/wireguard/wg0.conf"
-        content: |
-          [Interface]
-          PrivateKey = QA7trEGyrLYjea0A2CzuXVudo2LZIwDBuxJW1JzLPko=
-          Address = 172.20.0.2/24
-          DNS = 1.1.1.1
-          PostUp = ping -c1 172.20.0.1
-          [Peer]
-          PublicKey = IpPmmvbk0VGc07FT5HEcouoiCUt4bFfc43fZNdTCqQc=
-          AllowedIPs = 172.20.0.1/32
-          Endpoint = 130.61.64.164:51820
-          PersistentKeepalive = 25
+        # content: |
+        #   [Interface]
+        #   PrivateKey = QA7trEGyrLYjea0A2CzuXVudo2LZIwDBuxJW1JzLPko=
+        #   Address = 172.20.0.2/24
+        #   DNS = 1.1.1.1
+        #   PostUp = ping -c1 172.20.0.1
+        #   [Peer]
+        #   PublicKey = IpPmmvbk0VGc07FT5HEcouoiCUt4bFfc43fZNdTCqQc=
+        #   AllowedIPs = 172.20.0.1/32
+        #   Endpoint = 130.61.64.164:51820
+        #   PersistentKeepalive = 25
         mode: '640'
       become: true
 

@@ -1,0 +1,170 @@
+on: [push, fork]
+jobs:
+  terraform-gcp:
+    name: "Terraform GCP Infra"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./gcp
+    env:
+      GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
+  terraform-oracle:
+    name: "Terraform Oracle Infra"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./oracle
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup Terraform variables
+        id: vars
+        run: |-
+          cat > terraform.tfvars <<EOF
+          user_ocid = "${{ secrets.TF_USER_OCID }}"
+          tenancy_ocid = "${{ secrets.TF_TENANCY_OCID }}"
+          ssh_authorized_keys = "${{ secrets.TF_SSH_AUTHORIZED_KEYS }}"
+          oci_private_key = "${{ secrets.TF_OCI_PRIVATE_KEY }}"
+          fingerprint = "${{ secrets.TF_FINGERPRINT }}"
+          compartment_id = "${{ secrets.TF_COMPARTMENT_ID }}"
+          EOF
+
+      - name: "Terraform Plan"
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
+  ansible:
+    name: Ansible
+    needs: [terraform-oracle, terraform-gcp]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ansible
+
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Set up Python 3.7.
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install test dependencies.
+        run: pip3 install ansible-lint ansible
+
+      - name: Run ansible-lint.
+        run: ansible-lint
+
+      - name: Setup SSH
+        shell: bash
+        run: |
+         eval `ssh-agent -s`
+         mkdir -p /home/runner/.ssh/
+         touch /home/runner/.ssh/id_rsa
+         # Create a file containing IP addresses of all servers
+         echo -e "${{secrets.HOST_IPS}}" > /home/runner/.ssh/host_ips
+         # Create the SSH Private Key used to connect to all the servers using the Secret
+         echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
+         # Create the Ansible Vault password file for decryption
+         echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
+         chmod 700 /home/runner/.ssh/id_rsa
+         # Add the public keys of all servers to known_hosts file to avoid getting authenticity prompt
+         ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts
+
+      - name: Run vpn-playbook
+        run: |
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
+
+      - name: Run k3s-playbook
+        run: |
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml --vault-password-file ./vault.pass
+
+  terraform-kubernetes:
+    name: "Terraform Kubernetes Cluster"
+    needs: [terraform-oracle, ansible]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kubernetes
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup Terraform variables
+        id: vars
+        run: |-
+          cat > terraform.tfvars <<EOF
+          cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
+          kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
+          kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
+          EOF
+
+      - name: "Terraform Plan"
+        id: plan
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false

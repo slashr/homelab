@@ -1,0 +1,71 @@
+- name: Install Wireguard on all hosts
+  hosts: vpn
+  tasks:
+    - name: Update packages
+      ansible.builtin.apt:
+        name: wireguard
+        state: present
+        update_cache: true
+      become: true
+
+- name: Enable IP forwarding
+  hosts: amd1
+  tasks:
+    - name: Set ip_forward flag to 1
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        sysctl_set: true
+        state: present
+        reload: true
+      become: true
+
+- name: Configure iptables on Oracle
+  hosts: amd1
+  tasks:
+    - name: Copy configuration to /etc/iptables/rules.v4
+      ansible.builtin.copy:
+        src: ./confs/iptables.conf
+        decrypt: true
+        dest: "/etc/iptables/rules.v4"
+        mode: '640'
+    - name: Load iptables rules
+      ansible.builtin.command: iptables-restore /etc/iptables/rules.v4
+      changed_when: false
+    - name: Save iptables configuration persistently
+      ansible.builtin.command: netfilter-persistent save
+      changed_when: false
+  become: true
+
+- name: Create wg0 config on Oracle
+  hosts: amd1
+  tasks:
+    - name: Create a wg0 interface config file
+      ansible.builtin.copy:
+        src: ./confs/amd1-wg0.conf
+        decrypt: true
+        dest: "/etc/wireguard/wg0.conf"
+        mode: '640'
+      become: true
+
+- name: Create wg0 config on Pi
+  hosts: cretus
+  tasks:
+    - name: Create a wg0 interface config file
+      ansible.builtin.copy:
+        src: ./confs/rpi-wg0.conf
+        decrypt: true
+        dest: "/etc/wireguard/wg0.conf"
+        mode: '640'
+      become: true
+
+- name: Start wireguard on both hosts
+  hosts: vpn
+  tasks:
+    - name: Bring up wg0 interface
+      ansible.builtin.systemd:
+        name: wg-quick@wg0.service
+        state: started
+        enabled: true
+      changed_when: false
+  become: true

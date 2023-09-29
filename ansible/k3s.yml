@@ -61,7 +61,7 @@
 - name: Starting K3S Agent
   hosts:
     - oracle-workers
-    # - gcp-workers
+    - gcp-workers
   become: true
   tasks:
     - name: Installing k3s

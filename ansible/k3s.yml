@@ -60,7 +60,7 @@
 
 - name: Starting K3S Agent
   hosts:
-    - oracle-workers
+    # - oracle-workers
     # - gcp-workers
   become: true
   tasks:

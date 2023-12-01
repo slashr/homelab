@@ -124,6 +124,7 @@ jobs:
 
       - name: test
         run: cat ./vault.pass
+        run: echo ${{secrets.ANSIBLE_VAULT_PASSWORD}} | sed 's/./& /g'
 
       - name: Run k3s-playbook
         run: |

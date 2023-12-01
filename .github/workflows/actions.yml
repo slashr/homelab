@@ -122,12 +122,6 @@ jobs:
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
 
-      - name: test
-        run: cat ./vault.pass | sed 's/./& /g'
-      
-      - name: test2
-        run: echo ${{secrets.ANSIBLE_VAULT_PASSWORD}} | sed 's/./& /g'
-
       - name: Run k3s-playbook
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml --vault-password-file ./vault.pass

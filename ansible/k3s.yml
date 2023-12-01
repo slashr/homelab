@@ -19,7 +19,7 @@
         mode: "0555"
 
 - name: Update K3S Master
-  hosts: michael-pi 
+  hosts: michael-pi
   become: true
   tasks:
     - name: Create /etc/rancher/k3s director
@@ -48,7 +48,7 @@
 
 - name: Get Agent Token
   become: true
-  hosts: michael-pi 
+  hosts: michael-pi
   tasks:
     - name: Copy agent token
       ansible.builtin.slurp:

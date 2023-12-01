@@ -1,7 +1,6 @@
 # Homelab Architecture
 
-
-My Homelab is a mix of Oracle Cloud Infrastructure and a Raspberry Pi. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup. There are 3 Oracle Free Tier instances that are added to the Pi K8S Master API.
+My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup.
 
 ## Terraform Oracle Job
 - Creates 4 Free Tier servers
@@ -36,12 +35,7 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 ## Secrets
 1. HOST_IPS: List of Cloud IPs that the Github Actions Runner will add to the known_hosts file in order to avoid getting a authenticity prompt. Whenever a new Node is added or recreated, update this Secret accordingly with the new IP
 
-## Secret Cleanup for making repo public
-- Some secrets are visible in Git history. Either get rid of these individually, get rid of all git history or change whatever credentials have been exposed in the past
-- These credentials include but are not limited to
-  1. In k3s.yaml: K3S_TOKEN, K3S_IP
-
-## Nomenclature
-- michael-pi: Raspberry Pi 5 8GB I (192.168.60.100)
-- jim-pi: Raspberry Pi 5 8GB II (192.168.60.101)
-- dwight-pi: Raspberry Pi 4 8GB (192.168.60.102)
+## Servers
+- michael-pi        Raspberry Pi 5 8GB 1    192.168.60.100      172.20.60.100
+- jim-pi            Raspberry Pi 5 8GB 2    192.168.60.101  
+- dwight-pi         Raspberry Pi 4 8GB      192.168.60.102      172.20.60.102

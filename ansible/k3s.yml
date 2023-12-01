@@ -4,7 +4,7 @@
   hosts:
     - oracle-workers
     - gcp-workers
-    - cretus
+    - michael-pi
   become: true
   tasks:
     - name: Updating instances
@@ -19,7 +19,7 @@
         mode: "0555"
 
 - name: Update K3S Master
-  hosts: cretus
+  hosts: michael-pi 
   become: true
   tasks:
     - name: Create /etc/rancher/k3s director
@@ -48,7 +48,7 @@
 
 - name: Get Agent Token
   become: true
-  hosts: cretus
+  hosts: michael-pi 
   tasks:
     - name: Copy agent token
       ansible.builtin.slurp:

@@ -48,12 +48,12 @@
         mode: '640'
       become: true
 
-- name: Create wg0 config on Pi
+- name: Create wg0 config on michael-pi
   hosts: cretus
   tasks:
     - name: Create a wg0 interface config file
       ansible.builtin.copy:
-        src: ./confs/rpi-wg0.conf
+        src: ./confs/michael-pi-wg0.conf
         decrypt: true
         dest: "/etc/wireguard/wg0.conf"
         mode: '640'

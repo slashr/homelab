@@ -49,7 +49,7 @@
       become: true
 
 - name: Create wg0 config on michael-pi
-  hosts: cretus
+  hosts: michael-pi
   tasks:
     - name: Create a wg0 interface config file
       ansible.builtin.copy:

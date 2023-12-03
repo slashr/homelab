@@ -90,5 +90,7 @@
         timeout: 10
     - name: Adding role to worker node jim-pi
       ansible.builtin.command: kubectl label node jim-pi kubernetes.io/role=worker
+      changed_when: false
     - name: Adding role to worker node dwight-pi
       ansible.builtin.command: kubectl label node dwight-pi kubernetes.io/role=worker
+      changed_when: false

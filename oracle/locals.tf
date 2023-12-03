@@ -10,23 +10,9 @@ locals {
     },
     {
       protocol    = "6"
-      description = "Misc"
-      port_min    = 1100
-      port_max    = 1100
-      source      = "0.0.0.0/0"
-    },
-    {
-      protocol    = "6"
-      description = "Misc"
-      port_min    = 1101
-      port_max    = 1101
-      source      = "0.0.0.0/0"
-    },
-    {
-      protocol    = "6"
-      description = "Misc"
-      port_min    = 1103
-      port_max    = 1103
+      description = "Allow SSH port-forwarding traffic"
+      port_min    = 2244
+      port_max    = 2244
       source      = "0.0.0.0/0"
     },
     {

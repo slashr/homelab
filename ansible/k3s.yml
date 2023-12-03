@@ -5,6 +5,8 @@
     - oracle-workers
     - gcp-workers
     - michael-pi
+    - jim-pi
+    - dwight-pi
   become: true
   tasks:
     - name: Updating instances
@@ -60,14 +62,13 @@
 
 - name: Starting K3S Agent
   hosts:
-    - oracle-workers
-    - gcp-workers
+    - pi-workers
   become: true
   tasks:
     - name: Installing k3s
       ansible.builtin.command: /tmp/k3s.sh
       environment:
-        K3S_TOKEN: "{{ hostvars['cretus']['agent_token_fact'] }}"
+        K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://130.61.64.164:6443"
         INSTALL_K3S_VERSION: "v1.28.2+k3s1"
       changed_when: false
@@ -80,22 +81,16 @@
         state: restarted
         enabled: true
 
-# - name: Enabling Nodes
-#   hosts: cretus
-#   become: true
-#   tasks:
-#     - name: Sleep for 10 seconds
-#       ansible.builtin.wait_for:
-#         timeout: 10
-#     - name: Adding role to worker node arm1
-#       ansible.builtin.command: kubectl label node arm1 kubernetes.io/role=worker
-#       changed_when: false
-#     - name: Adding role to worker node arm2
-#       ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
-#       changed_when: false
-#     - name: Adding role to worker node amd2
-#       ansible.builtin.command: kubectl label node amd2 kubernetes.io/role=worker
-#       changed_when: false
-#     - name: Adding role to worker node gcp1
-#       ansible.builtin.command: kubectl label node gcp1 kubernetes.io/role=worker
-#       changed_when: false
+- name: Enabling Nodes
+  hosts: michael-pi
+  become: true
+  tasks:
+    - name: Sleep for 10 seconds
+      ansible.builtin.wait_for:
+        timeout: 10
+    - name: Adding role to worker node jim-pi
+      ansible.builtin.command: kubectl label node jim-pi kubernetes.io/role=worker
+      changed_when: false
+    - name: Adding role to worker node dwight-pi
+      ansible.builtin.command: kubectl label node dwight-pi kubernetes.io/role=worker
+      changed_when: false

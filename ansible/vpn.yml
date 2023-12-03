@@ -52,6 +52,7 @@
         name: wg-quick@wg0.service
         state: started
       register: wg_service_amd1_status
+      become: true
 
 - name: Create wg0 config on michael-pi
   hosts: michael-pi
@@ -68,6 +69,7 @@
         name: wg-quick@wg0.service
         state: started
       register: wg_service_michael_status
+      become: true
 
 - name: Start wireguard on both hosts
   hosts: vpn

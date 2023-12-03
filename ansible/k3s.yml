@@ -68,7 +68,7 @@
     - name: Installing k3s
       ansible.builtin.command: /tmp/k3s.sh
       environment:
-        K3S_TOKEN: "{{ hostvars['cretus']['agent_token_fact'] }}"
+        K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://130.61.64.164:6443"
         INSTALL_K3S_VERSION: "v1.28.2+k3s1"
       changed_when: false

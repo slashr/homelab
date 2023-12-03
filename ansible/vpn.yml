@@ -47,6 +47,11 @@
         dest: "/etc/wireguard/wg0.conf"
         mode: '640'
       become: true
+    - name: Check if WireGuard service is running
+      ansible.builtin.service:
+        name: wg-quick@wg0.service
+        state: started
+      register: wg_service_amd1_status
 
 - name: Create wg0 config on michael-pi
   hosts: michael-pi
@@ -58,6 +63,11 @@
         dest: "/etc/wireguard/wg0.conf"
         mode: '640'
       become: true
+    - name: Check if WireGuard service is running
+      ansible.builtin.service:
+        name: wg-quick@wg0.service
+        state: started
+      register: wg_service_michael_status
 
 - name: Start wireguard on both hosts
   hosts: vpn
@@ -68,6 +78,7 @@
         state: started
         enabled: true
       changed_when: false
+      when: not wg_service_amd1_status.changed and wg_service_michael_status.changed
   become: true
 
 - name: Create wg0 config on jim-pi

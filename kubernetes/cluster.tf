@@ -8,5 +8,5 @@ module "cert-manager" {
 }
 
 module "external-dns" {
-  source               = "git::https://github.com/slashr/terraform-modules.git//apps/external-dns?ref=main"
+  source = "git::https://github.com/slashr/terraform-modules.git//apps/external-dns?ref=main"
 }

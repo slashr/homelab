@@ -62,12 +62,18 @@
 - name: Start wireguard on both hosts
   hosts: vpn
   tasks:
+    - name: Check if wg0 interface is running
+      ansible.builtin.shell: "ip link show wg0"
+      register: wg0_exists
+      changed_when: false
+      ignore_errors: true
+
     - name: Bring up wg0 interface
       ansible.builtin.systemd:
         name: wg-quick@wg0.service
         state: started
         enabled: true # Start on boot
-      changed_when: false
+      when: wg0_exists.rc != 0
   become: true
 
 - name: Create wg0 config on jim-pi
@@ -97,10 +103,16 @@
     - jim-pi
     - dwight-pi
   tasks:
-    - name: Bring up wg0 interface
+    - name: Check if wg0 interface is running
+      ansible.builtin.shell: "ip link show wg0"
+      register: wg0_exists
+      changed_when: false
+      ignore_errors: true
+
+    - name: Bring up wg0 interface if not already running
       ansible.builtin.systemd:
         name: wg-quick@wg0.service
         state: started
         enabled: true
-      changed_when: false
+      when: wg0_exists.rc != 0
   become: true

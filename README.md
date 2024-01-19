@@ -40,4 +40,3 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 - jim-pi            Raspberry Pi 5 8GB 2    192.168.60.101      172.20.60.101 
 - dwight-pi         Raspberry Pi 4 8GB      192.168.60.102      172.20.60.102
 
-

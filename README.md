@@ -1,5 +1,4 @@
-![staging branch parameter](https://github.com/slashr/homelab/actions/workflows/actions.yml/badge.svg/?branch=staging)
-![production workflow](https://github.com/slashr/homelab/actions/workflows/actions.yml/badge.svg/?branch=main)
+![homelab workflow](https://github.com/slashr/homelab/actions/workflows/actions.yml/badge.svg)
 
 # Homelab Architecture
 

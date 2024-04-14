@@ -1,3 +1,5 @@
+![example workflow](https://github.com/slashr/homelab/actions/workflows/actions.yml/badge.svg)
+
 # Homelab Architecture
 
 My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup.

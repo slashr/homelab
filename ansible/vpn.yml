@@ -1,10 +1,10 @@
-- name: Install Wireguard on all hosts
+- name: Remove Wireguard on all hosts
   hosts: vpn
   tasks:
-    - name: Update packages
+    - name: Remove
       ansible.builtin.apt:
         name: wireguard
-        state: present
+        state: absent
         update_cache: true
       become: true
 
@@ -35,86 +35,6 @@
     - name: Save iptables configuration persistently
       ansible.builtin.command: netfilter-persistent save
       changed_when: false
-  become: true
-
-- name: Create wg0 config on Oracle
-  hosts: amd1
-  tasks:
-    - name: Create a wg0 interface config file
-      ansible.builtin.copy:
-        src: ./confs/amd1-wg0.conf
-        decrypt: true
-        dest: "/etc/wireguard/wg0.conf"
-        mode: '640'
-      become: true
-
-- name: Create wg0 config on michael-pi
-  hosts: michael-pi
-  tasks:
-    - name: Create a wg0 interface config file
-      ansible.builtin.copy:
-        src: ./confs/michael-pi-wg0.conf
-        decrypt: true
-        dest: "/etc/wireguard/wg0.conf"
-        mode: '640'
-      become: true
-
-- name: Start wireguard on both hosts
-  hosts: vpn
-  tasks:
-    - name: Check if wg0 interface is running
-      ansible.builtin.command: "ip link show wg0"
-      register: wg0_exists
-      changed_when: false
-      ignore_errors: true
-
-    - name: Bring up wg0 interface
-      ansible.builtin.systemd:
-        name: wg-quick@wg0.service
-        state: started
-        enabled: true # Start on boot
-      when: wg0_exists.rc != 0
-  become: true
-
-- name: Create wg0 config on jim-pi
-  hosts: jim-pi
-  tasks:
-    - name: Create a wg0 interface config file
-      ansible.builtin.copy:
-        src: ./confs/jim-pi-wg0.conf
-        decrypt: true
-        dest: "/etc/wireguard/wg0.conf"
-        mode: '640'
-      become: true
-
-- name: Create wg0 config on dwight-pi
-  hosts: dwight-pi
-  tasks:
-    - name: Create a wg0 interface config file
-      ansible.builtin.copy:
-        src: ./confs/dwight-pi-wg0.conf
-        decrypt: true
-        dest: "/etc/wireguard/wg0.conf"
-        mode: '640'
-      become: true
-
-- name: Start wireguard on jim and dwight
-  hosts:
-    - jim-pi
-    - dwight-pi
-  tasks:
-    - name: Check if wg0 interface is running
-      ansible.builtin.command: "ip link show wg0"
-      register: wg0_exists
-      changed_when: false
-      ignore_errors: true
-
-    - name: Bring up wg0 interface if not already running
-      ansible.builtin.systemd:
-        name: wg-quick@wg0.service
-        state: started
-        enabled: true
-      when: wg0_exists.rc != 0
   become: true
 
 - name: Install Tailscale

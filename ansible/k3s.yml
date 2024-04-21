@@ -65,11 +65,11 @@
   hosts:
     - pi-workers
     - oracle-workers
-    - arm2
+    - gcp-workers
   become: true
   tasks:
     - name: Installing k3s
-      ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
+      ansible.builtin.command: "/tmp/k3s.sh --vpn-auth={{ 'name=tailscale,joinKey=' ~ lookup('env', 'TAILSCALE_JOIN_KEY') | quote }}"
       environment:
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://130.61.64.164:6443"
@@ -102,4 +102,7 @@
       changed_when: false
     - name: Adding role to worker node arm2
       ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
+      changed_when: false
+    - name: Adding role to worker node gcp1
+      ansible.builtin.command: kubectl label node gcp1 kubernetes.io/role=worker
       changed_when: false

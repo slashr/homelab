@@ -36,8 +36,9 @@
         dest: /etc/rancher/k3s/config.yaml
         mode: '0644'
     - name: Installing k3s
-      ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=tskey-client-kXTAnTMZW311CNTRL-4oAtDtbU1AWktgmA48s5AW2gnZgT1Z4Zh"
+      ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
+        TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         INSTALL_K3S_VERSION: "v1.29.3+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds

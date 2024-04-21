@@ -63,6 +63,7 @@
 - name: Starting K3S Agent
   hosts:
     - pi-workers
+    - oracle-workers
   become: true
   tasks:
     - name: Installing k3s
@@ -93,4 +94,7 @@
       changed_when: false
     - name: Adding role to worker node dwight-pi
       ansible.builtin.command: kubectl label node dwight-pi kubernetes.io/role=worker
+      changed_when: false
+    - name: Adding role to worker node arm1
+      ansible.builtin.command: kubectl label node arm1 kubernetes.io/role=worker
       changed_when: false

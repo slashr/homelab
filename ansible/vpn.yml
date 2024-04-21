@@ -1,13 +1,3 @@
-- name: Remove Wireguard on all hosts
-  hosts: vpn
-  tasks:
-    - name: Remove
-      ansible.builtin.apt:
-        name: wireguard
-        state: absent
-        update_cache: true
-      become: true
-
 - name: Enable IP forwarding
   hosts: amd1
   tasks:

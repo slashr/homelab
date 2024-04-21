@@ -69,7 +69,7 @@
   become: true
   tasks:
     - name: Installing k3s
-      ansible.builtin.command: "/tmp/k3s.sh --vpn-auth={{ 'name=tailscale,joinKey=' ~ lookup('env', 'TAILSCALE_JOIN_KEY') | quote }}"
+      ansible.builtin.command: "/tmp/k3s.sh --vpn-auth='name=tailscale,joinKey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}'"
       environment:
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://130.61.64.164:6443"

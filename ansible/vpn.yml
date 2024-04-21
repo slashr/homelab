@@ -116,3 +116,23 @@
         enabled: true
       when: wg0_exists.rc != 0
   become: true
+
+- name: Setup Tailscale network
+  hosts:
+    - vpn
+    - pi-workers
+    - oracle-workers
+    - gcp-workers
+  tasks:
+    - name: Install Tailscale
+      ansible.builtin.apt:
+        name: tailscale
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Start tailscale
+      ansible.builtin.command: "tailscale up --auth-key=tskey-client-kXTAnTMZW311CNTRL-4oAtDtbU1AWktgmA48s5AW2gnZgT1Z4Zh?ephemeral=false --advertise-tags=tag:k3s --accept-routes"
+      changed_when: false
+      ignore_errors: true
+  become: true

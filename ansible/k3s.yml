@@ -2,12 +2,10 @@
 
 - name: Initialising cluster
   hosts:
+    - pi-workers
     - oracle-workers
     - gcp-workers
     - michael-pi
-    - jim-pi
-    - dwight-pi
-    - arm2
   become: true
   tasks:
     - name: Updating instances

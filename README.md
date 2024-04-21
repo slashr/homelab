@@ -48,3 +48,4 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
   - Backup Access Control List including Pod IP Auto-approve(10.42.0.0/16), Custom Node IP range (100.100.0.0/16), Groups and Tags definitions
 - Fix AMD2 server not reachable
 - Update hostnames like arm1 and arm2 to Stanley and Phyllis
+- Change amd1 to point to Michael's Tailscale IP (100.100.1.100) and get update the ipconfig table accordingly. Get rid of the wireguard tunnel or keep it as a backup connection

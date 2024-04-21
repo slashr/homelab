@@ -116,3 +116,18 @@
         enabled: true
       when: wg0_exists.rc != 0
   become: true
+
+- name: Install Tailscale
+  hosts:
+    - vpn
+    - pi-workers
+    - oracle-workers
+    - gcp-workers
+  tasks:
+    - name: Install Tailscale
+      ansible.builtin.apt:
+        name: tailscale
+        state: present
+        update_cache: true
+      become: true
+  become: true

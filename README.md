@@ -23,6 +23,7 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 
 ## Networking
 - K3S installs by default the Traefik networking and ingress controller. Traefik takes care of exposing Services of type LoadBalancer on the RPi with the RPi private IP. It also is able to route HTTP traffic to the right Ingress. Basically it can do what ingress-nginx and metallb together so I removed them in order to simplify the setup
+- Tailscale is used to create a meshnetwork between all servers. Tailscale auth key is added as TAILSCALE_JOIN_KEY in Github Secrets. Then it is set as TAILSCALE_JOIN_KEY env for the Ansible job inside github workflow actions.yml. And finally it is referred to inside k3s.yaml for the --vpn-auth flag when initializing k3s on the main and nodes.
 
 ## Notes
 ### Oracle Free Tier
@@ -42,3 +43,8 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 - jim-pi            Raspberry Pi 5 8GB 2    192.168.1.101      172.20.60.101 
 - dwight-pi         Raspberry Pi 4 8GB      192.168.1.102      172.20.60.102
 
+## TODO
+- Automate/codify Tailscale manual modifications:
+  - Backup Access Control List including Pod IP Auto-approve(10.42.0.0/16), Custom Node IP range (100.100.0.0/16), Groups and Tags definitions
+- Fix AMD2 server not reachable
+- Update hostnames like arm1 and arm2 to Stanley and Phyllis

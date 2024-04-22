@@ -128,6 +128,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
+        working-directory: ./ansible
+
     steps:
       - name: Check out the codebase.
         uses: actions/checkout@v4

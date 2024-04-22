@@ -1,7 +1,7 @@
 on: [push, fork]
 jobs:
-  terraform-gcp:
-    name: "Terraform GCP Infra"
+  gcp-setup:
+    name: "Setup GCP Infra"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,8 +32,8 @@ jobs:
         if: github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
 
-  terraform-oracle:
-    name: "Terraform Oracle Infra"
+  oracle-setup:
+    name: "Setup Oracle Infra"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -77,9 +77,9 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
 
-  ansible:
-    name: Ansible
-    needs: [terraform-oracle, terraform-gcp]
+  tailscale-setup:
+    name: "Setup Tailscale Network" 
+    needs: [oracle-setup, gcp-setup]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -122,15 +122,54 @@ jobs:
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
 
+  k3s-setup:
+    name: "Setup K3S Cluster"
+    needs: [tailscale-setup]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python 3.7.
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install test dependencies.
+        run: pip3 install ansible-lint ansible
+
+      - name: Run ansible-lint.
+        run: ansible-lint
+
+      - name: Setup SSH
+        shell: bash
+        run: |
+         eval `ssh-agent -s`
+         mkdir -p /home/runner/.ssh/
+         touch /home/runner/.ssh/id_rsa
+         # Create a file containing IP addresses of all servers
+         echo -e "${{secrets.HOST_IPS}}" > /home/runner/.ssh/host_ips
+         # Create the SSH Private Key used to connect to all the servers using the Secret
+         echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
+         # Create the Ansible Vault password file for decryption
+         echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
+         chmod 700 /home/runner/.ssh/id_rsa
+         # Add the public keys of all servers to known_hosts file to avoid getting authenticity prompt
+         ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts
+
       - name: Run k3s-playbook
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml --vault-password-file ./vault.pass
 
-  terraform-kubernetes:
-    name: "Terraform Kubernetes Cluster"
-    needs: [terraform-oracle, ansible]
+  run-k3s:
+    name: "Run Kubernetes Cluster"
+    needs: [tailscale-setup, k3s-setup]
     runs-on: ubuntu-latest
     defaults:
       run:

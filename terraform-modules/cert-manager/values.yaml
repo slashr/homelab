@@ -1,0 +1,88 @@
+# refer to https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml
+# for the commented values. This version here is shortened to make terraform diffs easier readable
+installCRDs: false
+replicaCount: 1
+strategy: {}
+featureGates: ""
+
+image:
+  repository: quay.io/jetstack/cert-manager-controller
+  pullPolicy: IfNotPresent
+
+clusterResourceNamespace: ""
+
+extraArgs: []
+extraEnv: []
+resources: {}
+
+securityContext:
+  runAsNonRoot: true
+
+containerSecurityContext: {}
+volumes: []
+volumeMounts: []
+nodeSelector: {}
+ingressShim: {}
+
+prometheus:
+  enabled: false
+
+affinity: {}
+tolerations: []
+
+webhook:
+  replicaCount: 1
+  timeoutSeconds: 10
+  strategy: {}
+  securityContext:
+    runAsNonRoot: true
+  containerSecurityContext: {}
+  extraArgs: []
+  resources: {}
+  livenessProbe:
+    failureThreshold: 3
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readinessProbe:
+    failureThreshold: 3
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 1
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  podLabels: {}
+  serviceLabels: {}
+  image:
+    repository: quay.io/jetstack/cert-manager-webhook
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    create: true
+    automountServiceAccountToken: true
+  securePort: 10250
+  hostNetwork: false
+  serviceType: ClusterIP
+  url: {}
+
+cainjector:
+  enabled: true
+  replicaCount: 1
+  strategy: {}
+  securityContext:
+    runAsNonRoot: true
+  containerSecurityContext: {}
+  extraArgs: []
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  podLabels: {}
+  image:
+    repository: quay.io/jetstack/cert-manager-cainjector
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    create: true
+    automountServiceAccountToken: true

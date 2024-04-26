@@ -1,8 +1,0 @@
-apiVersion: metallb.io/v1beta1
-kind: IPAddressPool
-metadata:
-  name: raspi-ip-space
-  namespace: metallb-system
-spec:
-  addresses:
-  - 198.168.60.11/30

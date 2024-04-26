@@ -1,0 +1,15 @@
+# -- _Kubernetes_ resources to monitor for DNS entries.
+sources:
+  - ingress
+
+provider: cloudflare
+
+domainFilters:
+  - akashnair.com
+
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token-secret
+        key: api-token

@@ -84,6 +84,31 @@
         state: restarted
         enabled: true
 
+# This installs k3s-agent on Dwight without the public Tailscale IP
+# It makes it accessible from home network using 192.168.*.*
+# thus enabling PiHole setup on the Router 
+- name: Install Vanilla-K3S on Nodes
+  hosts:
+    - dwight-pi
+  become: true
+  tasks:
+    - name: Installing k3s
+      ansible.builtin.command: /tmp/k3s.sh
+      environment:
+        TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
+        K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
+        K3S_URL: "https://130.61.64.164:6443"
+        INSTALL_K3S_VERSION: "v1.29.3+k3s1"
+      changed_when: false
+    - name: Sleep for 10 seconds
+      ansible.builtin.wait_for:
+        timeout: 20
+    - name: Check if service is running
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: restarted
+        enabled: true
+
 - name: Enabling Nodes
   hosts: michael-pi
   become: true

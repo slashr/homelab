@@ -33,6 +33,7 @@
     - pi-workers
     - oracle-workers
     - gcp-workers
+    - dwight-pi
   tasks:
     - name: Install Tailscale
       ansible.builtin.apt:

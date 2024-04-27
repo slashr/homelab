@@ -4,6 +4,7 @@
     - oracle-workers
     - gcp-workers
     - michael-pi
+    - dwight-pi
   become: true
   tasks:
     - name: Updating instances

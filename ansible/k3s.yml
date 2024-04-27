@@ -72,7 +72,7 @@
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
-        K3S_URL: "https://130.61.64.164:6443"
+        K3S_URL: "https://100.100.1.0:6443"
         INSTALL_K3S_VERSION: "v1.29.3+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds
@@ -97,7 +97,7 @@
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
-        K3S_URL: "https://130.61.64.164:6443"
+        K3S_URL: "https://100.100.1.0:6443"
         INSTALL_K3S_VERSION: "v1.29.3+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds

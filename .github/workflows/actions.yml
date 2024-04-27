@@ -94,11 +94,11 @@ jobs:
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
       - name: Tailscale
-         uses: tailscale/github-action@v2
-         with:
-           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-           tags: tag:k3s
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tags: tag:k3s
     
       - name: Set up Python 3.7.
         uses: actions/setup-python@v5
@@ -148,11 +148,11 @@ jobs:
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
       - name: Tailscale
-         uses: tailscale/github-action@v2
-         with:
-           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-           tags: tag:k3s
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tags: tag:k3s
 
       - name: Set up Python 3.7.
         uses: actions/setup-python@v5

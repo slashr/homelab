@@ -81,6 +81,14 @@ jobs:
     name: "Setup Tailscale Network" 
     needs: [oracle-setup, gcp-setup]
     runs-on: ubuntu-latest
+    # Setup Tailscale network on the Actions worker
+    # Enables connection to k3s nodes using Tailscale public IP
+    - name: Tailscale
+       uses: tailscale/github-action@v2
+       with:
+         oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+         oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+         tags: tag:k3s
     defaults:
       run:
         working-directory: ./ansible
@@ -126,6 +134,13 @@ jobs:
     name: "Setup K3S Cluster"
     needs: [tailscale-setup]
     runs-on: ubuntu-latest
+    # Setup Tailscale network on the Actions worker
+    - name: Tailscale
+       uses: tailscale/github-action@v2
+       with:
+         oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+         oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+         tags: tag:k3s
     defaults:
       run:
         working-directory: ./ansible

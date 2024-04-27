@@ -86,7 +86,7 @@
 
 # This installs k3s-agent on Dwight without the public Tailscale IP
 # It makes it accessible from home network using 192.168.*.*
-# thus enabling PiHole setup on the Router 
+# thus enabling PiHole setup on the Router
 - name: Install Vanilla-K3S on Nodes
   hosts:
     - dwight-pi

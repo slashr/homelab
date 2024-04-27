@@ -1,14 +1,13 @@
 ![homelab workflow](https://github.com/slashr/homelab/actions/workflows/actions.yml/badge.svg)
 
 [![latest release](https://img.shields.io/github/release/slashr/homelab)](https://github.com/slashr/homelab/releases)
-[![license](https://img.shields.io/github/license/slashr/homelab)](https://github.com/slashr/homelab/blob/master/license.txt)
+[![license](https://img.shields.io/github/license/slashr/homelab)](https://github.com/slashr/homelab/blob/main/license.txt)
 [![repo size](https://img.shields.io/github/repo-size/slashr/homelab)](https://github.com/slashr/homelab)
-[![contributors](https://img.shields.io/github/contributors/slashr/homelab)](https://github.com/slashr/homelab/graphs/contributors)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/slashr/homelab/ci.yml?branch=master)](https://github.com/slashr/homelab/actions/workflows/ci.yml?query=branch%3Amaster)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/slashr/homelab/ci.yml)](https://github.com/slashr/homelab/actions/workflows/ci.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000)](https://github.com/python/black)
-[![commits since last release](https://img.shields.io/github/commits-since/slashr/homelab/latest)](https://github.com/slashr/homelab/commits/master)
-[![last commit](https://img.shields.io/github/last-commit/slashr/homelab)](https://github.com/slashr/homelab/commits/master)
-[![commit activity](https://img.shields.io/github/commit-activity/y/slashr/homelab)](https://github.com/slashr/homelab/commits/master)
+[![commits since last release](https://img.shields.io/github/commits-since/slashr/homelab/latest)](https://github.com/slashr/homelab/commits/main)
+[![last commit](https://img.shields.io/github/last-commit/slashr/homelab)](https://github.com/slashr/homelab/commits/main)
+[![commit activity](https://img.shields.io/github/commit-activity/y/slashr/homelab)](https://github.com/slashr/homelab/commits/main)
 
 # Homelab Architecture
 

@@ -1,5 +1,15 @@
 ![homelab workflow](https://github.com/slashr/homelab/actions/workflows/actions.yml/badge.svg)
 
+[![latest release](https://img.shields.io/github/release/slashr/homelab)](https://github.com/slashr/homelab/releases)
+[![license](https://img.shields.io/github/license/slashr/homelab)](https://github.com/slashr/homelab/blob/master/license.txt)
+[![repo size](https://img.shields.io/github/repo-size/slashr/homelab)](https://github.com/slashr/homelab)
+[![contributors](https://img.shields.io/github/contributors/slashr/homelab)](https://github.com/slashr/homelab/graphs/contributors)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/slashr/homelab/ci.yml?branch=master)](https://github.com/slashr/homelab/actions/workflows/ci.yml?query=branch%3Amaster)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000)](https://github.com/python/black)
+[![commits since last release](https://img.shields.io/github/commits-since/slashr/homelab/latest)](https://github.com/slashr/homelab/commits/master)
+[![last commit](https://img.shields.io/github/last-commit/slashr/homelab)](https://github.com/slashr/homelab/commits/master)
+[![commit activity](https://img.shields.io/github/commit-activity/y/slashr/homelab)](https://github.com/slashr/homelab/commits/master)
+
 # Homelab Architecture
 
 My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup.
@@ -48,4 +58,3 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
   - Backup Access Control List including Pod IP Auto-approve(10.42.0.0/16), Custom Node IP range (100.100.0.0/16), Groups and Tags definitions
 - Fix AMD2 server not reachable
 - Update hostnames like arm1 and arm2 to Stanley and Phyllis
-- Change amd1 to point to Michael's Tailscale IP (100.100.1.100) and get update the ipconfig table accordingly. Get rid of the wireguard tunnel or keep it as a backup connection

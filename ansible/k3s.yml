@@ -1,4 +1,4 @@
----
+- --
 
 - name: Initialising cluster
   hosts:
@@ -73,27 +73,6 @@
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
-        K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
-        K3S_URL: "https://130.61.64.164:6443"
-        INSTALL_K3S_VERSION: "v1.29.3+k3s1"
-      changed_when: false
-    - name: Sleep for 10 seconds
-      ansible.builtin.wait_for:
-        timeout: 20
-    - name: Check if service is running
-      ansible.builtin.systemd:
-        name: k3s-agent
-        state: restarted
-        enabled: true
-
-- name: Install Vanilla-K3S on Dwight-Pi
-  hosts:
-    - pihole
-  become: true
-  tasks:
-    - name: Installing k3s
-      ansible.builtin.command: /tmp/k3s.sh
-      environment:
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://130.61.64.164:6443"
         INSTALL_K3S_VERSION: "v1.29.3+k3s1"

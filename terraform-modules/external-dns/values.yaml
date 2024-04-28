@@ -6,6 +6,7 @@ provider: cloudflare
 
 domainFilters:
   - akashnair.com
+  - shrub.dev
 
 env:
   - name: CF_API_TOKEN

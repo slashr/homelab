@@ -92,17 +92,17 @@
       ansible.builtin.wait_for:
         timeout: 10
     - name: Adding role to worker node jim-pi
-      ansible.builtin.command: kubectl label node jim-pi kubernetes.io/role=worker
+      ansible.builtin.command: kubectl label node jim-pi kubernetes.io/role=worker location=home name=jim
       changed_when: false
-    - name: Adding role to worker node arm1
-      ansible.builtin.command: kubectl label node arm1 kubernetes.io/role=worker
+    - name: Adding role to worker node stanley-arm1
+      ansible.builtin.command: kubectl label node stanley-arm1 kubernetes.io/role=worker location=cloud name=stanley
       changed_when: false
-    - name: Adding role to worker node arm2
-      ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
+    - name: Adding role to worker node phyllis-arm2
+      ansible.builtin.command: kubectl label node phyllis-arm2 kubernetes.io/role=worker location=cloud name=phyllis
       changed_when: false
-    - name: Adding role to worker node amd2
-      ansible.builtin.command: kubectl label node amd2 kubernetes.io/role=worker
+    - name: Adding role to worker node angela-amd2
+      ansible.builtin.command: kubectl label node angela-amd2 kubernetes.io/role=worker location=cloud name=angela
       changed_when: false
-    - name: Adding role to worker node gcp1
-      ansible.builtin.command: kubectl label node gcp1 kubernetes.io/role=worker
+    - name: Adding role to worker node toby-gcp1
+      ansible.builtin.command: kubectl label node toby-gcp1 kubernetes.io/role=worker location=cloud name=toby
       changed_when: false

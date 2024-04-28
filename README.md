@@ -42,7 +42,6 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 
 ## Secrets
-1. HOST_IPS: List of Cloud IPs that the Github Actions Runner will add to the known_hosts file in order to avoid getting a authenticity prompt. Whenever a new Node is added or recreated, update this Secret accordingly with the new IP
 
 ## Servers
 - michael-pi        Raspberry Pi 5 8GB 1    192.168.1.100      172.20.60.100
@@ -52,5 +51,4 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 ## TODO
 - Automate/codify Tailscale manual modifications:
   - Backup Access Control List including Pod IP Auto-approve(10.42.0.0/16), Custom Node IP range (100.100.0.0/16), Groups and Tags definitions
-- Fix AMD2 server not reachable
 - Update hostnames like arm1 and arm2 to Stanley and Phyllis

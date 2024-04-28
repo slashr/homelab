@@ -35,6 +35,11 @@
     - gcp-workers
     - dwight-pi
   tasks:
+    - name: Remove existing Tailscale script
+      ansible.builtin.file:
+        path: /tmp/tailscale.sh
+        state: absent
+      become: true
     - name: Downloading tailscale script
       ansible.builtin.get_url:
         url: https://tailscale.com/install.sh

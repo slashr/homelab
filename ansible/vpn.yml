@@ -36,9 +36,6 @@
     - dwight-pi
   tasks:
     - name: Install Tailscale
-      ansible.builtin.apt:
-        name: tailscale
-        state: present
-        update_cache: true
+      ansible.builtin.command: curl -fsSL https://tailscale.com/install.sh | sh
       become: true
   become: true

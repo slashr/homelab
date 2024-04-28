@@ -62,11 +62,11 @@ server:
     enabled: true
     annotations:
       # Create a A record pointing to the given IP on cloudflare
-      external-dns.alpha.kubernetes.io/hostname: argo.akashnair.com
+      external-dns.alpha.kubernetes.io/hostname: argo.shrub.dev
       external-dns.alpha.kubernetes.io/target: 130.61.64.164
       # This lets cert-manager identify which Ingresses to generate a cert for
       cert-manager.io/cluster-issuer: letsencrypt-prod
-    hostname: "argo.akashnair.com"
+    hostname: "argo.shrub.dev"
     tls: true
 
   certificate:
@@ -75,7 +75,7 @@ server:
     # -- The name of the Secret that will be automatically created and managed by this Certificate resource
     secretName: argocd-server-tls
     # -- Certificate primary domain (commonName)
-    domain: argo.akashnair.com
+    domain: argo.shrub.dev
     issuer:
       # -- Certificate issuer group. Set if using an external issuer. Eg. `cert-manager.io`
       group: "cert-manager.io"

@@ -51,4 +51,3 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 ## TODO
 - Automate/codify Tailscale manual modifications:
   - Backup Access Control List including Pod IP Auto-approve(10.42.0.0/16), Custom Node IP range (100.100.0.0/16), Groups and Tags definitions
-- Update hostnames like arm1 and arm2 to Stanley and Phyllis

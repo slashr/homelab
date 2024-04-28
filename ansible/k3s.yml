@@ -15,7 +15,7 @@
       ansible.builtin.get_url:
         url: https://get.k3s.io
         dest: /tmp/k3s.sh
-        mode: "0555"
+        mode: "0755"
 
 - name: Update K3S Master
   hosts: michael-pi
@@ -41,7 +41,7 @@
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
-        timeout: 20
+        timeout: 10
     - name: Check if service is running
       ansible.builtin.systemd:
         name: k3s
@@ -77,7 +77,7 @@
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
-        timeout: 20
+        timeout: 10
     - name: Check if service is running
       ansible.builtin.systemd:
         name: k3s-agent
@@ -99,6 +99,9 @@
       changed_when: false
     - name: Adding role to worker node arm2
       ansible.builtin.command: kubectl label node arm2 kubernetes.io/role=worker
+      changed_when: false
+    - name: Adding role to worker node amd2
+      ansible.builtin.command: kubectl label node amd2 kubernetes.io/role=worker
       changed_when: false
     - name: Adding role to worker node gcp1
       ansible.builtin.command: kubectl label node gcp1 kubernetes.io/role=worker

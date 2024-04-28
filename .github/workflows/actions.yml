@@ -125,7 +125,9 @@ jobs:
          echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
          chmod 700 /home/runner/.ssh/id_rsa
          # Add the public keys of all servers to known_hosts file to avoid getting authenticity prompt
-         ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts
+         #ssh-keyscan -t rsa,dsa,ecdsa,ed25519 -f /home/runner/.ssh/host_ips >> /home/runner/.ssh/known_hosts
+         # Disable strict host key checking
+         echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
 
       - name: Run vpn-playbook
         run: |

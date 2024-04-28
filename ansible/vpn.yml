@@ -35,10 +35,13 @@
     - gcp-workers
     - dwight-pi
   tasks:
+    - name: Download tailscale script
+      ansible.builtin.get_url:
+        url: https://tailscale.com/install.sh
+        dest: /tmp/tailscale.sh
+        mode: "0755"
+
     - name: Install Tailscale
-      ansible.builtin.apt:
-        name: tailscale
-        state: present
-        update_cache: true
+      ansible.builtin.command: /tmp/tailscale.sh
+      changed_when: false
       become: true
-  become: true

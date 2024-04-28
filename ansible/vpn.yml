@@ -1,5 +1,5 @@
 - name: Enable IP forwarding
-  hosts: amd1
+  hosts: pam-amd1
   tasks:
     - name: Set ip_forward flag to 1
       ansible.posix.sysctl:
@@ -11,7 +11,7 @@
       become: true
 
 - name: Configure iptables on Oracle
-  hosts: amd1
+  hosts: pam-amd1
   tasks:
     - name: Copy configuration to /etc/iptables/rules.v4
       ansible.builtin.copy:

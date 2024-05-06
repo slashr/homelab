@@ -10,7 +10,7 @@ jobs:
       GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
     steps:
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.0.0
+        uses: hashicorp/setup-terraform@v3.1.0
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -40,7 +40,7 @@ jobs:
         working-directory: ./oracle
     steps:
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.0.0
+        uses: hashicorp/setup-terraform@v3.1.0
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -192,7 +192,7 @@ jobs:
         working-directory: ./kubernetes
     steps:
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.0.0
+        uses: hashicorp/setup-terraform@v3.1.0
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 

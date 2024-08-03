@@ -51,3 +51,30 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 ## TODO
 - Automate/codify Tailscale manual modifications:
   - Backup Access Control List including Pod IP Auto-approve(10.42.0.0/16), Custom Node IP range (100.100.0.0/16), Groups and Tags definitions
+
+## Roadmap
+- 3 proxmox servers
+- Bitwarden Edit: vaultwarden password manager
+- Code server vscode in a browser
+- Nextcloud I only use it for calendar
+- TrueNas just storage
+- Immich photo backups from phone
+- Twingate vpn (for family with reduced access**)
+- NTFY notifications
+- Uptime Kuma checks if things are running, and notifies me via ntfy
+- Transmission
+- Jellyfin
+- Jellyseerr
+- Sonarr
+- Radarr
+- Prowlarr to connect jellyseer and the others
+- Plex
+- Snapdrop basically airdrop
+- Syncthing to sync folders from personal computer to nas
+- Handbrake (docker container) to transcode 
+- Dashdot widgets for homarr
+- Homarr home page
+- Cloudflare tunnel for access
+
+Ref: https://www.reddit.com/r/selfhosted/comments/1dhttjy/bored_with_my_homelab/?share_id=UPxrbGis6njRtFiR35M1v&utm_content=2&utm_medium=ios_app&utm_name=ioscss&utm_source=share&utm_term=1
+

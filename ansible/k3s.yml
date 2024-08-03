@@ -37,7 +37,7 @@
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
-        INSTALL_K3S_VERSION: "v1.30.0+k3s1"
+        INSTALL_K3S_VERSION: "v1.30.3+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
@@ -73,7 +73,7 @@
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://100.100.1.100:6443"
-        INSTALL_K3S_VERSION: "v1.30.0+k3s1"
+        INSTALL_K3S_VERSION: "v1.30.3+k3s1"
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:

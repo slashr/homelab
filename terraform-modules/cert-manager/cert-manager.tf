@@ -74,7 +74,7 @@ data "http" "cert_manager_crd_manifests" {
 
 #Convert the data into a kubectl_file_documents object
 data "kubectl_file_documents" "cert_manager_crd_manifests" {
-  content = data.http.cert_manager_crd_manifests.body
+  content = data.http.cert_manager_crd_manifests.response_body
 }
 
 #Read the kubectl_file_documents object and apply it on the cluster

@@ -1,3 +1,8 @@
+vars:
+  k3s_version: "v1.31.2+k3s1"
+  k3s_master_ip: "100.100.1.100"
+  k3s_master_port: "6443"
+
 - name: Initialising cluster
   hosts:
     - pi-workers
@@ -37,7 +42,7 @@
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
-        INSTALL_K3S_VERSION: "v1.31.2+k3s1"
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
@@ -73,7 +78,7 @@
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://100.100.1.100:6443"
-        INSTALL_K3S_VERSION: "v1.31.2+k3s1"
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
       changed_when: false
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:

@@ -1,3 +1,4 @@
+---
 - name: Initialising cluster
   hosts:
     - pi-workers
@@ -21,7 +22,7 @@
   hosts: michael-pi
   become: true
   tasks:
-    - name: Create /etc/rancher/k3s director
+    - name: Create /etc/rancher/k3s directory
       ansible.builtin.file:
         path: /etc/rancher/k3s
         state: directory
@@ -31,22 +32,38 @@
         src: ./k3s-master-config.yaml
         dest: /etc/rancher/k3s/config.yaml
         mode: '0644'
+    - name: Check if k3s is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
     - name: Installing k3s
-      # This creates a Tailscale overlay network on all the nodes
-      # See https://docs.k3s.io/networking/distributed-multicloud
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
-        INSTALL_K3S_VERSION: "v1.31.2+k3s1"
-      changed_when: false
-    - name: Sleep for 10 seconds
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+      register: k3s_install
+      when: not k3s_binary.stat.exists
+      failed_when:
+        - k3s_install.rc != 0
+        - '"already installed" not in k3s_install.stderr'
+      changed_when: k3s_install.rc == 0
+
+    - name: Wait for k3s to be ready
       ansible.builtin.wait_for:
-        timeout: 10
-    - name: Check if service is running
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 30
+        msg: "Timeout waiting for k3s to generate node token"
+
+    - name: Verify k3s service
       ansible.builtin.systemd:
         name: k3s
         state: started
         enabled: true
+      register: k3s_service
+      until: k3s_service.status.ActiveState == "active"
+      retries: 5
+      delay: 5
 
 - name: Get Agent Token
   become: true
@@ -67,22 +84,34 @@
     - gcp-workers
   become: true
   tasks:
-    - name: Installing k3s
+    - name: Check if k3s-agent is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s-agent
+      register: k3s_agent_binary
+
+    - name: Installing k3s agent
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
-        K3S_URL: "https://100.100.1.100:6443"
-        INSTALL_K3S_VERSION: "v1.31.2+k3s1"
-      changed_when: false
-    - name: Sleep for 10 seconds
-      ansible.builtin.wait_for:
-        timeout: 10
-    - name: Check if service is running
+        K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+      register: k3s_agent_install
+      when: not k3s_agent_binary.stat.exists
+      failed_when:
+        - k3s_agent_install.rc != 0
+        - '"already installed" not in k3s_agent_install.stderr'
+      changed_when: k3s_agent_install.rc == 0
+
+    - name: Wait for k3s-agent service to be ready
       ansible.builtin.systemd:
         name: k3s-agent
-        state: restarted
+        state: started
         enabled: true
+      register: k3s_agent_service
+      until: k3s_agent_service.status.ActiveState == "active"
+      retries: 5
+      delay: 5
 
 - name: Enabling Nodes
   hosts: michael-pi
@@ -91,18 +120,12 @@
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10
-    - name: Adding role to worker node jim-pi
-      ansible.builtin.command: kubectl label node jim-pi kubernetes.io/role=worker location=home name=jim
+    - name: Label worker nodes
+      ansible.builtin.command: kubectl label node {{ item.node }} kubernetes.io/role=worker location={{ item.location }} name={{ item.name }}
       changed_when: false
-    - name: Adding role to worker node stanley-arm1
-      ansible.builtin.command: kubectl label node stanley-arm1 kubernetes.io/role=worker location=cloud name=stanley
-      changed_when: false
-    - name: Adding role to worker node phyllis-arm2
-      ansible.builtin.command: kubectl label node phyllis-arm2 kubernetes.io/role=worker location=cloud name=phyllis
-      changed_when: false
-    - name: Adding role to worker node angela-amd2
-      ansible.builtin.command: kubectl label node angela-amd2 kubernetes.io/role=worker location=cloud name=angela
-      changed_when: false
-    - name: Adding role to worker node toby-gcp1
-      ansible.builtin.command: kubectl label node toby-gcp1 kubernetes.io/role=worker location=cloud name=toby
-      changed_when: false
+      with_items:
+        - { node: 'jim-pi', location: 'home', name: 'jim' }
+        - { node: 'stanley-arm1', location: 'cloud', name: 'stanley' }
+        - { node: 'phyllis-arm2', location: 'cloud', name: 'phyllis' }
+        - { node: 'angela-amd2', location: 'cloud', name: 'angela' }
+        - { node: 'toby-gcp1', location: 'cloud', name: 'toby' }

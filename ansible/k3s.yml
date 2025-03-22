@@ -120,18 +120,12 @@
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10
-    - name: Adding role to worker node jim-pi
-      ansible.builtin.command: kubectl label node jim-pi kubernetes.io/role=worker location=home name=jim
+    - name: Label worker nodes
+      ansible.builtin.command: kubectl label node {{ item.node }} kubernetes.io/role=worker location={{ item.location }} name={{ item.name }}
       changed_when: false
-    - name: Adding role to worker node stanley-arm1
-      ansible.builtin.command: kubectl label node stanley-arm1 kubernetes.io/role=worker location=cloud name=stanley
-      changed_when: false
-    - name: Adding role to worker node phyllis-arm2
-      ansible.builtin.command: kubectl label node phyllis-arm2 kubernetes.io/role=worker location=cloud name=phyllis
-      changed_when: false
-    - name: Adding role to worker node angela-amd2
-      ansible.builtin.command: kubectl label node angela-amd2 kubernetes.io/role=worker location=cloud name=angela
-      changed_when: false
-    - name: Adding role to worker node toby-gcp1
-      ansible.builtin.command: kubectl label node toby-gcp1 kubernetes.io/role=worker location=cloud name=toby
-      changed_when: false
+      with_items:
+        - { node: 'jim-pi', location: 'home', name: 'jim' }
+        - { node: 'stanley-arm1', location: 'cloud', name: 'stanley' }
+        - { node: 'phyllis-arm2', location: 'cloud', name: 'phyllis' }
+        - { node: 'angela-amd2', location: 'cloud', name: 'angela' }
+        - { node: 'toby-gcp1', location: 'cloud', name: 'toby' }

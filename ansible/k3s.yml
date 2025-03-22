@@ -1,7 +1,10 @@
-vars:
-  k3s_version: "v1.31.2+k3s1"
-  k3s_master_ip: "100.100.1.100"
-  k3s_master_port: "6443"
+---
+- name: Define global variables
+  hosts: all
+  vars:
+    k3s_version: "v1.31.2+k3s1"
+    k3s_master_ip: "100.100.1.100"
+    k3s_master_port: "6443"
 
 - name: Initialising cluster
   hosts:
@@ -77,7 +80,7 @@ vars:
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
-        K3S_URL: "https://100.100.1.100:6443"
+        K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
       changed_when: false
     - name: Sleep for 10 seconds

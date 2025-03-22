@@ -1,11 +1,4 @@
 ---
-- name: Define global variables
-  hosts: all
-  vars:
-    k3s_version: "v1.31.2+k3s1"
-    k3s_master_ip: "100.100.1.100"
-    k3s_master_port: "6443"
-
 - name: Initialising cluster
   hosts:
     - pi-workers

@@ -29,7 +29,7 @@
   hosts: michael-pi
   become: true
   tasks:
-    - name: Create /etc/rancher/k3s director
+    - name: Create /etc/rancher/k3s directory
       ansible.builtin.file:
         path: /etc/rancher/k3s
         state: directory
@@ -39,22 +39,38 @@
         src: ./k3s-master-config.yaml
         dest: /etc/rancher/k3s/config.yaml
         mode: '0644'
+    - name: Check if k3s is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
     - name: Installing k3s
-      # This creates a Tailscale overlay network on all the nodes
-      # See https://docs.k3s.io/networking/distributed-multicloud
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
-      changed_when: false
-    - name: Sleep for 10 seconds
+      register: k3s_install
+      when: not k3s_binary.stat.exists
+      failed_when:
+        - k3s_install.rc != 0
+        - '"already installed" not in k3s_install.stderr'
+      changed_when: k3s_install.rc == 0
+
+    - name: Wait for k3s to be ready
       ansible.builtin.wait_for:
-        timeout: 10
-    - name: Check if service is running
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 30
+        msg: "Timeout waiting for k3s to generate node token"
+
+    - name: Verify k3s service
       ansible.builtin.systemd:
         name: k3s
         state: started
         enabled: true
+      register: k3s_service
+      until: k3s_service.status.ActiveState == "active"
+      retries: 5
+      delay: 5
 
 - name: Get Agent Token
   become: true

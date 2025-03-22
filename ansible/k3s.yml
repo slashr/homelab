@@ -84,22 +84,34 @@
     - gcp-workers
   become: true
   tasks:
-    - name: Installing k3s
+    - name: Check if k3s-agent is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s-agent
+      register: k3s_agent_binary
+
+    - name: Installing k3s agent
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
         K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
-      changed_when: false
-    - name: Sleep for 10 seconds
-      ansible.builtin.wait_for:
-        timeout: 10
-    - name: Check if service is running
+      register: k3s_agent_install
+      when: not k3s_agent_binary.stat.exists
+      failed_when:
+        - k3s_agent_install.rc != 0
+        - '"already installed" not in k3s_agent_install.stderr'
+      changed_when: k3s_agent_install.rc == 0
+
+    - name: Wait for k3s-agent service to be ready
       ansible.builtin.systemd:
         name: k3s-agent
-        state: restarted
+        state: started
         enabled: true
+      register: k3s_agent_service
+      until: k3s_agent_service.status.ActiveState == "active"
+      retries: 5
+      delay: 5
 
 - name: Enabling Nodes
   hosts: michael-pi

@@ -2,7 +2,8 @@
 sources:
   - ingress
 
-provider: cloudflare
+provider: 
+  name: cloudflare
 
 domainFilters:
   - akashnair.com

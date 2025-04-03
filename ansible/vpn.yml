@@ -1,5 +1,8 @@
-- name: Enable IP forwarding
+---
+# Play 1: Configure Oracle VPN server
+- name: Configure VPN Server (pam-amd1)
   hosts: pam-amd1
+  become: true
   tasks:
     - name: Set ip_forward flag to 1
       ansible.posix.sysctl:
@@ -8,40 +11,92 @@
         sysctl_set: true
         state: present
         reload: true
-      become: true
 
-- name: Configure iptables on Oracle
-  hosts: pam-amd1
-  tasks:
+    - name: Ensure iptables-persistent is installed
+      ansible.builtin.apt:
+        name: 
+          - iptables-persistent
+          - netfilter-persistent
+        state: present
+        update_cache: yes
+      register: iptables_install
+      until: iptables_install is success
+      retries: 3
+      delay: 5
+
     - name: Copy configuration to /etc/iptables/rules.v4
       ansible.builtin.copy:
         src: ./confs/iptables.conf
         decrypt: true
         dest: "/etc/iptables/rules.v4"
         mode: '640'
+        owner: root
+        group: root
+      register: iptables_config
+
     - name: Load iptables rules
       ansible.builtin.command: iptables-restore /etc/iptables/rules.v4
-      changed_when: false
+      when: iptables_config.changed
+
     - name: Save iptables configuration persistently
       ansible.builtin.command: netfilter-persistent save
-      changed_when: false
-  become: true
+      when: iptables_config.changed
 
-- name: Install Tailscale
+# Play 2: Install and configure Tailscale on all nodes
+- name: Install and Configure Tailscale
   hosts:
     - vpn
     - pi-workers
     - oracle-workers
     - gcp-workers
     - dwight-pi
+  become: true
+  vars:
+    tailscale_version: "latest"
+    tailscale_args: ""
   tasks:
+    - name: Check if Tailscale is already installed
+      ansible.builtin.stat:
+        path: /usr/sbin/tailscaled
+      register: tailscale_binary
+
     - name: Download tailscale script
       ansible.builtin.get_url:
         url: https://tailscale.com/install.sh
         dest: /tmp/tailscale.sh
         mode: "0755"
+        force: true
+      when: not tailscale_binary.stat.exists
+      register: download_result
+      until: download_result is success
+      retries: 3
+      delay: 5
 
     - name: Install Tailscale
       ansible.builtin.command: /tmp/tailscale.sh
+      when: not tailscale_binary.stat.exists
+      register: install_result
+      failed_when: install_result.rc != 0 and "already installed" not in install_result.stderr
+      changed_when: install_result.rc == 0
+
+    - name: Ensure tailscale service is enabled and running
+      ansible.builtin.systemd:
+        name: tailscaled
+        state: started
+        enabled: yes
+
+    - name: Configure Tailscale with join key
+      ansible.builtin.command: tailscale up --authkey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}
+      when: 
+        - lookup('env', 'TAILSCALE_JOIN_KEY') is defined
+        - lookup('env', 'TAILSCALE_JOIN_KEY') | length > 0
+      register: tailscale_up
+      changed_when: "'Success' in tailscale_up.stdout"
+      failed_when: tailscale_up.rc != 0 and "already authenticated" not in tailscale_up.stderr
+      no_log: true
+
+    - name: Check Tailscale status
+      ansible.builtin.command: tailscale status
+      register: tailscale_status
       changed_when: false
-      become: true
+      failed_when: tailscale_status.rc != 0

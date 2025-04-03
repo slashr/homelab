@@ -136,23 +136,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
 
-      # Add step to install graphviz for 'dot'
-      - name: Install Graphviz
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz
 
-      # Add dependency graph visualization for Terraform
-      - name: Terraform Graph
-        run: |
-          terraform graph | dot -Tpng > terraform-graph.png
-
-      - name: Upload Dependency Graph
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-dependency-graph
-          path: ./oracle/terraform-graph.png
-          retention-days: 5
 
   tailscale-setup:
     name: "Setup Tailscale Network" 

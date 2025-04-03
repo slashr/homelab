@@ -55,7 +55,7 @@ jobs:
 
       # Save plan as artifact for review
       - name: Save Terraform Plan
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: github.event_name == 'pull_request'
         with:
           name: gcp-terraform-plan
@@ -142,7 +142,7 @@ jobs:
           terraform graph | dot -Tpng > terraform-graph.png
 
       - name: Upload Dependency Graph
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: terraform-dependency-graph
           path: ./oracle/terraform-graph.png

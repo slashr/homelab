@@ -136,6 +136,12 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
 
+      # Add step to install graphviz for 'dot'
+      - name: Install Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
       # Add dependency graph visualization for Terraform
       - name: Terraform Graph
         run: |

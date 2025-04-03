@@ -1,21 +1,42 @@
-on: [push, fork]
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual triggering
+
+# Add concurrency control to prevent conflicting deployments
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   gcp-setup:
     name: "Setup GCP Infra"
     runs-on: ubuntu-latest
+    timeout-minutes: 30 # Add timeout to prevent hanging jobs
     defaults:
       run:
         working-directory: ./gcp
     env:
       GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.0.0
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          terraform_version: "1.9.6" # Pin Terraform version
 
-      - name: Checkout
-        uses: actions/checkout@v4
+      # Add caching for Terraform plugins
+      - name: Cache Terraform plugins
+        uses: actions/cache@v3
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/gcp/.terraform.lock.hcl') }}
+          restore-keys: ${{ runner.os }}-terraform-
 
       - name: Terraform Format
         id: fmt
@@ -24,13 +45,51 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color
 
+      # Save plan as artifact for review
+      - name: Save Terraform Plan
+        uses: actions/upload-artifact@v3
+        if: github.event_name == 'pull_request'
+        with:
+          name: gcp-terraform-plan
+          path: ./gcp/terraform.tfplan
+          retention-days: 5
+
       - name: Terraform Apply
-        if: github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
+
+  # Extract common SSH setup into a reusable composite action or use OIDC for authentication
+  setup-ssh:
+    name: "Setup SSH and Tailscale"
+    runs-on: ubuntu-latest
+    outputs:
+      ssh_config: ${{ steps.ssh.outputs.ssh_config }}
+    steps:
+      - name: Setup SSH
+        id: ssh
+        shell: bash
+        run: |
+          eval `ssh-agent -s`
+          mkdir -p /home/runner/.ssh/
+          echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
+          chmod 700 /home/runner/.ssh/id_rsa
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
+          echo "ssh_config=done" >> $GITHUB_OUTPUT
+
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tags: tag:k3s
 
   oracle-setup:
     name: "Setup Oracle Infra"
@@ -77,9 +136,21 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
 
+      # Add dependency graph visualization for Terraform
+      - name: Terraform Graph
+        run: |
+          terraform graph | dot -Tpng > terraform-graph.png
+
+      - name: Upload Dependency Graph
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-dependency-graph
+          path: ./oracle/terraform-graph.png
+          retention-days: 5
+
   tailscale-setup:
     name: "Setup Tailscale Network" 
-    needs: [oracle-setup, gcp-setup]
+    needs: [oracle-setup, gcp-setup, setup-ssh]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -225,3 +296,19 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
+
+      # Add drift detection
+      - name: Check for Infrastructure Drift
+        id: drift_check
+        run: |
+          terraform plan -detailed-exitcode -out=plan.tfplan
+          echo "drift_exitcode=$?" >> $GITHUB_OUTPUT
+      
+      # Add plan summary for PRs
+      - name: Terraform Plan Summary
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to add: $(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "create")) | length')" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to change: $(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "update")) | length')" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to destroy: $(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "delete")) | length')" >> $GITHUB_STEP_SUMMARY

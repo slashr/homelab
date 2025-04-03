@@ -5,20 +5,31 @@ terraform {
       tags = ["dev"]
     }
   }
-  required_version = ">=1.5.0"
+  required_version = ">=1.9.0"
 
   required_providers {
     kubectl = {
       source  = "gavinbunney/kubectl"
       version = ">= 1.7.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.20.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.9.0"
+    }
   }
 }
 
-# Have to use Oracle 130.61.64.164 IP since Terraform Cloud needs it
-# Otherwise could use Tailscale 100.100.1.100 IP 
+locals {
+  k8s_endpoint = "https://130.61.64.164:6443"
+}
+
+# Use a single provider configuration with locals
 provider "kubectl" {
-  host               = "https://130.61.64.164:6443"
+  host               = local.k8s_endpoint
   load_config_file   = false
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
@@ -26,7 +37,7 @@ provider "kubectl" {
 }
 
 provider "kubernetes" {
-  host               = "https://130.61.64.164:6443"
+  host               = local.k8s_endpoint
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
   client_key         = base64decode(var.kube_client_key)
@@ -34,7 +45,7 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes {
-    host               = "https://130.61.64.164:6443"
+    host               = local.k8s_endpoint
     insecure           = "true"
     client_certificate = base64decode(var.kube_client_cert)
     client_key         = base64decode(var.kube_client_key)

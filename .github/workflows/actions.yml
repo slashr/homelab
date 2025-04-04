@@ -152,17 +152,6 @@ jobs:
         with:
           submodules: true
 
-      # Add a simple retry mechanism before installing/running the Tailscale action
-      - name: Retry Tailscale installation
-        run: |
-          n=0
-          until [ $n -ge 5 ]
-          do
-            sudo apt-get update && sudo apt-get install -y gnupg && break
-            n=$((n+1))
-            sleep 5
-          done
-
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
       - name: Tailscale

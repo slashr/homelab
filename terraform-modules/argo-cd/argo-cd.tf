@@ -9,7 +9,7 @@ resource "helm_release" "argo-cd" {
   namespace  = "argo-cd"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
-  version    = "6.7.11"
+  version    = "7.8.24"
 
   values = [templatefile("${path.module}/values.yaml", {})]
 
@@ -23,7 +23,7 @@ resource "helm_release" "argo-cd-apps" {
   namespace  = "argo-cd"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argocd-apps"
-  version    = "1.4.1"
+  version    = "2.0.2"
 
   values = [templatefile("${path.module}/argo-cd-apps-values.yaml", {})]
 

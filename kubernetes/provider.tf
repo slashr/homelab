@@ -23,13 +23,10 @@ terraform {
   }
 }
 
-locals {
-  k8s_endpoint = "https://130.61.64.164:6443"
-}
-
-# Use a single provider configuration with locals
+# Have to use Oracle 130.61.64.164 IP since Terraform Cloud needs it
+# Otherwise could use Tailscale 100.100.1.100 IP 
 provider "kubectl" {
-  host               = local.k8s_endpoint
+  host               = "https://130.61.64.164:6443"
   load_config_file   = false
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
@@ -37,7 +34,7 @@ provider "kubectl" {
 }
 
 provider "kubernetes" {
-  host               = local.k8s_endpoint
+  host               = "https://130.61.64.164:6443"
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
   client_key         = base64decode(var.kube_client_key)
@@ -45,7 +42,7 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes {
-    host               = local.k8s_endpoint
+    host               = "https://130.61.64.164:6443"
     insecure           = "true"
     client_certificate = base64decode(var.kube_client_cert)
     client_key         = base64decode(var.kube_client_key)

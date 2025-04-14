@@ -16,10 +16,3 @@ module "external-dns" {
   cloudflare_api_token = var.cloudflare_api_token
   depends_on           = [module.cert-manager]
 }
-
-# Add outputs for important information
-output "argocd_endpoint" {
-  value       = module.argo-cd.endpoint
-  description = "ArgoCD endpoint URL"
-  sensitive   = false
-}

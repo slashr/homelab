@@ -32,7 +32,7 @@ jobs:
 
       # Add caching for Terraform plugins
       - name: Cache Terraform plugins
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.terraform.d/plugin-cache
           key: ${{ runner.os }}-terraform-${{ hashFiles('**/gcp/.terraform.lock.hcl') }}

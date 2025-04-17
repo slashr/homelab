@@ -20,8 +20,8 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 - Setup up K3S Agent on amd2, arm1 and arm2 and adds them to the K8S cluster
 
 ## Terraform Kubernetes Job
-- Deploys ArgoCD, Cert Manager, Ingress Nginx and MetalLB on the K3S cluster
-- ArgoCD then deploys a app-of-apps which consists currently of Podinfo
++ Deploys ArgoCD, Cert Manager and External‑DNS on the K3S cluster (Traefik, the K3S default ingress, handles HTTP routing and LoadBalancer)
++ ArgoCD then deploys an app‑of‑apps (currently Podinfo)
 
 ## GCP
 - GCP SA Key is added as a environment variable in Terraform Cloud so that Terraform can access GCP infra
@@ -38,8 +38,10 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 - ARM instances will not have always free tag as they are flexible shape.
 - ARM instances will be deleted after one-month trial. They have to be then recreated
 
-## Diagram
-https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
+## Architecture Diagram
+
+A live, editable network and cluster diagram is available in Excalidraw:
+[View diagram](https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ)
 
 ## Secrets
 
@@ -74,7 +76,44 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 - Handbrake (docker container) to transcode 
 - Dashdot widgets for homarr
 - Homarr home page
-- Cloudflare tunnel for access
+ - Cloudflare tunnel for access
+
+## Maintenance & Quick Reference
+
+### Rotating the Ansible Vault password
+1. Run:
+   ```bash
+   ansible-vault rekey ansible/confs/iptables.conf
+   ```
+2. Update the `ANSIBLE_VAULT_PASSWORD` secret in GitHub Actions (or the local vault.pass file).
+
+### Rotating the Tailscale Join Key
+1. In the Tailscale admin console, generate a new reusable join key.
+2. Update the `TAILSCALE_JOIN_KEY` secret in GitHub Actions.
+3. Re-run the VPN playbook:
+   ```bash
+   ansible-playbook --private-key ~/.ssh/id_rsa -i ansible/hosts.ini ansible/vpn.yml \
+     --vault-password-file ./vault.pass
+   ```
+
+### Reprovisioning a Raspberry Pi node
+1. Flash Raspberry Pi OS and configure network (Wi-Fi or Ethernet) as needed.
+2. Ensure the Pi is reachable and listed under `pi-workers` in `ansible/hosts.ini` with the correct hostname/IP.
+3. Run the VPN playbook:
+   ```bash
+   ansible-playbook --private-key ~/.ssh/id_rsa -i ansible/hosts.ini ansible/vpn.yml \
+     --vault-password-file ./vault.pass
+   ```
+4. Run the K3S playbook to install the agent:
+   ```bash
+   ansible-playbook --private-key ~/.ssh/id_rsa -i ansible/hosts.ini ansible/k3s.yml \
+     --vault-password-file ./vault.pass
+   ```
+5. Label the new node (if needed):
+   ```bash
+   kubectl label node <node-name> \
+     kubernetes.io/role=worker location=<home|cloud> name=<identifier>
+   ```
 
 Ref: https://www.reddit.com/r/selfhosted/comments/1dhttjy/bored_with_my_homelab/?share_id=UPxrbGis6njRtFiR35M1v&utm_content=2&utm_medium=ios_app&utm_name=ioscss&utm_source=share&utm_term=1
 

@@ -73,9 +73,13 @@
       ansible.builtin.slurp:
         path: /var/lib/rancher/k3s/server/agent-token
       register: agent_token
-    - name: Set variable agent_token_fact
+    - name: Share agent token with every host
       ansible.builtin.set_fact:
         agent_token_fact: "{{ agent_token.content | b64decode | trim }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true          # store the fact on the delegated host
+      loop: "{{ groups['all'] }}"    # or restrict to the three worker groups
+
 
 - name: Install Tailscale-K3S on Nodes
   hosts:
@@ -93,7 +97,7 @@
       ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
-        K3S_TOKEN: "{{ hostvars['michael-pi']['agent_token_fact'] }}"
+        K3S_TOKEN: "{{ agent_token_fact }}"
         K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
       register: k3s_agent_install

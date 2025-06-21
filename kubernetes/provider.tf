@@ -18,7 +18,7 @@ terraform {
     }
     helm = {
       source  = "hashicorp/helm"
-      version = ">= 2.9.0"
+      version = ">= 3.0.1"
     }
   }
 }
@@ -41,7 +41,7 @@ provider "kubernetes" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host               = "https://130.61.64.164:6443"
     insecure           = "true"
     client_certificate = base64decode(var.kube_client_cert)

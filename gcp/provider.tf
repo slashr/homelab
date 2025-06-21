@@ -9,6 +9,6 @@ terraform {
 }
 
 provider "google" {
-  project = "spice-385121"
-  region  = "us-central1"
+  project = var.project
+  region  = var.region
 }

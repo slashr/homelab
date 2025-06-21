@@ -45,12 +45,26 @@ def main() -> None:
         help="Action to perform on the ACL configuration",
     )
     parser.add_argument("file", help="Path to ACL JSON file")
-    parser.add_argument("--tailnet", required=True, help="Tailscale tailnet name")
-    parser.add_argument("--api-key", default=os.getenv("TAILSCALE_API_KEY"), help="Tailscale API key")
+    parser.add_argument(
+        "--tailnet",
+        default=os.getenv("TAILSCALE_TAILNET"),
+        help="Tailscale tailnet name (or set TAILSCALE_TAILNET)",
+    )
+    parser.add_argument(
+        "--api-key",
+        default=os.getenv("TAILSCALE_API_KEY"),
+        help="Tailscale API key (or set TAILSCALE_API_KEY)",
+    )
     args = parser.parse_args()
 
+    if not args.tailnet:
+        parser.error(
+            "Tailnet must be provided via --tailnet or TAILSCALE_TAILNET env"
+        )
     if not args.api_key:
-        parser.error("Tailscale API key must be provided via --api-key or TAILSCALE_API_KEY env")
+        parser.error(
+            "Tailscale API key must be provided via --api-key or TAILSCALE_API_KEY env"
+        )
 
     if args.action == "export":
         data = {

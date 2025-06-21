@@ -52,7 +52,9 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 The repository includes a helper script located at `scripts/tailscale_acl.py` which
 uses the Tailscale API to export or import ACLs, groups, tags and IP ranges. The
 desired configuration lives in `tailscale/acl.json` and is applied automatically
-in the `tailscale-setup` job of the GitHub Actions workflow.
+in the `tailscale-setup` job of the GitHub Actions workflow. The script reads the
+`TAILSCALE_TAILNET` and `TAILSCALE_API_KEY` environment variables by default so
+the workflow can provide those secrets without command-line arguments.
 
 ## TODO
 # Remaining enhancements

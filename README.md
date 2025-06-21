@@ -78,3 +78,14 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 
 Ref: https://www.reddit.com/r/selfhosted/comments/1dhttjy/bored_with_my_homelab/?share_id=UPxrbGis6njRtFiR35M1v&utm_content=2&utm_medium=ios_app&utm_name=ioscss&utm_source=share&utm_term=1
 
+
+## Contributing
+
+This project uses [pre-commit](https://pre-commit.com/) to lint Terraform and Ansible files.
+
+### Setup
+1. Install pre-commit with `pip install pre-commit`.
+2. Run `pre-commit install` once to add the git hooks.
+
+### Running the checks
+Execute `pre-commit run --all-files` to run all hooks on the repository.

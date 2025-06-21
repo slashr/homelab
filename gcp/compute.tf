@@ -1,7 +1,7 @@
 resource "google_compute_instance" "gcp1" {
   name         = "gcp1"
-  machine_type = "e2-micro"
-  zone         = "us-central1-c"
+  machine_type = var.machine_type
+  zone         = var.zone
 
   boot_disk {
     initialize_params {

@@ -1,0 +1,19 @@
+{
+  "acl": {
+    "ACLs": [
+      { "action": "accept", "src": ["*"], "dst": ["*:*"] }
+    ],
+    "Groups": {
+      "group:admins": ["user@example.com"]
+    },
+    "TagOwners": {
+      "tag:k3s": ["group:admins"]
+    },
+    "AutoApprovers": {
+      "routes": {
+        "10.42.0.0/16": ["group:admins"]
+      }
+    }
+  },
+  "ip_ranges": {}
+}

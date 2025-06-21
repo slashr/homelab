@@ -48,9 +48,14 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 - jim-pi            Raspberry Pi 5 8GB 2    192.168.1.101      172.20.60.101 
 - dwight-pi         Raspberry Pi 4 8GB      192.168.1.102      172.20.60.102
 
+## Tailscale Automation
+The repository includes a helper script located at `scripts/tailscale_acl.py` which
+uses the Tailscale API to export or import ACLs, groups, tags and IP ranges. The
+desired configuration lives in `tailscale/acl.json` and is applied automatically
+in the `tailscale-setup` job of the GitHub Actions workflow.
+
 ## TODO
-- Automate/codify Tailscale manual modifications:
-  - Backup Access Control List including Pod IP Auto-approve(10.42.0.0/16), Custom Node IP range (100.100.0.0/16), Groups and Tags definitions
+# Remaining enhancements
 
 ## Roadmap
 - 3 proxmox servers

@@ -167,7 +167,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install test dependencies.
-        run: pip3 install ansible-lint ansible
+        run: pip3 install ansible-lint ansible requests
 
       - name: Run ansible-lint.
         run: ansible-lint
@@ -189,6 +189,10 @@ jobs:
       - name: Run vpn-playbook
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
+
+      - name: Configure Tailscale ACLs
+        run: |
+          python ../scripts/tailscale_acl.py import ../tailscale/acl.json --tailnet ${{ secrets.TAILSCALE_TAILNET }} --api-key ${{ secrets.TAILSCALE_API_KEY }}
 
   k3s-setup:
     name: "Setup K3S Cluster"
@@ -219,7 +223,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install test dependencies.
-        run: pip3 install ansible-lint ansible
+        run: pip3 install ansible-lint ansible requests
 
       - name: Run ansible-lint.
         run: ansible-lint

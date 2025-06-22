@@ -37,13 +37,26 @@
         path: /usr/local/bin/k3s
       register: k3s_binary
 
+    - name: Get current k3s version
+      ansible.builtin.command: /usr/local/bin/k3s --version
+      register: k3s_current_version
+      changed_when: false
+      failed_when: false
+      when: k3s_binary.stat.exists
+
+    - name: Set installed k3s version fact
+      ansible.builtin.set_fact:
+        k3s_installed_version: "{{ k3s_current_version.stdout.split()[2] }}"
+      when: k3s_binary.stat.exists
+
     - name: Installing k3s
-      ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
+      ansible.builtin.command: >
+        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
       register: k3s_install
-      when: not k3s_binary.stat.exists
+      when: not k3s_binary.stat.exists or k3s_installed_version != k3s_version
       failed_when:
         - k3s_install.rc != 0
         - '"already installed" not in k3s_install.stderr'
@@ -94,7 +107,8 @@
       register: k3s_agent_binary
 
     - name: Installing k3s agent
-      ansible.builtin.command: /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
+      ansible.builtin.command: >
+        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ agent_token_fact }}"
@@ -125,11 +139,23 @@
       ansible.builtin.wait_for:
         timeout: 10
     - name: Label worker nodes
-      ansible.builtin.command: kubectl label node {{ item.node }} kubernetes.io/role=worker location={{ item.location }} name={{ item.name }}
+      ansible.builtin.command: >
+        kubectl label node {{ item.node }} kubernetes.io/role=worker
+        location={{ item.location }} name={{ item.name }}
       changed_when: false
       with_items:
-        - { node: 'jim-pi', location: 'home', name: 'jim' }
-        - { node: 'stanley-arm1', location: 'cloud', name: 'stanley' }
-        - { node: 'phyllis-arm2', location: 'cloud', name: 'phyllis' }
-        - { node: 'angela-amd2', location: 'cloud', name: 'angela' }
-        - { node: 'toby-gcp1', location: 'cloud', name: 'toby' }
+        - node: jim-pi
+          location: home
+          name: jim
+        - node: stanley-arm1
+          location: cloud
+          name: stanley
+        - node: phyllis-arm2
+          location: cloud
+          name: phyllis
+        - node: angela-amd2
+          location: cloud
+          name: angela
+        - node: toby-gcp1
+          location: cloud
+          name: toby

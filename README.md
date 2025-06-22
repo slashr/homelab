@@ -18,6 +18,8 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 ## Ansible Job
 - Sets up a Wireguard tunnel between Pi and amd1
 - Setup up K3S Agent on amd2, arm1 and arm2 and adds them to the K8S cluster
+- Cluster version is defined in `ansible/group_vars/all.yml`. Rerun
+  `ansible/k3s.yml` after changing the version to upgrade all nodes.
 
 ## Terraform Kubernetes Job
 - Deploys ArgoCD, Cert Manager, Ingress Nginx and MetalLB on the K3S cluster

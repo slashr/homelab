@@ -28,3 +28,13 @@ variable "kube_client_key" {
     error_message = "kube_client_key must be valid base64-encoded data."
   }
 }
+
+variable "master_node_ip" {
+  description = "Internal IP address of the Kubernetes master node"
+  type        = string
+}
+
+variable "api_server_ip" {
+  description = "External IP address used to reach the Kubernetes API server"
+  type        = string
+}

@@ -18,6 +18,7 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 ## Ansible Job
 - Sets up a Wireguard tunnel between Pi and amd1
 - Setup up K3S Agent on amd2, arm1 and arm2 and adds them to the K8S cluster
+- IP addresses are managed via the `master_node_ip` and `api_server_ip` variables defined in `ansible/group_vars/all.yml` and `kubernetes/variables.tf`
 
 ## Terraform Kubernetes Job
 - Deploys ArgoCD, Cert Manager, Ingress Nginx and MetalLB on the K3S cluster
@@ -27,6 +28,7 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 - GCP SA Key is added as a environment variable in Terraform Cloud so that Terraform can access GCP infra
 - The username for SSH login is the username provided in the public key in gcp/compute.tf under "ssh-keys". Can be set to any username desired
 - The `gcp/variables.tf` file defines variables for `project`, `region`, `zone`, and `machine_type` to customize the deployment
+- The `kubernetes/variables.tf` file defines `master_node_ip` and `api_server_ip` for the K3S master node
 
 ## Networking
 - K3S installs by default the Traefik networking and ingress controller. Traefik takes care of exposing Services of type LoadBalancer on the RPi with the RPi private IP. It also is able to route HTTP traffic to the right Ingress. Basically it can do what ingress-nginx and metallb together so I removed them in order to simplify the setup

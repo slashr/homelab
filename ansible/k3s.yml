@@ -98,7 +98,7 @@
       environment:
         TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ agent_token_fact }}"
-        K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
+        K3S_URL: "https://{{ master_node_ip }}:{{ k3s_master_port }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
       register: k3s_agent_install
       when: not k3s_agent_binary.stat.exists

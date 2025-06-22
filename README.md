@@ -82,7 +82,7 @@ Ref: https://www.reddit.com/r/selfhosted/comments/1dhttjy/bored_with_my_homelab/
 
 ## Contributing
 
-This project uses [pre-commit](https://pre-commit.com/) to lint Terraform and Ansible files.
+This project uses [pre-commit](https://pre-commit.com/) to lint Terraform, Ansible, and YAML files.
 
 ### Setup
 1. Install pre-commit with `pip install pre-commit`.

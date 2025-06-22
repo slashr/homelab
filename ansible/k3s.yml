@@ -106,6 +106,19 @@
         path: /usr/local/bin/k3s-agent
       register: k3s_agent_binary
 
+    - name: Get current k3s agent version
+      ansible.builtin.command: /usr/local/bin/k3s-agent --version
+      register: k3s_agent_current_version
+      changed_when: false
+      failed_when: false
+      when: k3s_agent_binary.stat.exists
+
+    - name: Set installed k3s agent version fact
+      ansible.builtin.set_fact:
+        k3s_agent_installed_version: >-
+          {{ k3s_agent_current_version.stdout.split()[2] }}
+      when: k3s_agent_binary.stat.exists
+
     - name: Installing k3s agent
       ansible.builtin.command: >
         /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
@@ -115,7 +128,9 @@
         K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
       register: k3s_agent_install
-      when: not k3s_agent_binary.stat.exists
+      when:
+        - not k3s_agent_binary.stat.exists
+        - k3s_agent_installed_version != k3s_version
       failed_when:
         - k3s_agent_install.rc != 0
         - '"already installed" not in k3s_agent_install.stderr'

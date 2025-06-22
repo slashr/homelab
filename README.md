@@ -25,8 +25,8 @@ My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The 
 
 ## GCP
 - GCP SA Key is added as a environment variable in Terraform Cloud so that Terraform can access GCP infra
-- The username for SSH login is the username provided in the public key in gcp/compute.tf under "ssh-keys". Can be set to any username desired
-- The `gcp/variables.tf` file defines variables for `project`, `region`, `zone`, and `machine_type` to customize the deployment
+- The `ssh_username` and `ssh_public_key` variables define the login user and SSH key used for the instance
+- The `gcp/variables.tf` file defines variables for `project`, `region`, `zone`, `machine_type`, `ssh_username`, and `ssh_public_key` to customize the deployment
 
 ## Networking
 - K3S installs by default the Traefik networking and ingress controller. Traefik takes care of exposing Services of type LoadBalancer on the RPi with the RPi private IP. It also is able to route HTTP traffic to the right Ingress. Basically it can do what ingress-nginx and metallb together so I removed them in order to simplify the setup

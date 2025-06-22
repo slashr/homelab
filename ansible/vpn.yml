@@ -50,9 +50,9 @@
 - name: Install and Configure Tailscale
   hosts:
     - vpn
-    - pi-workers
-    - oracle-workers
-    - gcp-workers
+    - pi_workers
+    - oracle_workers
+    - gcp_workers
     - dwight-pi
   become: true
   vars:
@@ -80,7 +80,9 @@
       ansible.builtin.command: /tmp/tailscale.sh
       when: not tailscale_binary.stat.exists
       register: install_result
-      failed_when: install_result.rc != 0 and "already installed" not in install_result.stderr
+      failed_when: >-
+        install_result.rc != 0
+        and "already installed" not in install_result.stderr
       changed_when: install_result.rc == 0
 
     - name: Ensure tailscale service is enabled and running
@@ -90,13 +92,16 @@
         enabled: true
 
     - name: Configure Tailscale with join key
-      ansible.builtin.command: tailscale up --authkey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}
+      ansible.builtin.command: >-
+        tailscale up --authkey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}
       when:
         - lookup('env', 'TAILSCALE_JOIN_KEY') is defined
         - lookup('env', 'TAILSCALE_JOIN_KEY') | length > 0
       register: tailscale_up
       changed_when: "'Success' in tailscale_up.stdout"
-      failed_when: tailscale_up.rc != 0 and "already authenticated" not in tailscale_up.stderr
+      failed_when: >-
+        tailscale_up.rc != 0
+        and "already authenticated" not in tailscale_up.stderr
       no_log: true
 
     - name: Check Tailscale status

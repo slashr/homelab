@@ -63,7 +63,7 @@ server:
     annotations:
       # Create a A record pointing to the given IP on cloudflare
       external-dns.alpha.kubernetes.io/hostname: argo.shrub.dev
-      external-dns.alpha.kubernetes.io/target: ${api_server_ip}
+      external-dns.alpha.kubernetes.io/target: ${public_dns_ip}
       # This lets cert-manager identify which Ingresses to generate a cert for
       cert-manager.io/cluster-issuer: letsencrypt-prod
     hostname: "argo.shrub.dev"

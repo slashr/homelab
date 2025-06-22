@@ -1,7 +1,7 @@
 module "argo-cd" {
   source        = "../terraform-modules/argo-cd"
   depends_on    = [module.cert-manager, module.external-dns]
-  api_server_ip = var.api_server_ip
+  public_dns_ip = var.public_dns_ip
 }
 
 module "cert-manager" {

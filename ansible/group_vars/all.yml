@@ -1,5 +1,5 @@
 ---
 k3s_version: "v1.32.3+k3s1"
 master_node_ip: "100.100.1.100"
-api_server_ip: "130.61.64.164"
+public_dns_ip: "130.61.64.164"
 k3s_master_port: "6443"

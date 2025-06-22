@@ -11,7 +11,7 @@ resource "helm_release" "argo-cd" {
   chart      = "argo-cd"
   version    = "8.1.1"
 
-  values = [templatefile("${path.module}/values.yaml", { api_server_ip = var.api_server_ip })]
+  values = [templatefile("${path.module}/values.yaml", { public_dns_ip = var.public_dns_ip })]
 
   depends_on = [
     resource.kubernetes_namespace.argo-cd

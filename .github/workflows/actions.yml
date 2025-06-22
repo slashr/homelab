@@ -193,6 +193,7 @@ jobs:
   k3s-setup:
     name: "Setup K3S Cluster"
     needs: [tailscale-setup]
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && github.event_name == 'push') }}
     runs-on: ubuntu-latest
     defaults:
       run:

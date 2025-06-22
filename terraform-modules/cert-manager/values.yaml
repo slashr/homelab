@@ -1,6 +1,7 @@
 # refer to https://github.com/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml
 # for the commented values. This version here is shortened to make terraform diffs easier readable
-installCRDs: false
+crds:
+  enabled: true
 replicaCount: 1
 strategy: {}
 featureGates: ""

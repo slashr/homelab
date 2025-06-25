@@ -20,8 +20,7 @@ resource "helm_release" "cert-manager" {
   version    = var.chart_version
 
   depends_on = [
-    kubernetes_namespace.cert-manager,
-    kubectl_manifest.cert-manager-crds #Because CRDs needs to be installed for the cert-manager Pods to be healthy and thus for the Helm release to succeed
+    kubernetes_namespace.cert-manager
   ]
 }
 

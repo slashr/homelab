@@ -94,7 +94,7 @@ jobs:
           echo "ssh_config=done" >> $GITHUB_OUTPUT
 
       - name: Tailscale
-        uses: tailscale/github-action@v3.2.2
+        uses: tailscale/github-action@v3.2.3
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
@@ -173,7 +173,7 @@ jobs:
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
       - name: Tailscale
-        uses: tailscale/github-action@v3.2.2
+        uses: tailscale/github-action@v3.2.3
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
@@ -235,7 +235,7 @@ jobs:
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
       - name: Tailscale
-        uses: tailscale/github-action@v3.2.2
+        uses: tailscale/github-action@v3.2.3
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}

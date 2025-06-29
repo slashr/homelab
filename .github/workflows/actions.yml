@@ -1,9 +1,10 @@
-on:
+---
+'on':
   push:
     branches: [main, staging]
   pull_request:
     branches: [main]
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:  # Allow manual triggering
 
 # Add concurrency control to prevent conflicting deployments
 concurrency:
@@ -14,7 +15,7 @@ jobs:
   gcp-setup:
     name: "Setup GCP Infra"
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # Add timeout to prevent hanging jobs
+    timeout-minutes: 30  # Add timeout to prevent hanging jobs
     defaults:
       run:
         working-directory: ./gcp
@@ -23,12 +24,40 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-          terraform_version: "1.9.6" # Pin Terraform version
+          terraform_version: "1.9.6"  # Pin Terraform version
+
+      - name: Install test dependencies
+        run: pip3 install ansible-lint ansible
+
+      - name: Install Ansible collections
+        working-directory: '${{ github.workspace }}'
+        run: ansible-galaxy collection install -r ansible/requirements.yml --force
+
+      - name: Install pre-commit
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
+          else
+            pre-commit run --all-files
+          fi
 
       # Add caching for Terraform plugins
       - name: Cache Terraform plugins
@@ -114,6 +143,34 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install test dependencies
+        run: pip3 install ansible-lint ansible
+
+      - name: Install Ansible collections
+        working-directory: '${{ github.workspace }}'
+        run: ansible-galaxy collection install -r ansible/requirements.yml --force
+
+      - name: Install pre-commit
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
+          else
+            pre-commit run --all-files
+          fi
 
       - name: Terraform Format
         id: fmt
@@ -154,10 +211,8 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-
-
   tailscale-setup:
-    name: "Setup Tailscale Network" 
+    name: "Setup Tailscale Network"
     needs: [oracle-setup, gcp-setup, setup-ssh]
     runs-on: ubuntu-latest
     defaults:
@@ -169,6 +224,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          fetch-depth: 0
 
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
@@ -178,7 +234,6 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
-    
       - name: Set up Python 3.7.
         uses: actions/setup-python@v5
         with:
@@ -186,6 +241,26 @@ jobs:
 
       - name: Install test dependencies.
         run: pip3 install ansible-lint ansible
+      - name: Install Ansible collections
+        working-directory: '${{ github.workspace }}'
+        run: ansible-galaxy collection install -r ansible/requirements.yml --force
+
+      - name: Install pre-commit
+        run: pip3 install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
+          else
+            pre-commit run --all-files
+          fi
 
       - name: Run ansible-lint.
         run: ansible-lint
@@ -231,6 +306,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          fetch-depth: 0
 
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
@@ -240,7 +316,6 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
-
       - name: Set up Python 3.7.
         uses: actions/setup-python@v5
         with:
@@ -248,6 +323,26 @@ jobs:
 
       - name: Install test dependencies.
         run: pip3 install ansible-lint ansible
+      - name: Install Ansible collections
+        working-directory: '${{ github.workspace }}'
+        run: ansible-galaxy collection install -r ansible/requirements.yml --force
+
+      - name: Install pre-commit
+        run: pip3 install pre-commit
+
+      - name: Run pre-commit
+        run: |
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            else
+              BASE_SHA="${{ github.event.before }}"
+            fi
+            CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+            if [ -n "$CHANGED_FILES" ]; then
+              echo "$CHANGED_FILES" | xargs pre-commit run --files
+            else
+              pre-commit run --all-files
+            fi
 
       - name: Run ansible-lint.
         run: ansible-lint
@@ -296,6 +391,34 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install test dependencies
+        run: pip3 install ansible-lint ansible
+
+      - name: Install Ansible collections
+        working-directory: '${{ github.workspace }}'
+        run: ansible-galaxy collection install -r ansible/requirements.yml --force
+
+      - name: Install pre-commit
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
+          else
+            pre-commit run --all-files
+          fi
 
       - name: Terraform Format
         id: fmt
@@ -343,12 +466,14 @@ jobs:
         if: always()
         run: |
           echo "Drift detection exit code: ${{ steps.drift_check.outputs.drift_exitcode }}" >> $GITHUB_STEP_SUMMARY
-      
       # Add plan summary for PRs
       - name: Terraform Plan Summary
         if: github.event_name == 'pull_request'
         run: |
           echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to add: $(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "create")) | length')" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to change: $(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "update")) | length')" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to destroy: $(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "delete")) | length')" >> $GITHUB_STEP_SUMMARY
+          ADDED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "create")) | length')
+          CHANGED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "update")) | length')
+          DESTROYED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "delete")) | length')
+          echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY

@@ -227,6 +227,8 @@ jobs:
 
       - name: Install test dependencies.
         run: pip3 install ansible-lint ansible
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Install pre-commit
         run: pip3 install pre-commit
@@ -306,6 +308,8 @@ jobs:
 
       - name: Install test dependencies.
         run: pip3 install ansible-lint ansible
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Install pre-commit
         run: pip3 install pre-commit

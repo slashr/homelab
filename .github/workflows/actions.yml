@@ -1,9 +1,10 @@
-on:
+---
+'on':
   push:
     branches: [main, staging]
   pull_request:
     branches: [main]
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:  # Allow manual triggering
 
 # Add concurrency control to prevent conflicting deployments
 concurrency:
@@ -14,7 +15,7 @@ jobs:
   gcp-setup:
     name: "Setup GCP Infra"
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # Add timeout to prevent hanging jobs
+    timeout-minutes: 30  # Add timeout to prevent hanging jobs
     defaults:
       run:
         working-directory: ./gcp
@@ -28,7 +29,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-          terraform_version: "1.9.6" # Pin Terraform version
+          terraform_version: "1.9.6"  # Pin Terraform version
 
       - name: Install pre-commit
         run: |
@@ -36,7 +37,17 @@ jobs:
           pip3 install pre-commit
 
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          else
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          fi
+          if [ -n "$CHANGED_FILES" ]; then
+            pre-commit run --files $CHANGED_FILES
+          else
+            pre-commit run --all-files
+          fi
 
       # Add caching for Terraform plugins
       - name: Cache Terraform plugins
@@ -129,7 +140,17 @@ jobs:
           pip3 install pre-commit
 
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          else
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          fi
+          if [ -n "$CHANGED_FILES" ]; then
+            pre-commit run --files $CHANGED_FILES
+          else
+            pre-commit run --all-files
+          fi
 
       - name: Terraform Format
         id: fmt
@@ -170,10 +191,8 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-
-
   tailscale-setup:
-    name: "Setup Tailscale Network" 
+    name: "Setup Tailscale Network"
     needs: [oracle-setup, gcp-setup, setup-ssh]
     runs-on: ubuntu-latest
     defaults:
@@ -194,7 +213,6 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
-    
       - name: Set up Python 3.7.
         uses: actions/setup-python@v5
         with:
@@ -207,7 +225,17 @@ jobs:
         run: pip3 install pre-commit
 
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          else
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          fi
+          if [ -n "$CHANGED_FILES" ]; then
+            pre-commit run --files $CHANGED_FILES
+          else
+            pre-commit run --all-files
+          fi
 
       - name: Run ansible-lint.
         run: ansible-lint
@@ -262,7 +290,6 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
-
       - name: Set up Python 3.7.
         uses: actions/setup-python@v5
         with:
@@ -275,7 +302,17 @@ jobs:
         run: pip3 install pre-commit
 
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: |
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+            else
+              CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            fi
+            if [ -n "$CHANGED_FILES" ]; then
+              pre-commit run --files $CHANGED_FILES
+            else
+              pre-commit run --all-files
+            fi
 
       - name: Run ansible-lint.
         run: ansible-lint
@@ -331,7 +368,17 @@ jobs:
           pip3 install pre-commit
 
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          else
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          fi
+          if [ -n "$CHANGED_FILES" ]; then
+            pre-commit run --files $CHANGED_FILES
+          else
+            pre-commit run --all-files
+          fi
 
       - name: Terraform Format
         id: fmt
@@ -379,7 +426,6 @@ jobs:
         if: always()
         run: |
           echo "Drift detection exit code: ${{ steps.drift_check.outputs.drift_exitcode }}" >> $GITHUB_STEP_SUMMARY
-      
       # Add plan summary for PRs
       - name: Terraform Plan Summary
         if: github.event_name == 'pull_request'

@@ -47,7 +47,7 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            echo "$CHANGED_FILES" | xargs pre-commit run --files --hook-stage manual
+            pre-commit run --files $CHANGED_FILES --hook-stage manual
           fi
 
       # Add caching for Terraform plugins
@@ -151,7 +151,7 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            echo "$CHANGED_FILES" | xargs pre-commit run --files --hook-stage manual
+            pre-commit run --files $CHANGED_FILES --hook-stage manual
           fi
 
       - name: Terraform Format
@@ -244,7 +244,7 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            echo "$CHANGED_FILES" | xargs pre-commit run --files --hook-stage manual
+            pre-commit run --files $CHANGED_FILES --hook-stage manual
           fi
 
       - name: Run ansible-lint.
@@ -330,7 +330,7 @@ jobs:
             fi
             CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
             if [ -n "$CHANGED_FILES" ]; then
-              echo "$CHANGED_FILES" | xargs pre-commit run --files --hook-stage manual
+              pre-commit run --files $CHANGED_FILES --hook-stage manual
             else
               pre-commit run --all-files --hook-stage manual
             fi
@@ -399,7 +399,7 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            echo "$CHANGED_FILES" | xargs pre-commit run --files --hook-stage manual
+            pre-commit run --files $CHANGED_FILES --hook-stage manual
           fi
 
       - name: Terraform Format

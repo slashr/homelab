@@ -16,4 +16,3 @@ spec:
   - '*.${extra_domain}'
   - '${extra_domain}'
 %{ endfor ~}
-  

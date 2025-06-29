@@ -1,4 +1,4 @@
-applications: 
+applications:
   app-of-apps:
     namespace: argo-cd
     project: default

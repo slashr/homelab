@@ -14,7 +14,7 @@ concurrency:
 jobs:
   gcp-setup:
     name: "Setup GCP Infra"
-    if: github.ref != 'refs/heads/staging'
+    if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30  # Add timeout to prevent hanging jobs
     defaults:
@@ -124,7 +124,7 @@ jobs:
 
   oracle-setup:
     name: "Setup Oracle Infra"
-    if: github.ref != 'refs/heads/staging'
+    if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -230,6 +230,8 @@ jobs:
         with:
           path: ~/.ansible/collections/ansible_collections
           key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-ansible-collections-
       - name: Install Ansible collections
         working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
@@ -316,6 +318,8 @@ jobs:
         with:
           path: ~/.ansible/collections/ansible_collections
           key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-ansible-collections-
       - name: Install Ansible collections
         working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
@@ -372,7 +376,7 @@ jobs:
   run-k3s:
     name: "Run Kubernetes Cluster"
     needs: [tailscale-setup, k3s-setup]
-    if: github.ref != 'refs/heads/staging'
+    if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     defaults:
       run:

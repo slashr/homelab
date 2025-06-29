@@ -41,12 +41,13 @@ jobs:
       - name: Run pre-commit
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
           else
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.before }}"
           fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
           else
             pre-commit run --all-files
           fi
@@ -146,12 +147,13 @@ jobs:
       - name: Run pre-commit
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
           else
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.before }}"
           fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
           else
             pre-commit run --all-files
           fi
@@ -232,12 +234,13 @@ jobs:
       - name: Run pre-commit
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
           else
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.before }}"
           fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
           else
             pre-commit run --all-files
           fi
@@ -310,12 +313,13 @@ jobs:
       - name: Run pre-commit
         run: |
             if [ "${{ github.event_name }}" = "pull_request" ]; then
-              CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+              BASE_SHA="${{ github.event.pull_request.base.sha }}"
             else
-              CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+              BASE_SHA="${{ github.event.before }}"
             fi
+            CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
             if [ -n "$CHANGED_FILES" ]; then
-              pre-commit run --files $CHANGED_FILES
+              echo "$CHANGED_FILES" | xargs pre-commit run --files
             else
               pre-commit run --all-files
             fi
@@ -378,12 +382,13 @@ jobs:
       - name: Run pre-commit
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
           else
-            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            BASE_SHA="${{ github.event.before }}"
           fi
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
           else
             pre-commit run --all-files
           fi

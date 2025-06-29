@@ -47,7 +47,9 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES --hook-stage manual
+            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
+          else
+            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
           fi
 
       # Add caching for Terraform plugins
@@ -151,7 +153,9 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES --hook-stage manual
+            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
+          else
+            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
           fi
 
       - name: Terraform Format
@@ -244,7 +248,9 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES --hook-stage manual
+            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
+          else
+            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
           fi
 
       - name: Run ansible-lint.
@@ -330,9 +336,9 @@ jobs:
             fi
             CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
             if [ -n "$CHANGED_FILES" ]; then
-              pre-commit run --files $CHANGED_FILES --hook-stage manual
+              pre-commit run --files "$CHANGED_FILES" --hook-stage manual
             else
-              pre-commit run --all-files --hook-stage manual
+              pre-commit run --all-files
             fi
 
       - name: Run ansible-lint.
@@ -399,7 +405,9 @@ jobs:
           fi
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files $CHANGED_FILES --hook-stage manual
+            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
+          else
+            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
           fi
 
       - name: Terraform Format

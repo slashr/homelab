@@ -24,7 +24,7 @@ terraform {
 }
 
 # Have to use Oracle 130.61.64.164 IP since Terraform Cloud needs it
-# Otherwise could use Tailscale 100.100.1.100 IP 
+# Otherwise could use Tailscale 100.100.1.100 IP
 provider "kubectl" {
   host               = "https://130.61.64.164:6443"
   load_config_file   = false

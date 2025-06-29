@@ -46,7 +46,7 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 
 ## Servers
 - michael-pi        Raspberry Pi 5 8GB 1    192.168.1.100      172.20.60.100
-- jim-pi            Raspberry Pi 5 8GB 2    192.168.1.101      172.20.60.101 
+- jim-pi            Raspberry Pi 5 8GB 2    192.168.1.101      172.20.60.101
 - dwight-pi         Raspberry Pi 4 8GB      192.168.1.102      172.20.60.102
 
 ## TODO
@@ -72,7 +72,7 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 - Plex
 - Snapdrop basically airdrop
 - Syncthing to sync folders from personal computer to nas
-- Handbrake (docker container) to transcode 
+- Handbrake (docker container) to transcode
 - Dashdot widgets for homarr
 - Homarr home page
 - Cloudflare tunnel for access

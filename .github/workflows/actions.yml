@@ -14,6 +14,7 @@ concurrency:
 jobs:
   gcp-setup:
     name: "Setup GCP Infra"
+    if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 30  # Add timeout to prevent hanging jobs
     defaults:
@@ -26,19 +27,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
-
-      - name: Install test dependencies
-        run: pip3 install ansible-lint ansible
-
-      - name: Install Ansible collections
-        working-directory: '${{ github.workspace }}'
-        run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
       - name: Install pre-commit
         run: |
@@ -52,7 +45,7 @@ jobs:
           else
             BASE_SHA="${{ github.event.before }}"
           fi
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
             echo "$CHANGED_FILES" | xargs pre-commit run --files
           else
@@ -131,6 +124,7 @@ jobs:
 
   oracle-setup:
     name: "Setup Oracle Infra"
+    if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -145,14 +139,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Install test dependencies
-        run: pip3 install ansible-lint ansible
-
-      - name: Install Ansible collections
-        working-directory: '${{ github.workspace }}'
-        run: ansible-galaxy collection install -r ansible/requirements.yml --force
-
       - name: Install pre-commit
         run: |
           python3 -m pip install --upgrade pip
@@ -165,7 +151,7 @@ jobs:
           else
             BASE_SHA="${{ github.event.before }}"
           fi
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
             echo "$CHANGED_FILES" | xargs pre-commit run --files
           else
@@ -225,7 +211,6 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-
       # Setup Tailscale network on the Actions worker
       # Enables connection to k3s nodes using Tailscale public IP
       - name: Tailscale
@@ -239,10 +224,14 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install test dependencies.
-        run: pip3 install ansible-lint ansible
+      - name: Install ansible-lint (lighter)
+        run: pip3 install ansible-core ansible-lint
+      - uses: actions/cache@v4
+        with:
+          path: ~/.ansible/collections/ansible_collections
+          key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
       - name: Install Ansible collections
-        working-directory: '${{ github.workspace }}'
+        working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
       - name: Install pre-commit
@@ -255,7 +244,7 @@ jobs:
           else
             BASE_SHA="${{ github.event.before }}"
           fi
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
             echo "$CHANGED_FILES" | xargs pre-commit run --files
           else
@@ -321,10 +310,14 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install test dependencies.
-        run: pip3 install ansible-lint ansible
+      - name: Install ansible-lint (lighter)
+        run: pip3 install ansible-core ansible-lint
+      - uses: actions/cache@v4
+        with:
+          path: ~/.ansible/collections/ansible_collections
+          key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
       - name: Install Ansible collections
-        working-directory: '${{ github.workspace }}'
+        working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
       - name: Install pre-commit
@@ -337,7 +330,7 @@ jobs:
             else
               BASE_SHA="${{ github.event.before }}"
             fi
-            CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+            CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
             if [ -n "$CHANGED_FILES" ]; then
               echo "$CHANGED_FILES" | xargs pre-commit run --files
             else
@@ -379,6 +372,7 @@ jobs:
   run-k3s:
     name: "Run Kubernetes Cluster"
     needs: [tailscale-setup, k3s-setup]
+    if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -393,14 +387,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Install test dependencies
-        run: pip3 install ansible-lint ansible
-
-      - name: Install Ansible collections
-        working-directory: '${{ github.workspace }}'
-        run: ansible-galaxy collection install -r ansible/requirements.yml --force
-
       - name: Install pre-commit
         run: |
           python3 -m pip install --upgrade pip
@@ -413,7 +399,7 @@ jobs:
           else
             BASE_SHA="${{ github.event.before }}"
           fi
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
           if [ -n "$CHANGED_FILES" ]; then
             echo "$CHANGED_FILES" | xargs pre-commit run --files
           else

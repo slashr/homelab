@@ -1,3 +1,4 @@
+---
 profile: min
 exclude_paths:
   - terraform-modules/

@@ -425,8 +425,8 @@ jobs:
         run: |-
           cat > terraform.tfvars <<EOF
           cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
-          kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
-          kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
+          kube_cluster_ca_cert = "${{ secrets.TF_KUBE_CLUSTER_CA_CERT }}"
+          kube_token = "${{ secrets.TF_KUBE_TOKEN }}"
           EOF
 
       - name: "Terraform Plan"

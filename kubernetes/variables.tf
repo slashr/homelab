@@ -8,23 +8,37 @@ variable "cloudflare_api_token" {
   }
 }
 
-# Raspberry Pi variables
+# Deprecated: use kube_cluster_ca_cert and kube_token instead
 variable "kube_client_cert" {
-  description = "Rpi Kube cluster certificate base64 encoded"
+  description = "(DEPRECATED) client certificate, will be removed in future"
   type        = string
   sensitive   = true
-  validation {
-    condition     = can(base64decode(var.kube_client_cert))
-    error_message = "kube_client_cert must be valid base64-encoded data."
-  }
+  default     = ""
 }
 
 variable "kube_client_key" {
-  description = "Rpi Kube client key base64 encoded"
+  description = "(DEPRECATED) client key, will be removed in future"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "kube_cluster_ca_cert" {
+  description = "Rpi Kube cluster CA certificate base64 encoded"
   type        = string
   sensitive   = true
   validation {
-    condition     = can(base64decode(var.kube_client_key))
-    error_message = "kube_client_key must be valid base64-encoded data."
+    condition     = can(base64decode(var.kube_cluster_ca_cert))
+    error_message = "kube_cluster_ca_cert must be valid base64-encoded data."
+  }
+}
+
+variable "kube_token" {
+  description = "Bearer token for GitHub Actions ServiceAccount in the cluster"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.kube_token) > 0
+    error_message = "kube_token cannot be empty."
   }
 }

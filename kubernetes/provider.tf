@@ -26,25 +26,25 @@ terraform {
 # Have to use Oracle 130.61.64.164 IP since Terraform Cloud needs it
 # Otherwise could use Tailscale 100.100.1.100 IP
 provider "kubectl" {
-  host               = "https://130.61.64.164:6443"
-  load_config_file   = false
-  insecure           = "true"
-  client_certificate = base64decode(var.kube_client_cert)
-  client_key         = base64decode(var.kube_client_key)
+  host                    = "https://130.61.64.164:6443"
+  load_config_file        = false
+  insecure                = false
+  cluster_ca_certificate  = base64decode(var.kube_cluster_ca_cert)
+  token                   = var.kube_token
 }
 
 provider "kubernetes" {
-  host               = "https://130.61.64.164:6443"
-  insecure           = "true"
-  client_certificate = base64decode(var.kube_client_cert)
-  client_key         = base64decode(var.kube_client_key)
+  host                    = "https://130.61.64.164:6443"
+  insecure                = false
+  cluster_ca_certificate  = base64decode(var.kube_cluster_ca_cert)
+  token                   = var.kube_token
 }
 
 provider "helm" {
   kubernetes = {
-    host               = "https://130.61.64.164:6443"
-    insecure           = "true"
-    client_certificate = base64decode(var.kube_client_cert)
-    client_key         = base64decode(var.kube_client_key)
+    host                    = "https://130.61.64.164:6443"
+    insecure                = false
+    cluster_ca_certificate  = base64decode(var.kube_cluster_ca_cert)
+    token                   = var.kube_token
   }
 }

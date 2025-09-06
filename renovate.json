@@ -2,5 +2,84 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ]
+  ],
+  "packageRules": [
+    {
+      "description": "Group Terraform provider updates",
+      "matchManagers": ["terraform"],
+      "groupName": "Terraform Providers",
+      "groupSlug": "terraform-providers"
+    },
+    {
+      "description": "Group Helm chart updates",
+      "matchManagers": ["helm-values", "helmv3"],
+      "groupName": "Helm Charts",
+      "groupSlug": "helm-charts"
+    },
+    {
+      "description": "Group Ansible collection updates",
+      "matchManagers": ["ansible"],
+      "groupName": "Ansible Collections",
+      "groupSlug": "ansible-collections"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions"
+    },
+    {
+      "description": "Group Python dependencies",
+      "matchManagers": ["pip_requirements", "pip-compile", "pipenv", "poetry"],
+      "groupName": "Python Dependencies",
+      "groupSlug": "python-deps"
+    },
+    {
+      "description": "Group pre-commit hooks",
+      "matchManagers": ["pre-commit"],
+      "groupName": "Pre-commit Hooks",
+      "groupSlug": "pre-commit-hooks"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "dependencies"]
+  },
+  "schedule": ["before 6am on monday"],
+  "timezone": "UTC",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "labels": ["dependencies"],
+  "assignees": ["slashr"],
+  "reviewers": ["slashr"],
+  "automerge": false,
+  "automergeType": "pr",
+  "requiredStatusChecks": null,
+  "ignoreTests": false,
+  "rangeStrategy": "replace",
+  "bumpVersion": "patch",
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageSuffix": "",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "terraform": {
+    "fileMatch": ["\\.tf$", "\\.tfvars$", "\\.tf.json$"]
+  },
+  "helm-values": {
+    "fileMatch": ["values\\.yaml$", "values\\.yml$"]
+  },
+  "ansible": {
+    "fileMatch": ["requirements\\.yml$", "requirements\\.yaml$"]
+  },
+  "github-actions": {
+    "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"]
+  },
+  "pre-commit": {
+    "fileMatch": ["\\.pre-commit-config\\.ya?ml$"]
+  }
 }

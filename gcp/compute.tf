@@ -17,9 +17,10 @@ resource "google_compute_instance" "gcp1" {
 
   network_interface {
     network = "default"
-
+    
     access_config {
-      // Ephemeral public IP
+      // Ephemeral public IP - required for initial Tailscale setup
+      // Will be removed after Tailscale is configured
     }
   }
 }

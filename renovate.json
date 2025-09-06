@@ -6,55 +6,81 @@
   "packageRules": [
     {
       "description": "Group Terraform provider updates",
-      "matchManagers": ["terraform"],
+      "matchManagers": [
+        "terraform"
+      ],
       "groupName": "Terraform Providers",
       "groupSlug": "terraform-providers"
     },
     {
       "description": "Group Helm chart updates",
-      "matchManagers": ["helm-values", "helmv3"],
+      "matchManagers": [
+        "helm-values",
+        "helmv3"
+      ],
       "groupName": "Helm Charts",
       "groupSlug": "helm-charts"
     },
     {
       "description": "Group Ansible collection updates",
-      "matchManagers": ["ansible"],
+      "matchManagers": [
+        "ansible"
+      ],
       "groupName": "Ansible Collections",
       "groupSlug": "ansible-collections"
     },
     {
       "description": "Group GitHub Actions updates",
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "GitHub Actions",
       "groupSlug": "github-actions"
     },
     {
       "description": "Group Python dependencies",
-      "matchManagers": ["pip_requirements", "pip-compile", "pipenv", "poetry"],
+      "matchManagers": [
+        "pip_requirements",
+        "pip-compile",
+        "pipenv",
+        "poetry"
+      ],
       "groupName": "Python Dependencies",
       "groupSlug": "python-deps"
     },
     {
       "description": "Group pre-commit hooks",
-      "matchManagers": ["pre-commit"],
+      "matchManagers": [
+        "pre-commit"
+      ],
       "groupName": "Pre-commit Hooks",
       "groupSlug": "pre-commit-hooks"
     }
   ],
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": ["security", "dependencies"]
+    "labels": [
+      "security",
+      "dependencies"
+    ]
   },
-  "schedule": ["before 6am on monday"],
+  "schedule": [
+    "before 6am on monday"
+  ],
   "timezone": "UTC",
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
-  "labels": ["dependencies"],
-  "assignees": ["slashr"],
-  "reviewers": ["slashr"],
+  "labels": [
+    "dependencies"
+  ],
+  "assignees": [
+    "slashr"
+  ],
+  "reviewers": [
+    "slashr"
+  ],
   "automerge": false,
   "automergeType": "pr",
-  "requiredStatusChecks": null,
   "ignoreTests": false,
   "rangeStrategy": "replace",
   "bumpVersion": "patch",
@@ -65,21 +91,37 @@
   "semanticCommitScope": "deps",
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am on monday"]
+    "schedule": [
+      "before 6am on monday"
+    ]
   },
   "terraform": {
-    "fileMatch": ["\\.tf$", "\\.tfvars$", "\\.tf.json$"]
+    "managerFilePatterns": [
+      "/\\.tf$/",
+      "/\\.tfvars$/",
+      "/\\.tf.json$/"
+    ]
   },
   "helm-values": {
-    "fileMatch": ["values\\.yaml$", "values\\.yml$"]
+    "managerFilePatterns": [
+      "/values\\.yaml$/",
+      "/values\\.yml$/"
+    ]
   },
   "ansible": {
-    "fileMatch": ["requirements\\.yml$", "requirements\\.yaml$"]
+    "managerFilePatterns": [
+      "/requirements\\.yml$/",
+      "/requirements\\.yaml$/"
+    ]
   },
   "github-actions": {
-    "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"]
+    "managerFilePatterns": [
+      "/\\.github/workflows/.*\\.ya?ml$/"
+    ]
   },
   "pre-commit": {
-    "fileMatch": ["\\.pre-commit-config\\.ya?ml$"]
+    "managerFilePatterns": [
+      "/\\.pre-commit-config\\.ya?ml$/"
+    ]
   }
 }

@@ -38,6 +38,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+          category: 'trivy-filesystem'
 
       - name: Run Trivy for Terraform files
         uses: aquasecurity/trivy-action@master
@@ -52,6 +53,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-config-results.sarif'
+          category: 'trivy-config'
 
   dependency-scan:
     name: Dependency Security Scan

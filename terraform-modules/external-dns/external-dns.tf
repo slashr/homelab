@@ -9,7 +9,7 @@ resource "helm_release" "external-dns" {
   namespace  = "external-dns"
   repository = "https://kubernetes-sigs.github.io/external-dns/"
   chart      = "external-dns"
-  version    = "1.18.0"
+  version    = "1.19.0"
 
   values = [templatefile("${path.module}/values.yaml", {})]
 

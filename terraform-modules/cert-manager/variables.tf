@@ -28,3 +28,8 @@ variable "cert_issuer_url_map" {
 variable "cloudflare_api_token" {
   type = string
 }
+
+variable "letsencrypt_prod_email" {
+  description = "Email address registered with Let's Encrypt for the production ClusterIssuer"
+  type        = string
+}

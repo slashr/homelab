@@ -6,17 +6,10 @@ module "argo-cd" {
 module "cert-manager" {
   source               = "../terraform-modules/cert-manager"
   cloudflare_api_token = var.cloudflare_api_token
+  letsencrypt_prod_email = var.letsencrypt_prod_email
 
   # Ensure cert-manager is deployed first as it's often a dependency
   count = 1
-}
-
-resource "kubernetes_manifest" "letsencrypt_prod_clusterissuer" {
-  manifest = yamldecode(templatefile("${path.module}/clusterissuer-letsencrypt-prod.yaml", {
-    email = var.letsencrypt_prod_email
-  }))
-
-  depends_on = [module.cert-manager]
 }
 
 module "external-dns" {

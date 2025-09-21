@@ -24,6 +24,20 @@ resource "helm_release" "cert-manager" {
   ]
 }
 
+# Provision the production ClusterIssuer once cert-manager is installed.
+resource "kubernetes_manifest" "letsencrypt_prod_clusterissuer" {
+  manifest = yamldecode(
+    templatefile("${path.module}/clusterissuer-letsencrypt-prod.yaml", {
+      email = var.letsencrypt_prod_email
+    })
+  )
+
+  depends_on = [
+    helm_release.cert-manager,
+    kubernetes_secret.cloudflare-api-token,
+  ]
+}
+
 # Required for cert-manager to allow it to set dns records on cloudflare
 resource "kubernetes_secret" "cloudflare-api-token" {
   metadata {

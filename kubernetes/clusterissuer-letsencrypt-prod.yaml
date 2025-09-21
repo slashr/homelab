@@ -1,12 +1,11 @@
 # ClusterIssuer for issuing certificates for shrub.dev via Let's Encrypt DNS-01 validation
-# Update the email field with the address registered with Let's Encrypt before applying.
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: letsencrypt-prod
 spec:
   acme:
-    email: admin@shrub.dev
+    email: ${email}
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: letsencrypt-prod

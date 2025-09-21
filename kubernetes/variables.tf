@@ -8,6 +8,15 @@ variable "cloudflare_api_token" {
   }
 }
 
+variable "letsencrypt_prod_email" {
+  description = "Email address registered with Let's Encrypt for the production ClusterIssuer"
+  type        = string
+  validation {
+    condition     = can(regex("^[^@]+@[^@]+\.[^@]+$", var.letsencrypt_prod_email))
+    error_message = "letsencrypt_prod_email must be a valid email address."
+  }
+}
+
 # Raspberry Pi variables
 variable "kube_client_cert" {
   description = "Rpi Kube cluster certificate base64 encoded"

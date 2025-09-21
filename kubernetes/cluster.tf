@@ -4,8 +4,8 @@ module "argo-cd" {
 }
 
 module "cert-manager" {
-  source               = "../terraform-modules/cert-manager"
-  cloudflare_api_token = var.cloudflare_api_token
+  source                 = "../terraform-modules/cert-manager"
+  cloudflare_api_token   = var.cloudflare_api_token
   letsencrypt_prod_email = var.letsencrypt_prod_email
 
   # Ensure cert-manager is deployed first as it's often a dependency

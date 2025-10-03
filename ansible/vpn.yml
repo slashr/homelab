@@ -50,10 +50,10 @@
 - name: Install and Configure Tailscale
   hosts:
     - vpn
-    - pi-workers
-    - oracle-workers
-    - gcp-workers
-    - dwight-pi
+    - pi_workers
+    - oracle_workers
+    - gcp_workers
+    - pihole_worker
   become: true
   vars:
     tailscale_version: "latest"

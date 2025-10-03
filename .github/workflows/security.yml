@@ -31,6 +31,7 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
+          cache: true
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
@@ -46,6 +47,7 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-config-results.sarif'
+          cache: true
 
       - name: Upload Trivy config scan results
         uses: github/codeql-action/upload-sarif@v3
@@ -72,6 +74,7 @@ jobs:
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
+          cache: true
 
       - name: Run Trivy for Terraform dependencies
         uses: aquasecurity/trivy-action@master
@@ -81,6 +84,7 @@ jobs:
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
+          cache: true
 
   secret-scan:
     name: Secret Detection

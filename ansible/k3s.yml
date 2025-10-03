@@ -1,9 +1,9 @@
 ---
 - name: Initialising cluster
   hosts:
-    - pi-workers
-    - oracle-workers
-    - gcp-workers
+    - pi_workers
+    - oracle_workers
+    - gcp_workers
     - michael-pi
   become: true
   tasks:
@@ -100,9 +100,9 @@
 
 - name: Install Tailscale-K3S on Nodes
   hosts:
-    - pi-workers
-    - oracle-workers
-    - gcp-workers
+    - pi_workers
+    - oracle_workers
+    - gcp_workers
   become: true
   tasks:
     - name: Check if k3s-agent is already installed

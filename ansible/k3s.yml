@@ -12,8 +12,7 @@
         update_cache: true
         upgrade: dist
         dpkg_options:
-          - "force-confdef"
-          - "force-confold"
+          - "force-confdef,force-confold"
         force_apt_get: true
 
     - name: Downloading k3s script

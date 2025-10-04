@@ -8,15 +8,15 @@
 
 # Homelab Architecture
 
-My Homelab is a mix of Oracle Cloud Infrastructure and three Raspberry Pis. The Raspberry Pi is the Master Node of the Kubernetes cluster and uses a small Oracle instance to expose it's APIs to the internet using a Wireguard VPN setup.
+My Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a GCP VM and three Raspberry Pis.
 
 ## Terraform Oracle Job
 - Creates 4 Free Tier servers
-- amd1 is used for Wireguard VPN setup between Pi and Oracle
+- amd1 is used for Tailscale VPN setup between Pi and Oracle
 - amd2, arm1, arm2 are created in order to be added as worker K8S Nodes
 
 ## Ansible Job
-- Sets up a Wireguard tunnel between Pi and amd1
+- Sets up a Tailscale tunnel between Pi and amd1
 - Setup up K3S Agent on amd2, arm1 and arm2 and adds them to the K8S cluster
 
 ## Terraform Kubernetes Job

@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   gcp-setup:
-    name: "Setup GCP Infra"
+    name: "Terraform GCP"
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30  # Add timeout to prevent hanging jobs
@@ -115,7 +115,7 @@ jobs:
 
   # Extract common SSH setup into a reusable composite action or use OIDC for authentication
   setup-ssh:
-    name: "Setup SSH and Tailscale"
+    name: "Setup SSH & VPN"
     runs-on: ubuntu-latest
     outputs:
       ssh_config: ${{ steps.ssh.outputs.ssh_config }}
@@ -139,7 +139,7 @@ jobs:
           tags: tag:k3s
 
   oracle-setup:
-    name: "Setup Oracle Infra"
+    name: "Terraform Oracle"
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     defaults:
@@ -238,7 +238,7 @@ jobs:
           fi
 
   tailscale-setup:
-    name: "Setup Tailscale Network"
+    name: "Ansible Tailscale"
     needs: [oracle-setup, gcp-setup, setup-ssh]
     runs-on: ubuntu-latest
     defaults:
@@ -338,7 +338,7 @@ jobs:
           fi
 
   k3s-setup:
-    name: "Setup K3S Cluster"
+    name: "Ansible K3S"
     needs: [tailscale-setup]
     if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && github.event_name == 'push') }}
     runs-on: ubuntu-latest
@@ -442,7 +442,7 @@ jobs:
           fi
 
   run-k3s:
-    name: "Run Kubernetes Cluster"
+    name: "Terraform K8S"
     needs: [tailscale-setup, k3s-setup]
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest

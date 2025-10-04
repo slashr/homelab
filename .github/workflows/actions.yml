@@ -5,6 +5,12 @@
   pull_request:
     branches: [main]
   workflow_dispatch:  # Allow manual triggering
+    inputs:
+      confirm_kubernetes_apply:
+        description: "Set to true to run the Kubernetes terraform apply step"
+        required: false
+        type: boolean
+        default: false
 
 # Add concurrency control to prevent conflicting deployments
 concurrency:
@@ -583,7 +589,10 @@ jobs:
   run-k3s-apply:
     name: "Apply Kubernetes Cluster"
     needs: run-k3s
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.run-k3s.outputs.plan_exitcode == '2'
+    if: needs.run-k3s.outputs.plan_exitcode == '2' && (
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_kubernetes_apply == 'true')
+    )
     runs-on: ubuntu-latest
     environment:
       name: production

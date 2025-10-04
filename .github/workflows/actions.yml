@@ -5,12 +5,6 @@
   pull_request:
     branches: [main]
   workflow_dispatch:  # Allow manual triggering
-    inputs:
-      confirm_kubernetes_apply:
-        description: "Set to true to run the Kubernetes terraform apply step"
-        required: false
-        type: boolean
-        default: false
 
 # Add concurrency control to prevent conflicting deployments
 concurrency:
@@ -457,8 +451,6 @@ jobs:
         working-directory: ./kubernetes
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
-    outputs:
-      has_changes: ${{ steps.plan_outcome.outputs.has_changes }}
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -531,145 +523,12 @@ jobs:
 
       - name: "Terraform Plan"
         id: plan
-        run: |
-          set -eo pipefail
-
-          set +e
-          terraform plan -no-color -detailed-exitcode -out=plan.tfplan
-          PLAN_EXIT=$?
-          set -e
-
-          if [ "$PLAN_EXIT" -eq 1 ]; then
-            exit 1
-          fi
-
-          PLAN_JSON="$(terraform show -json plan.tfplan)"
-          ADDED=$(jq '[.resource_changes[]? | select(.change.actions | index("create"))] | length' <<<"$PLAN_JSON")
-          CHANGED=$(jq '[.resource_changes[]? | select(.change.actions | index("update"))] | length' <<<"$PLAN_JSON")
-          DESTROYED=$(jq '[.resource_changes[]? | select(.change.actions | index("delete"))] | length' <<<"$PLAN_JSON")
-          OUTPUTS=$(jq '.output_changes // {} | length' <<<"$PLAN_JSON")
-
-          TOTAL=$((ADDED + CHANGED + DESTROYED))
-          if [ "$PLAN_EXIT" -eq 2 ] || [ "$TOTAL" -gt 0 ] || [ "$OUTPUTS" -gt 0 ]; then
-            HAS_CHANGES=true
-          else
-            HAS_CHANGES=false
-          fi
-
-          echo "added=$ADDED" >> $GITHUB_OUTPUT
-          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
-          echo "destroyed=$DESTROYED" >> $GITHUB_OUTPUT
-          echo "outputs=$OUTPUTS" >> $GITHUB_OUTPUT
-          echo "plan_exit=$PLAN_EXIT" >> $GITHUB_OUTPUT
-          echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
-
-      - name: Terraform Plan Outcome
-        id: plan_outcome
-        run: |
-          ADDED=${{ steps.plan.outputs.added || 0 }}
-          CHANGED=${{ steps.plan.outputs.changed || 0 }}
-          DESTROYED=${{ steps.plan.outputs.destroyed || 0 }}
-          OUTPUTS=${{ steps.plan.outputs.outputs || 0 }}
-          PLAN_EXIT=${{ steps.plan.outputs.plan_exit || 0 }}
-          TOTAL=$((ADDED + CHANGED + DESTROYED))
-
-          if [ "$TOTAL" -gt 0 ] || [ "$OUTPUTS" -gt 0 ]; then
-            echo "Terraform plan detected pending changes." >> $GITHUB_STEP_SUMMARY
-            if [ "$OUTPUTS" -gt 0 ]; then
-              echo "* Pending output updates: $OUTPUTS" >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo "Terraform plan detected no changes." >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "plan_exit=$PLAN_EXIT" >> $GITHUB_OUTPUT
-          echo "has_changes=${{ steps.plan.outputs.has_changes }}" >> $GITHUB_OUTPUT
-
-      - name: Upload Terraform Plan Artifact
-        if: steps.plan.outputs.has_changes == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: run-k3s-plan
-          path: plan.tfplan
-          retention-days: 5
-
-      # Add plan summary for PRs
-      - name: Terraform Plan Summary
-        if: github.event_name == 'pull_request' && steps.plan.outputs.has_changes == 'true'
-        run: |
-          echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to add: ${{ steps.plan.outputs.added }}" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to change: ${{ steps.plan.outputs.changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to destroy: ${{ steps.plan.outputs.destroyed }}" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.plan.outputs.outputs || 0 }}" -gt 0 ]; then
-            echo "* Outputs to update: ${{ steps.plan.outputs.outputs }}" >> $GITHUB_STEP_SUMMARY
-          fi
-      - name: Terraform Plan Details
-        if: steps.plan.outputs.has_changes == 'true'
-        run: |
-          {
-            echo "## Terraform Plan Details"
-            echo '```'
-            terraform show -no-color plan.tfplan
-            echo '```'
-          } >> $GITHUB_STEP_SUMMARY
-
-  run-k3s-apply:
-    name: "Apply Kubernetes Cluster"
-    needs: run-k3s
-    if: >-
-      ${{ needs.run-k3s.outputs.has_changes == 'true' && (
-          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-          (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_kubernetes_apply == 'true')
-        ) }}
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-    defaults:
-      run:
-        working-directory: ./kubernetes
-    env:
-      TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
-    steps:
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Cache Terraform plugins
-        uses: actions/cache@v4
-        with:
-          path: ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-${{ hashFiles('kubernetes/**/*.tf') }}
-          restore-keys: |
-            ${{ runner.os }}-terraform-
-
-      - name: Download Terraform Plan
-        uses: actions/download-artifact@v4
-        with:
-          name: run-k3s-plan
-          path: kubernetes
-
-      - name: Setup Terraform variables
-        run: |-
-          cat > terraform.tfvars <<EOF
-          cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
-          kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
-          kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
-          EOF
-
-      - name: Terraform Init
-        run: terraform init
+        run: terraform plan -no-color
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply -auto-approve -input=false plan.tfplan
-
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
       - name: Terraform Apply Summary
         if: always()
         run: |
@@ -678,3 +537,25 @@ jobs:
           else
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
+
+      # Add drift detection
+      - name: Check for Infrastructure Drift
+        id: drift_check
+        run: |
+          terraform plan -detailed-exitcode -out=plan.tfplan
+          echo "drift_exitcode=$?" >> $GITHUB_OUTPUT
+      - name: Drift Detection Summary
+        if: always()
+        run: |
+          echo "Drift detection exit code: ${{ steps.drift_check.outputs.drift_exitcode }}" >> $GITHUB_STEP_SUMMARY
+      # Add plan summary for PRs
+      - name: Terraform Plan Summary
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+          ADDED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "create")) | length')
+          CHANGED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "update")) | length')
+          DESTROYED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "delete")) | length')
+          echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY

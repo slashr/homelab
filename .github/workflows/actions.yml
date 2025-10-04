@@ -544,12 +544,13 @@ jobs:
           fi
 
           PLAN_JSON="$(terraform show -json plan.tfplan)"
-          ADDED=$(jq '[.resource_changes[]? | select(.change.actions[0] == "create")] | length' <<<"$PLAN_JSON")
-          CHANGED=$(jq '[.resource_changes[]? | select(.change.actions[0] == "update")] | length' <<<"$PLAN_JSON")
-          DESTROYED=$(jq '[.resource_changes[]? | select(.change.actions[0] == "delete")] | length' <<<"$PLAN_JSON")
+          ADDED=$(jq '[.resource_changes[]? | select(.change.actions | index("create"))] | length' <<<"$PLAN_JSON")
+          CHANGED=$(jq '[.resource_changes[]? | select(.change.actions | index("update"))] | length' <<<"$PLAN_JSON")
+          DESTROYED=$(jq '[.resource_changes[]? | select(.change.actions | index("delete"))] | length' <<<"$PLAN_JSON")
+          OUTPUTS=$(jq '.output_changes // {} | length' <<<"$PLAN_JSON")
 
           TOTAL=$((ADDED + CHANGED + DESTROYED))
-          if [ "$TOTAL" -gt 0 ]; then
+          if [ "$PLAN_EXIT" -eq 2 ] || [ "$TOTAL" -gt 0 ] || [ "$OUTPUTS" -gt 0 ]; then
             HAS_CHANGES=true
           else
             HAS_CHANGES=false
@@ -558,6 +559,8 @@ jobs:
           echo "added=$ADDED" >> $GITHUB_OUTPUT
           echo "changed=$CHANGED" >> $GITHUB_OUTPUT
           echo "destroyed=$DESTROYED" >> $GITHUB_OUTPUT
+          echo "outputs=$OUTPUTS" >> $GITHUB_OUTPUT
+          echo "plan_exit=$PLAN_EXIT" >> $GITHUB_OUTPUT
           echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
 
       - name: Terraform Plan Outcome
@@ -566,14 +569,20 @@ jobs:
           ADDED=${{ steps.plan.outputs.added || 0 }}
           CHANGED=${{ steps.plan.outputs.changed || 0 }}
           DESTROYED=${{ steps.plan.outputs.destroyed || 0 }}
+          OUTPUTS=${{ steps.plan.outputs.outputs || 0 }}
+          PLAN_EXIT=${{ steps.plan.outputs.plan_exit || 0 }}
           TOTAL=$((ADDED + CHANGED + DESTROYED))
 
-          if [ "$TOTAL" -gt 0 ]; then
+          if [ "$TOTAL" -gt 0 ] || [ "$OUTPUTS" -gt 0 ]; then
             echo "Terraform plan detected pending changes." >> $GITHUB_STEP_SUMMARY
+            if [ "$OUTPUTS" -gt 0 ]; then
+              echo "* Pending output updates: $OUTPUTS" >> $GITHUB_STEP_SUMMARY
+            fi
           else
             echo "Terraform plan detected no changes." >> $GITHUB_STEP_SUMMARY
           fi
 
+          echo "plan_exit=$PLAN_EXIT" >> $GITHUB_OUTPUT
           echo "has_changes=${{ steps.plan.outputs.has_changes }}" >> $GITHUB_OUTPUT
 
       - name: Upload Terraform Plan Artifact
@@ -592,6 +601,9 @@ jobs:
           echo "* Resources to add: ${{ steps.plan.outputs.added }}" >> $GITHUB_STEP_SUMMARY
           echo "* Resources to change: ${{ steps.plan.outputs.changed }}" >> $GITHUB_STEP_SUMMARY
           echo "* Resources to destroy: ${{ steps.plan.outputs.destroyed }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.plan.outputs.outputs || 0 }}" -gt 0 ]; then
+            echo "* Outputs to update: ${{ steps.plan.outputs.outputs }}" >> $GITHUB_STEP_SUMMARY
+          fi
       - name: Terraform Plan Details
         if: steps.plan.outputs.has_changes == 'true'
         run: |

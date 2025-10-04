@@ -528,35 +528,45 @@ jobs:
         id: plan
         run: |
           set -o pipefail
-          terraform plan -no-color 2>&1 | tee plan.log
+          terraform plan -no-color -detailed-exitcode -out=plan.tfplan 2>&1 | tee plan.log
           PLAN_EXIT=${PIPESTATUS[0]}
           echo "exitcode=$PLAN_EXIT" >> $GITHUB_OUTPUT
-          if [ "$PLAN_EXIT" -ne 0 ] && [ "$PLAN_EXIT" -ne 2 ]; then
-            exit "$PLAN_EXIT"
+          if [ "$PLAN_EXIT" -eq 1 ]; then
+            exit 1
           fi
 
-          SUMMARY_LINE=$(grep -E "Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy\." plan.log | tail -n1 || true)
-          if [ -n "$SUMMARY_LINE" ]; then
-            ADD_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\1/')
-            CHANGE_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\2/')
-            DESTROY_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\3/')
+          ADD_COUNT=0
+          CHANGE_COUNT=0
+          DESTROY_COUNT=0
+          HAS_CHANGES="unknown"
+          PLAN_JSON=$(mktemp)
+          if terraform show -json plan.tfplan >"$PLAN_JSON" 2>/dev/null; then
+            ADD_COUNT=$(jq '[(.resource_changes // [])[] | select(((.change.actions // []) | index("create")) != null)] | length' "$PLAN_JSON")
+            CHANGE_COUNT=$(jq '[(.resource_changes // [])[] | select(((.change.actions // []) | index("update")) != null)] | length' "$PLAN_JSON")
+            DESTROY_COUNT=$(jq '[(.resource_changes // [])[] | select(((.change.actions // []) | index("delete")) != null)] | length' "$PLAN_JSON")
+            if [ "$ADD_COUNT" -eq 0 ] && [ "$CHANGE_COUNT" -eq 0 ] && [ "$DESTROY_COUNT" -eq 0 ]; then
+              HAS_CHANGES="false"
+            else
+              HAS_CHANGES="true"
+            fi
           else
-            ADD_COUNT=0
-            CHANGE_COUNT=0
-            DESTROY_COUNT=0
+            SUMMARY_LINE=$(grep -E "Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy\." plan.log | tail -n1 || true)
+            if [ -n "$SUMMARY_LINE" ]; then
+              ADD_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\1/')
+              CHANGE_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\2/')
+              DESTROY_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\3/')
+            fi
+            if [ "$ADD_COUNT" -gt 0 ] || [ "$CHANGE_COUNT" -gt 0 ] || [ "$DESTROY_COUNT" -gt 0 ]; then
+              HAS_CHANGES="true"
+            elif [ -n "$SUMMARY_LINE" ] || grep -q "No changes. Infrastructure is up-to-date." plan.log; then
+              HAS_CHANGES="false"
+            fi
           fi
+          rm -f "$PLAN_JSON"
 
           echo "add_count=$ADD_COUNT" >> $GITHUB_OUTPUT
           echo "change_count=$CHANGE_COUNT" >> $GITHUB_OUTPUT
           echo "destroy_count=$DESTROY_COUNT" >> $GITHUB_OUTPUT
-
-          HAS_CHANGES="unknown"
-          if [ "$ADD_COUNT" -gt 0 ] || [ "$CHANGE_COUNT" -gt 0 ] || [ "$DESTROY_COUNT" -gt 0 ]; then
-            HAS_CHANGES="true"
-          elif [ -n "$SUMMARY_LINE" ] || grep -q "No changes. Infrastructure is up-to-date." plan.log; then
-            HAS_CHANGES="false"
-          fi
-
           echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
 
       - name: Terraform Plan Outcome
@@ -580,7 +590,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: run-k3s-plan
-          path: plan.log
+          path: |
+            plan.tfplan
+            plan.log
           retention-days: 5
 
       - name: Terraform Plan Summary
@@ -605,7 +617,7 @@ jobs:
           {
             echo "## Terraform Plan Details"
             echo '```'
-            cat plan.log
+            terraform show -no-color plan.tfplan
             echo '```'
           } >> $GITHUB_STEP_SUMMARY
 
@@ -648,6 +660,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-terraform-
 
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: run-k3s-plan
+          path: kubernetes
+
       - name: Setup Terraform variables
         run: |-
           cat > terraform.tfvars <<EOF
@@ -661,7 +679,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false plan.tfplan
 
       - name: Terraform Apply Summary
         if: always()

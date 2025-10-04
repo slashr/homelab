@@ -589,7 +589,10 @@ jobs:
   run-k3s-apply:
     name: "Apply Kubernetes Cluster"
     needs: run-k3s
-    if: needs.run-k3s.outputs.plan_exitcode == '2' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_kubernetes_apply == 'true'))
+    if: needs.run-k3s.outputs.plan_exitcode == '2' && (
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_kubernetes_apply == 'true')
+    )
     runs-on: ubuntu-latest
     environment:
       name: production

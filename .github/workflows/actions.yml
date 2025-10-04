@@ -458,7 +458,7 @@ jobs:
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
     outputs:
-      plan_exitcode: ${{ steps.plan.outputs.exitcode }}
+      has_changes: ${{ steps.plan_outcome.outputs.has_changes }}
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -532,33 +532,52 @@ jobs:
       - name: "Terraform Plan"
         id: plan
         run: |
+          set -eo pipefail
+
           set +e
           terraform plan -no-color -detailed-exitcode -out=plan.tfplan
           PLAN_EXIT=$?
           set -e
-          echo "exitcode=$PLAN_EXIT" >> $GITHUB_OUTPUT
+
           if [ "$PLAN_EXIT" -eq 1 ]; then
             exit 1
           fi
 
+          PLAN_JSON="$(terraform show -json plan.tfplan)"
+          ADDED=$(jq '[.resource_changes[]? | select(.change.actions[0] == "create")] | length' <<<"$PLAN_JSON")
+          CHANGED=$(jq '[.resource_changes[]? | select(.change.actions[0] == "update")] | length' <<<"$PLAN_JSON")
+          DESTROYED=$(jq '[.resource_changes[]? | select(.change.actions[0] == "delete")] | length' <<<"$PLAN_JSON")
+
+          TOTAL=$((ADDED + CHANGED + DESTROYED))
+          if [ "$TOTAL" -gt 0 ]; then
+            HAS_CHANGES=true
+          else
+            HAS_CHANGES=false
+          fi
+
+          echo "added=$ADDED" >> $GITHUB_OUTPUT
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+          echo "destroyed=$DESTROYED" >> $GITHUB_OUTPUT
+          echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+
       - name: Terraform Plan Outcome
+        id: plan_outcome
         run: |
-          case "${PLAN_EXITCODE}" in
-            0)
-              echo "Terraform plan detected no changes." >> $GITHUB_STEP_SUMMARY
-              ;;
-            2)
-              echo "Terraform plan detected pending changes." >> $GITHUB_STEP_SUMMARY
-              ;;
-            *)
-              echo "Terraform plan exited with code ${PLAN_EXITCODE}." >> $GITHUB_STEP_SUMMARY
-              ;;
-          esac
-        env:
-          PLAN_EXITCODE: ${{ steps.plan.outputs.exitcode }}
+          ADDED=${{ steps.plan.outputs.added || 0 }}
+          CHANGED=${{ steps.plan.outputs.changed || 0 }}
+          DESTROYED=${{ steps.plan.outputs.destroyed || 0 }}
+          TOTAL=$((ADDED + CHANGED + DESTROYED))
+
+          if [ "$TOTAL" -gt 0 ]; then
+            echo "Terraform plan detected pending changes." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Terraform plan detected no changes." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "has_changes=${{ steps.plan.outputs.has_changes }}" >> $GITHUB_OUTPUT
 
       - name: Upload Terraform Plan Artifact
-        if: steps.plan.outputs.exitcode == '2'
+        if: steps.plan.outputs.has_changes == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: run-k3s-plan
@@ -567,17 +586,14 @@ jobs:
 
       # Add plan summary for PRs
       - name: Terraform Plan Summary
-        if: github.event_name == 'pull_request' && steps.plan.outputs.exitcode != '1'
+        if: github.event_name == 'pull_request' && steps.plan.outputs.has_changes == 'true'
         run: |
           echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-          ADDED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "create")) | length')
-          CHANGED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "update")) | length')
-          DESTROYED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "delete")) | length')
-          echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to add: ${{ steps.plan.outputs.added }}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to change: ${{ steps.plan.outputs.changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to destroy: ${{ steps.plan.outputs.destroyed }}" >> $GITHUB_STEP_SUMMARY
       - name: Terraform Plan Details
-        if: steps.plan.outputs.exitcode != '1'
+        if: steps.plan.outputs.has_changes == 'true'
         run: |
           {
             echo "## Terraform Plan Details"
@@ -590,7 +606,7 @@ jobs:
     name: "Apply Kubernetes Cluster"
     needs: run-k3s
     if: >-
-      ${{ needs.run-k3s.outputs.plan_exitcode == '2' && (
+      ${{ needs.run-k3s.outputs.has_changes == 'true' && (
           (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
           (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_kubernetes_apply == 'true')
         ) }}

@@ -531,7 +531,7 @@ jobs:
           terraform plan -no-color 2>&1 | tee plan.log
           PLAN_EXIT=${PIPESTATUS[0]}
           echo "exitcode=$PLAN_EXIT" >> $GITHUB_OUTPUT
-          if [ "$PLAN_EXIT" -ne 0 ]; then
+          if [ "$PLAN_EXIT" -ne 0 ] && [ "$PLAN_EXIT" -ne 2 ]; then
             exit "$PLAN_EXIT"
           fi
 
@@ -584,7 +584,7 @@ jobs:
           retention-days: 5
 
       - name: Terraform Plan Summary
-        if: steps.plan.outputs.exitcode == '0'
+        if: steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2'
         env:
           ADD_COUNT: ${{ steps.plan.outputs.add_count }}
           CHANGE_COUNT: ${{ steps.plan.outputs.change_count }}
@@ -600,7 +600,7 @@ jobs:
           fi
 
       - name: Terraform Plan Details
-        if: steps.plan.outputs.exitcode == '0'
+        if: steps.plan.outputs.exitcode == '0' || steps.plan.outputs.exitcode == '2'
         run: |
           {
             echo "## Terraform Plan Details"
@@ -616,7 +616,11 @@ jobs:
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push' &&
       needs.run-k3s.result == 'success' &&
-      needs.run-k3s.outputs.plan_exitcode == '0'
+      (
+        needs.run-k3s.outputs.plan_exitcode == '0' ||
+        needs.run-k3s.outputs.plan_exitcode == '2'
+      ) &&
+      needs.run-k3s.outputs.plan_has_changes != 'false'
     runs-on: ubuntu-latest
     environment:
       name: production

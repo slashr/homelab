@@ -576,10 +576,15 @@ jobs:
       - name: Drift Detection Summary
         if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          if [ -n "${{ steps.drift_check.outputs.drift_exitcode }}" ]; then
-            echo "Drift detection exit code: ${{ steps.drift_check.outputs.drift_exitcode }}" >> $GITHUB_STEP_SUMMARY
+          exitcode="${{ steps.drift_check.outputs.drift_exitcode }}"
+          if [ -z "$exitcode" ]; then
+            echo "Drift detection did not run (non-main or apply skipped)." >> $GITHUB_STEP_SUMMARY
+          elif [ "$exitcode" -eq 0 ]; then
+            echo "Drift detection: no changes detected." >> $GITHUB_STEP_SUMMARY
+          elif [ "$exitcode" -eq 2 ]; then
+            echo "Drift detection: configuration drift detected." >> $GITHUB_STEP_SUMMARY
           else
-            echo "Drift detection did not run (non-main or no apply)." >> $GITHUB_STEP_SUMMARY
+            echo "Drift detection completed with unexpected exit code: $exitcode" >> $GITHUB_STEP_SUMMARY
           fi
 
       # Plan summary for PRs (safe if no plan file)

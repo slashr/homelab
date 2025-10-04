@@ -615,8 +615,8 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push' &&
-      (needs.run-k3s.outputs.plan_has_changes == 'true' ||
-       needs.run-k3s.outputs.plan_has_changes == 'unknown')
+      needs.run-k3s.result == 'success' &&
+      needs.run-k3s.outputs.plan_exitcode == '0'
     runs-on: ubuntu-latest
     environment:
       name: production

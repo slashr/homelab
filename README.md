@@ -8,7 +8,7 @@
 
 # Homelab Architecture
 
-My Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a GCP VM and three Raspberry Pis.
+This Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a GCP VM and three Raspberry Pis.
 
 ## Terraform Oracle Job
 - Creates 4 Free Tier servers

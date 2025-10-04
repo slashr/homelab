@@ -451,6 +451,9 @@ jobs:
         working-directory: ./kubernetes
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+    outputs:
+      plan_exitcode: ${{ steps.plan.outputs.exitcode }}
+      plan_has_changes: ${{ steps.plan.outputs.has_changes }}
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -523,12 +526,139 @@ jobs:
 
       - name: "Terraform Plan"
         id: plan
-        run: terraform plan -no-color
+        run: |
+          set -o pipefail
+          terraform plan -no-color 2>&1 | tee plan.log
+          PLAN_EXIT=${PIPESTATUS[0]}
+          echo "exitcode=$PLAN_EXIT" >> $GITHUB_OUTPUT
+          if [ "$PLAN_EXIT" -ne 0 ]; then
+            exit "$PLAN_EXIT"
+          fi
+
+          SUMMARY_LINE=$(grep -E "Plan: [0-9]+ to add, [0-9]+ to change, [0-9]+ to destroy\." plan.log | tail -n1 || true)
+          if [ -n "$SUMMARY_LINE" ]; then
+            ADD_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\1/')
+            CHANGE_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\2/')
+            DESTROY_COUNT=$(echo "$SUMMARY_LINE" | sed -E 's/Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy\./\3/')
+          else
+            ADD_COUNT=0
+            CHANGE_COUNT=0
+            DESTROY_COUNT=0
+          fi
+
+          echo "add_count=$ADD_COUNT" >> $GITHUB_OUTPUT
+          echo "change_count=$CHANGE_COUNT" >> $GITHUB_OUTPUT
+          echo "destroy_count=$DESTROY_COUNT" >> $GITHUB_OUTPUT
+
+          HAS_CHANGES="unknown"
+          if [ "$ADD_COUNT" -gt 0 ] || [ "$CHANGE_COUNT" -gt 0 ] || [ "$DESTROY_COUNT" -gt 0 ]; then
+            HAS_CHANGES="true"
+          elif [ -n "$SUMMARY_LINE" ] || grep -q "No changes. Infrastructure is up-to-date." plan.log; then
+            HAS_CHANGES="false"
+          fi
+
+          echo "has_changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+
+      - name: Terraform Plan Outcome
+        run: |
+          case "${PLAN_HAS_CHANGES}" in
+            true)
+              echo "Terraform plan detected pending changes." >> $GITHUB_STEP_SUMMARY
+              ;;
+            false)
+              echo "Terraform plan detected no changes." >> $GITHUB_STEP_SUMMARY
+              ;;
+            *)
+              echo "Terraform plan completed but the change summary could not be determined automatically." >> $GITHUB_STEP_SUMMARY
+              ;;
+          esac
+        env:
+          PLAN_HAS_CHANGES: ${{ steps.plan.outputs.has_changes }}
+
+      - name: Upload Terraform Plan Artifact
+        if: steps.plan.outputs.has_changes != 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-k3s-plan
+          path: plan.log
+          retention-days: 5
+
+      - name: Terraform Plan Summary
+        if: steps.plan.outputs.exitcode == '0'
+        env:
+          ADD_COUNT: ${{ steps.plan.outputs.add_count }}
+          CHANGE_COUNT: ${{ steps.plan.outputs.change_count }}
+          DESTROY_COUNT: ${{ steps.plan.outputs.destroy_count }}
+          PLAN_HAS_CHANGES: ${{ steps.plan.outputs.has_changes }}
+        run: |
+          echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to add: ${ADD_COUNT}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to change: ${CHANGE_COUNT}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to destroy: ${DESTROY_COUNT}" >> $GITHUB_STEP_SUMMARY
+          if [ "${PLAN_HAS_CHANGES}" = "unknown" ]; then
+            echo "> Terraform could not automatically determine whether changes are pending. Review the plan details below." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Terraform Plan Details
+        if: steps.plan.outputs.exitcode == '0'
+        run: |
+          {
+            echo "## Terraform Plan Details"
+            echo '```'
+            cat plan.log
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+  run-k3s-apply:
+    name: "Apply Kubernetes Cluster"
+    needs: run-k3s
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      (needs.run-k3s.outputs.plan_has_changes == 'true' ||
+       needs.run-k3s.outputs.plan_has_changes == 'unknown')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    defaults:
+      run:
+        working-directory: ./kubernetes
+    env:
+      TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+    steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: ${{ runner.os }}-terraform-${{ hashFiles('kubernetes/**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
+
+      - name: Setup Terraform variables
+        run: |-
+          cat > terraform.tfvars <<EOF
+          cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
+          kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
+          kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
+          EOF
+
+      - name: Terraform Init
+        run: terraform init
 
       - name: Terraform Apply
         id: apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
+
       - name: Terraform Apply Summary
         if: always()
         run: |
@@ -537,25 +667,3 @@ jobs:
           else
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
-
-      # Add drift detection
-      - name: Check for Infrastructure Drift
-        id: drift_check
-        run: |
-          terraform plan -detailed-exitcode -out=plan.tfplan
-          echo "drift_exitcode=$?" >> $GITHUB_OUTPUT
-      - name: Drift Detection Summary
-        if: always()
-        run: |
-          echo "Drift detection exit code: ${{ steps.drift_check.outputs.drift_exitcode }}" >> $GITHUB_STEP_SUMMARY
-      # Add plan summary for PRs
-      - name: Terraform Plan Summary
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-          ADDED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "create")) | length')
-          CHANGED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "update")) | length')
-          DESTROYED=$(terraform show -json plan.tfplan | jq '.resource_changes | map(select(.change.actions[0] == "delete")) | length')
-          echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
-          echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY

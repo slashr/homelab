@@ -533,10 +533,16 @@ jobs:
         id: plan
         run: |
           set +e
-          terraform plan -no-color -detailed-exitcode -out=plan.tfplan
-          PLAN_EXIT=$?
+          terraform plan -no-color -detailed-exitcode -out=plan.tfplan | tee plan.log
+          PLAN_EXIT=${PIPESTATUS[0]}
           set -e
           echo "exitcode=$PLAN_EXIT" >> $GITHUB_OUTPUT
+          if [ -f plan.log ]; then
+            RUN_URL=$(grep -F "To view this run" plan.log | sed -E 's/.*(https:\/\/[^ ]+).*/\1/' | head -n1)
+            if [ -n "$RUN_URL" ]; then
+              echo "run_url=$RUN_URL" >> $GITHUB_OUTPUT
+            fi
+          fi
           if [ "$PLAN_EXIT" -eq 1 ]; then
             exit 1
           fi
@@ -584,7 +590,13 @@ jobs:
             echo '```'
             terraform show -no-color plan.tfplan
             echo '```'
+            if [ -n "${RUN_URL}" ]; then
+              echo
+              echo "[View this run in Terraform Cloud](${RUN_URL})"
+            fi
           } >> $GITHUB_STEP_SUMMARY
+        env:
+          RUN_URL: ${{ steps.plan.outputs.run_url }}
 
   run-k3s-apply:
     name: "Apply Kubernetes Cluster"

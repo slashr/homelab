@@ -6,6 +6,9 @@
     branches: [main]
   workflow_dispatch:  # Allow manual triggering
 
+permissions:
+  contents: read
+
 # Add concurrency control to prevent conflicting deployments
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

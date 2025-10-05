@@ -123,6 +123,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
+
       - name: Cache Terraform plugins
         uses: actions/cache@v4
         with:
@@ -130,9 +133,6 @@ jobs:
           key: ${{ runner.os }}-terraform-${{ hashFiles('oracle/**/*.tf') }}
           restore-keys: |
             ${{ runner.os }}-terraform-
-
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
 
       - name: Terraform Format
         id: fmt

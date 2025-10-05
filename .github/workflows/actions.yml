@@ -99,6 +99,12 @@ jobs:
         working-directory: ./oracle
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+      TF_VAR_user_ocid: ${{ secrets.TF_USER_OCID }}
+      TF_VAR_tenancy_ocid: ${{ secrets.TF_TENANCY_OCID }}
+      TF_VAR_ssh_authorized_keys: ${{ secrets.TF_SSH_AUTHORIZED_KEYS }}
+      TF_VAR_oci_private_key: ${{ secrets.TF_OCI_PRIVATE_KEY }}
+      TF_VAR_fingerprint: ${{ secrets.TF_FINGERPRINT }}
+      TF_VAR_compartment_id: ${{ secrets.TF_COMPARTMENT_ID }}
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -130,18 +136,6 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate
-
-      - name: Setup Terraform variables
-        id: vars
-        run: |-
-          cat > terraform.tfvars <<EOF
-          user_ocid = "${{ secrets.TF_USER_OCID }}"
-          tenancy_ocid = "${{ secrets.TF_TENANCY_OCID }}"
-          ssh_authorized_keys = "${{ secrets.TF_SSH_AUTHORIZED_KEYS }}"
-          oci_private_key = "${{ secrets.TF_OCI_PRIVATE_KEY }}"
-          fingerprint = "${{ secrets.TF_FINGERPRINT }}"
-          compartment_id = "${{ secrets.TF_COMPARTMENT_ID }}"
-          EOF
 
       - name: "Terraform Plan"
         id: plan
@@ -331,6 +325,9 @@ jobs:
         working-directory: ./kubernetes
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+      TF_VAR_cloudflare_api_token: ${{ secrets.TF_CLOUDFLARE_API_TOKEN }}
+      TF_VAR_kube_client_cert: ${{ secrets.TF_KUBE_CLIENT_CERT }}
+      TF_VAR_kube_client_key: ${{ secrets.TF_KUBE_CLIENT_KEY }}
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -362,15 +359,6 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate
-
-      - name: Setup Terraform variables
-        id: vars
-        run: |-
-          cat > terraform.tfvars <<EOF
-          cloudflare_api_token = "${{ secrets.TF_CLOUDFLARE_API_TOKEN }}"
-          kube_client_cert = "${{ secrets.TF_KUBE_CLIENT_CERT }}"
-          kube_client_key = "${{ secrets.TF_KUBE_CLIENT_KEY }}"
-          EOF
 
       - name: "Terraform Plan"
         id: plan

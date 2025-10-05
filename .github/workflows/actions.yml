@@ -39,38 +39,8 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
 
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install pre-commit
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       # Add caching for Terraform plugins
       - name: Cache Terraform plugins
@@ -133,7 +103,7 @@ jobs:
           eval `ssh-agent -s`
           mkdir -p /home/runner/.ssh/
           echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-          chmod 700 /home/runner/.ssh/id_rsa
+          chmod 600 /home/runner/.ssh/id_rsa
           echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
           echo "ssh_config=done" >> $GITHUB_OUTPUT
 
@@ -164,38 +134,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install pre-commit
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4
@@ -269,7 +209,7 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
 
-      - name: Set up Python 3.7.
+      - name: Set up Python 3.x
         uses: actions/setup-python@v6
         with:
           python-version: '3.x'
@@ -296,45 +236,17 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
-      - name: Install pre-commit
-        run: pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Run ansible-lint.
         run: ansible-lint
 
       - name: Setup SSH
-        shell: bash
-        run: |
-         eval `ssh-agent -s`
-         mkdir -p /home/runner/.ssh/
-         touch /home/runner/.ssh/id_rsa
-         # Create the SSH Private Key used to connect to all the servers using the Secret
-         echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-         # Create the Ansible Vault password file for decryption
-         echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
-         chmod 700 /home/runner/.ssh/id_rsa
-         # Disable strict host key checking
-         echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
+          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run vpn-playbook
         id: vpn_playbook
@@ -375,7 +287,7 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
 
-      - name: Set up Python 3.7.
+      - name: Set up Python 3.x
         uses: actions/setup-python@v6
         with:
           python-version: '3.x'
@@ -402,45 +314,17 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
-      - name: Install pre-commit
-        run: pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            else
-              BASE_SHA="${{ github.event.before }}"
-            fi
-            CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-            if [ -n "$CHANGED_FILES" ]; then
-              pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-            else
-              pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-            fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Run ansible-lint.
         run: ansible-lint
 
       - name: Setup SSH
-        shell: bash
-        run: |
-         eval `ssh-agent -s`
-         mkdir -p /home/runner/.ssh/
-         touch /home/runner/.ssh/id_rsa
-         # Create the SSH Private Key used to connect to all the servers using the Secret
-         echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-         # Create the Ansible Vault password file for decryption
-         echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
-         chmod 700 /home/runner/.ssh/id_rsa
-         # Disable strict host key checking
-         echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
+          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run k3s-playbook
         id: k3s_playbook
@@ -460,7 +344,7 @@ jobs:
 
   run-k3s:
     name: "Terraform K8S"
-    needs: [tailscale-setup, k3s-setup]
+    needs: [k3s-setup]
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     defaults:
@@ -479,38 +363,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install pre-commit
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4

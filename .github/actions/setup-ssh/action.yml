@@ -1,0 +1,34 @@
+---
+name: 'Setup SSH'
+description: 'Configure SSH with private key and disable strict host checking'
+inputs:
+  ssh_private_key:
+    description: 'SSH private key for authentication'
+    required: true
+  ansible_vault_password:
+    description: 'Ansible vault password (optional, only needed for Ansible jobs)'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup SSH
+      shell: bash
+      run: |
+        eval `ssh-agent -s`
+        mkdir -p /home/runner/.ssh/
+        touch /home/runner/.ssh/id_rsa
+        # Create the SSH Private Key used to connect to all the servers using the Secret
+        echo -e "${{ inputs.ssh_private_key }}" > /home/runner/.ssh/id_rsa
+        chmod 600 /home/runner/.ssh/id_rsa
+        # Disable strict host key checking
+        echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
+
+    - name: Setup Ansible Vault
+      if: inputs.ansible_vault_password != ''
+      shell: bash
+      working-directory: ${{ github.workspace }}/ansible
+      run: |
+        # Create the Ansible Vault password file for decryption
+        echo -e "${{ inputs.ansible_vault_password }}" > ./vault.pass
+

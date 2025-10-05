@@ -89,32 +89,6 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  # Extract common SSH setup into a reusable composite action or use OIDC for authentication
-  setup-ssh:
-    name: "Setup SSH & VPN"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      ssh_config: ${{ steps.ssh.outputs.ssh_config }}
-    steps:
-      - name: Setup SSH
-        id: ssh
-        shell: bash
-        run: |
-          eval `ssh-agent -s`
-          mkdir -p /home/runner/.ssh/
-          echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-          chmod 600 /home/runner/.ssh/id_rsa
-          echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
-          echo "ssh_config=done" >> $GITHUB_OUTPUT
-
-      - name: Tailscale
-        uses: tailscale/github-action@v3.3.0
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          tags: tag:k3s
-
   oracle-setup:
     name: "Terraform Oracle"
     if: ${{ github.ref != 'refs/heads/staging' }}
@@ -189,7 +163,7 @@ jobs:
 
   tailscale-setup:
     name: "Ansible Tailscale"
-    needs: [oracle-setup, gcp-setup, setup-ssh]
+    needs: [oracle-setup, gcp-setup]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -461,4 +435,3 @@ jobs:
           else
             echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
           fi
-

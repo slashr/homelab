@@ -33,8 +33,16 @@ runs:
           BASE_SHA="${{ github.event.before }}"
         fi
         CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
+        
+        # Skip terraform hooks if terraform is not installed
+        SKIP_HOOKS=""
+        if ! command -v terraform &> /dev/null && ! command -v tofu &> /dev/null; then
+          SKIP_HOOKS="terraform_fmt,terraform_validate"
+          echo "Terraform/OpenTofu not found, skipping terraform hooks"
+        fi
+        
         if [ -n "$CHANGED_FILES" ]; then
-          pre-commit run --files "$CHANGED_FILES" --hook-stage manual
+          SKIP=$SKIP_HOOKS pre-commit run --files "$CHANGED_FILES" --hook-stage manual
         else
           pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
         fi

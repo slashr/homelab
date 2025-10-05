@@ -106,18 +106,20 @@ jobs:
       TF_VAR_fingerprint: ${{ secrets.TF_FINGERPRINT }}
       TF_VAR_compartment_id: ${{ secrets.TF_COMPARTMENT_ID }}
     steps:
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
+      # Create cache directory before Terraform is set up (TF_PLUGIN_CACHE_DIR env var requires it)
       - name: Create Terraform plugin cache directory
         run: mkdir -p ~/.terraform.d/plugin-cache
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          terraform_version: "1.9.6"
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4

@@ -1,0 +1,32 @@
+---
+name: 'Terraform Plan Summary'
+description: 'Generate and display Terraform plan summary in GitHub Step Summary'
+inputs:
+  plan_file:
+    description: 'Path to the Terraform plan file'
+    required: false
+    default: 'plan.tfplan'
+  job_name:
+    description: 'Name of the job/stack (e.g., GCP, Oracle, Kubernetes)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Terraform Plan Summary
+      if: github.event_name == 'pull_request'
+      shell: bash
+      run: |
+        if [ -f "${{ inputs.plan_file }}" ]; then
+          echo "## ${{ inputs.job_name }} Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+          ADDED=$(terraform show -json "${{ inputs.plan_file }}" | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
+          CHANGED=$(terraform show -json "${{ inputs.plan_file }}" | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
+          DESTROYED=$(terraform show -json "${{ inputs.plan_file }}" | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
+          echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
+          echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ${{ inputs.job_name }} Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️  No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
+        fi
+

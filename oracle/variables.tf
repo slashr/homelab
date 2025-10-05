@@ -42,9 +42,11 @@ variable "user_ocid" {
 variable "fingerprint" {
   description = "Fingerprint of the private key being used for OCI API authentication"
   type        = string
+  sensitive   = true
 }
 
 variable "ssh_authorized_keys" {
   description = "Public SSH key added to authorized_keys file of new instances on OCI"
   type        = string
+  sensitive   = true
 }

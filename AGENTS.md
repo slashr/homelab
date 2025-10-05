@@ -47,19 +47,20 @@ The primary deployment workflow orchestrates infrastructure provisioning and con
 
 ### Security Scanning Workflow (`security.yml`)
 
-Automated security scanning runs daily at 2 AM UTC, on pushes to `main`/`staging`, and on PRs. Scans skip for documentation-only changes (`**.md`, `LICENSE`, `AGENTS.md`, `archive/**`).
+Automated security scanning runs on merge to `main`, daily at 2 AM UTC, and on manual trigger. Scans skip for documentation-only changes (`**.md`, `LICENSE`, `AGENTS.md`, `archive/**`).
 
 **Security Jobs:**
 1. **security-scan** — Trivy vulnerability scanning (filesystem + Terraform config) with SARIF uploads to GitHub Security tab
-2. **dependency-scan** — Fast-fail PR checks for CRITICAL/HIGH vulnerabilities in Python and Terraform dependencies
-3. **secret-scan** — TruffleHog secret detection (incremental for PRs, deep scan for main/scheduled)
-4. **security-summary** — Consolidated status report
+2. **secret-scan** — TruffleHog secret detection with full history scan
+3. **security-summary** — Consolidated status report with links to Security tab
 
 **Scanning Strategy:**
-- PRs: Fast incremental scans for quick feedback
-- Main/Scheduled: Comprehensive deep scans with full history
-- Concurrency control with `cancel-in-progress: true` to save resources
-- Only verified secrets reported by TruffleHog to reduce noise
+- **Main only:** Scans run after merge to main, not on PRs (faster PR feedback, reduced costs)
+- **Comprehensive:** Full history scans with complete vulnerability and secret detection
+- **Scheduled:** Daily scans at 2 AM UTC catch new vulnerabilities in dependencies
+- **Manual:** Workflow dispatch available for ad-hoc security checks
+- **Verified only:** TruffleHog reports only verified secrets to reduce noise
+- **SARIF uploads:** Results visible in GitHub Security tab for tracking
 
 ## Composite Actions
 
@@ -337,9 +338,10 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 - Review k3s-agent service logs: `journalctl -u k3s-agent -f`
 
 **Security scans failing:**
-- PR scans use shallow clone; ensure `base.sha` is available
-- TruffleHog flag conflicts: use `base`/`head` parameters, not `--since-commit` in `extra_args`
+- Ensure full history is fetched (`fetch-depth: 0`)
+- TruffleHog errors: check `--only-verified` and `--debug` flags compatibility
 - Trivy cache issues: re-run workflow to fetch fresh data
+- SARIF upload failures: verify `security-events: write` permission is set
 
 ### Support Resources
 

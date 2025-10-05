@@ -89,6 +89,22 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
+      # Plan summary for PRs
+      - name: Terraform Plan Summary
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f terraform.tfplan ]; then
+            echo "## GCP Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+            ADDED=$(terraform show -json terraform.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
+            CHANGED=$(terraform show -json terraform.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
+            DESTROYED=$(terraform show -json terraform.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
+            echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
+            echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
+            echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
+          fi
+
   oracle-setup:
     name: "Terraform Oracle"
     if: ${{ github.ref != 'refs/heads/staging' }}
@@ -153,6 +169,22 @@ jobs:
             echo "Terraform apply succeeded." >> $GITHUB_STEP_SUMMARY
           else
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Plan summary for PRs
+      - name: Terraform Plan Summary
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f plan.tfplan ]; then
+            echo "## Oracle Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+            ADDED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
+            CHANGED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
+            DESTROYED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
+            echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
+            echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
+            echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
           fi
 
   tailscale-setup:

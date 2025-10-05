@@ -133,7 +133,7 @@ jobs:
           eval `ssh-agent -s`
           mkdir -p /home/runner/.ssh/
           echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-          chmod 700 /home/runner/.ssh/id_rsa
+          chmod 600 /home/runner/.ssh/id_rsa
           echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
           echo "ssh_config=done" >> $GITHUB_OUTPUT
 
@@ -332,7 +332,7 @@ jobs:
          echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
          # Create the Ansible Vault password file for decryption
          echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
-         chmod 700 /home/runner/.ssh/id_rsa
+         chmod 600 /home/runner/.ssh/id_rsa
          # Disable strict host key checking
          echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
 
@@ -438,7 +438,7 @@ jobs:
          echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
          # Create the Ansible Vault password file for decryption
          echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
-         chmod 700 /home/runner/.ssh/id_rsa
+         chmod 600 /home/runner/.ssh/id_rsa
          # Disable strict host key checking
          echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
 

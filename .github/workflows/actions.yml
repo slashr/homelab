@@ -116,7 +116,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-          terraform_version: "1.9.6"
+          terraform_version: "1.9.6"  # Pin Terraform version
 
       - name: Checkout
         uses: actions/checkout@v5

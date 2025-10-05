@@ -27,6 +27,7 @@ jobs:
     env:
       GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+      TF_VAR_ssh_public_key: ${{ secrets.GCP_SSH_PUBLIC_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5

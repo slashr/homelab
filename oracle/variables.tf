@@ -26,6 +26,7 @@ variable "compartment_id" {
 variable "oci_private_key" {
   description = "Private key of the public-private key pair added to OCI account. Used for accessing the OCI API"
   type        = string
+  sensitive   = true
 }
 
 variable "tenancy_ocid" {

@@ -10,21 +10,21 @@ locals {
     },
     {
       protocol    = "6"
-      description = "Misc"
+      description = "Custom application port 1100"
       port_min    = 1100
       port_max    = 1100
       source      = "0.0.0.0/0"
     },
     {
       protocol    = "6"
-      description = "Misc"
+      description = "Custom application port 1101"
       port_min    = 1101
       port_max    = 1101
       source      = "0.0.0.0/0"
     },
     {
       protocol    = "6"
-      description = "Misc"
+      description = "Custom application port 1102"
       port_min    = 1102
       port_max    = 1102
       source      = "0.0.0.0/0"

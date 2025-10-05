@@ -89,6 +89,12 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Terraform Plan Summary
+        uses: ./.github/actions/terraform-plan-summary
+        with:
+          plan_file: 'terraform.tfplan'
+          job_name: 'GCP'
+
   oracle-setup:
     name: "Terraform Oracle"
     if: ${{ github.ref != 'refs/heads/staging' }}
@@ -106,6 +112,12 @@ jobs:
       TF_VAR_fingerprint: ${{ secrets.TF_FINGERPRINT }}
       TF_VAR_compartment_id: ${{ secrets.TF_COMPARTMENT_ID }}
     steps:
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          terraform_version: "1.9.6"
+
       - name: Checkout
         uses: actions/checkout@v5
         with:
@@ -160,6 +172,12 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Terraform Plan Summary
+        uses: ./.github/actions/terraform-plan-summary
+        with:
+          plan_file: 'plan.tfplan'
+          job_name: 'Oracle'
+
   tailscale-setup:
     name: "Ansible Tailscale"
     needs: [oracle-setup, gcp-setup]
@@ -170,57 +188,17 @@ jobs:
         working-directory: ./ansible
 
     steps:
-      - name: Check out the codebase.
+      - name: Check out the codebase
         uses: actions/checkout@v5
         with:
           submodules: true
           fetch-depth: 0
 
-      # Setup Tailscale network on the Actions worker
-      # Enables connection to k3s nodes using Tailscale public IP
-      - name: Tailscale
-        uses: tailscale/github-action@v3.3.0
+      - name: Setup Ansible Environment
+        uses: ./.github/actions/setup-ansible
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          tags: tag:k3s
-
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install ansible-lint (lighter)
-        run: pip3 install ansible-core ansible-lint
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.ansible/collections/ansible_collections
-          key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-ansible-collections-
-
-      - name: Install Ansible collections
-        working-directory: ${{ github.workspace }}
-        run: ansible-galaxy collection install -r ansible/requirements.yml --force
-
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
-
-      - name: Run ansible-lint.
-        run: ansible-lint
-
-      - name: Setup SSH
-        uses: ./.github/actions/setup-ssh
-        with:
+          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -249,57 +227,17 @@ jobs:
         working-directory: ./ansible
 
     steps:
-      - name: Check out the codebase.
+      - name: Check out the codebase
         uses: actions/checkout@v5
         with:
           submodules: true
           fetch-depth: 0
 
-      # Setup Tailscale network on the Actions worker
-      # Enables connection to k3s nodes using Tailscale public IP
-      - name: Tailscale
-        uses: tailscale/github-action@v3.3.0
+      - name: Setup Ansible Environment
+        uses: ./.github/actions/setup-ansible
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          tags: tag:k3s
-
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install ansible-lint (lighter)
-        run: pip3 install ansible-core ansible-lint
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.ansible/collections/ansible_collections
-          key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-ansible-collections-
-
-      - name: Install Ansible collections
-        working-directory: ${{ github.workspace }}
-        run: ansible-galaxy collection install -r ansible/requirements.yml --force
-
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
-
-      - name: Run ansible-lint.
-        run: ansible-lint
-
-      - name: Setup SSH
-        uses: ./.github/actions/setup-ssh
-        with:
+          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -338,6 +276,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          terraform_version: "1.9.6"
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -413,18 +352,8 @@ jobs:
             echo "Drift detection completed with unexpected exit code: $exitcode" >> $GITHUB_STEP_SUMMARY
           fi
 
-      # Plan summary for PRs (safe if no plan file)
       - name: Terraform Plan Summary
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -f plan.tfplan ]; then
-            echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-            ADDED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
-            CHANGED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
-            DESTROYED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
-            echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
-          fi
+        uses: ./.github/actions/terraform-plan-summary
+        with:
+          plan_file: 'plan.tfplan'
+          job_name: 'Kubernetes'

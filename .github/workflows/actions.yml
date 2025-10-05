@@ -461,4 +461,3 @@ jobs:
           else
             echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
           fi
-

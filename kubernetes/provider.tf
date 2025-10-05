@@ -23,10 +23,14 @@ terraform {
   }
 }
 
-# Have to use Oracle 130.61.64.164 IP since Terraform Cloud needs it
-# Otherwise could use Tailscale 100.100.1.100 IP
+locals {
+  # Use Oracle reserved public IP since Terraform Cloud runners cannot access Tailscale network
+  # Alternative would be Tailscale IP: https://100.100.1.100:6443
+  k8s_api_endpoint = "https://130.61.64.164:6443"
+}
+
 provider "kubectl" {
-  host               = "https://130.61.64.164:6443"
+  host               = local.k8s_api_endpoint
   load_config_file   = false
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
@@ -34,7 +38,7 @@ provider "kubectl" {
 }
 
 provider "kubernetes" {
-  host               = "https://130.61.64.164:6443"
+  host               = local.k8s_api_endpoint
   insecure           = "true"
   client_certificate = base64decode(var.kube_client_cert)
   client_key         = base64decode(var.kube_client_key)
@@ -42,7 +46,7 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes = {
-    host               = "https://130.61.64.164:6443"
+    host               = local.k8s_api_endpoint
     insecure           = "true"
     client_certificate = base64decode(var.kube_client_cert)
     client_key         = base64decode(var.kube_client_key)

@@ -117,10 +117,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Create cache directory FIRST - before Terraform setup (TF_PLUGIN_CACHE_DIR requires it)
-      - name: Create Terraform plugin cache directory
-        run: mkdir -p $HOME/.terraform.d/plugin-cache
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:

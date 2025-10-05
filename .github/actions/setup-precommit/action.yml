@@ -1,0 +1,41 @@
+---
+name: 'Setup and Run Pre-commit'
+description: 'Install pre-commit, cache it, and run checks on changed files'
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache pip downloads
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install pre-commit
+      shell: bash
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install pre-commit
+
+    - name: Cache pre-commit environments
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+    - name: Run pre-commit
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+        else
+          BASE_SHA="${{ github.event.before }}"
+        fi
+        CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
+        if [ -n "$CHANGED_FILES" ]; then
+          pre-commit run --files "$CHANGED_FILES" --hook-stage manual
+        else
+          pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
+        fi
+

@@ -1,36 +1,36 @@
 locals {
   instances = {
     amd1 = {
-      shape               = "VM.Standard.E2.1.Micro"
-      memory_in_gbs       = 1
-      ocpus               = 1
-      private_ip          = "10.0.0.10"
-      assign_public_ip    = false
-      source_image_id     = var.amd_source_image_id
+      shape            = "VM.Standard.E2.1.Micro"
+      memory_in_gbs    = 1
+      ocpus            = 1
+      private_ip       = "10.0.0.10"
+      assign_public_ip = false
+      source_image_id  = var.amd_source_image_id
     }
     amd2 = {
-      shape               = "VM.Standard.E2.1.Micro"
-      memory_in_gbs       = 1
-      ocpus               = 1
-      private_ip          = "10.0.0.20"
-      assign_public_ip    = true
-      source_image_id     = var.amd_source_image_id
+      shape            = "VM.Standard.E2.1.Micro"
+      memory_in_gbs    = 1
+      ocpus            = 1
+      private_ip       = "10.0.0.20"
+      assign_public_ip = true
+      source_image_id  = var.amd_source_image_id
     }
     arm1 = {
-      shape               = "VM.Standard.A1.Flex"
-      memory_in_gbs       = 12
-      ocpus               = 2
-      private_ip          = "10.0.0.30"
-      assign_public_ip    = true
-      source_image_id     = var.ampere_source_image_id
+      shape            = "VM.Standard.A1.Flex"
+      memory_in_gbs    = 12
+      ocpus            = 2
+      private_ip       = "10.0.0.30"
+      assign_public_ip = true
+      source_image_id  = var.ampere_source_image_id
     }
     arm2 = {
-      shape               = "VM.Standard.A1.Flex"
-      memory_in_gbs       = 12
-      ocpus               = 2
-      private_ip          = "10.0.0.40"
-      assign_public_ip    = true
-      source_image_id     = var.ampere_source_image_id
+      shape            = "VM.Standard.A1.Flex"
+      memory_in_gbs    = 12
+      ocpus            = 2
+      private_ip       = "10.0.0.40"
+      assign_public_ip = true
+      source_image_id  = var.ampere_source_image_id
     }
   }
 }

@@ -35,6 +35,27 @@ locals {
   }
 }
 
+# State migration: map old individual resources to new for_each structure
+moved {
+  from = oci_core_instance.amd1
+  to   = oci_core_instance.instances["amd1"]
+}
+
+moved {
+  from = oci_core_instance.amd2
+  to   = oci_core_instance.instances["amd2"]
+}
+
+moved {
+  from = oci_core_instance.arm1
+  to   = oci_core_instance.instances["arm1"]
+}
+
+moved {
+  from = oci_core_instance.arm2
+  to   = oci_core_instance.instances["arm2"]
+}
+
 resource "oci_core_instance" "instances" {
   for_each = local.instances
 

@@ -116,8 +116,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
+      - name: Create Terraform plugin cache directory
+        run: mkdir -p ~/.terraform.d/plugin-cache
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4
@@ -126,6 +126,9 @@ jobs:
           key: ${{ runner.os }}-terraform-${{ hashFiles('oracle/**/*.tf') }}
           restore-keys: |
             ${{ runner.os }}-terraform-
+
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Terraform Format
         id: fmt

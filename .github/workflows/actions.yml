@@ -269,7 +269,7 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
 
-      - name: Set up Python 3.7.
+      - name: Set up Python 3.x
         uses: actions/setup-python@v6
         with:
           python-version: '3.x'
@@ -375,7 +375,7 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
 
-      - name: Set up Python 3.7.
+      - name: Set up Python 3.x
         uses: actions/setup-python@v6
         with:
           python-version: '3.x'

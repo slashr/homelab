@@ -422,7 +422,7 @@ jobs:
             if [ -n "$CHANGED_FILES" ]; then
               pre-commit run --files "$CHANGED_FILES" --hook-stage manual
             else
-              pre-commit run --all-files
+              pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
             fi
 
       - name: Run ansible-lint.

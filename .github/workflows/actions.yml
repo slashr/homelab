@@ -123,6 +123,7 @@ jobs:
   setup-ssh:
     name: "Setup SSH & VPN"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       ssh_config: ${{ steps.ssh.outputs.ssh_config }}
     steps:
@@ -148,6 +149,7 @@ jobs:
     name: "Terraform Oracle"
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: ./oracle
@@ -249,6 +251,7 @@ jobs:
     name: "Ansible Tailscale"
     needs: [oracle-setup, gcp-setup, setup-ssh]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: ./ansible
@@ -355,6 +358,7 @@ jobs:
     needs: [tailscale-setup]
     if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && github.event_name == 'push') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: ./ansible
@@ -463,6 +467,7 @@ jobs:
     needs: [tailscale-setup, k3s-setup]
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: ./kubernetes

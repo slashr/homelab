@@ -55,6 +55,7 @@ Automated security scanning runs on merge to `main`, daily at 2 AM UTC, and on m
 3. **security-summary** — Consolidated status report with links to Security tab
 
 **Scanning Strategy:**
+
 - **Main only:** Scans run after merge to main, not on PRs (faster PR feedback, reduced costs)
 - **Comprehensive:** Full history scans with complete vulnerability and secret detection
 - **Scheduled:** Daily scans at 2 AM UTC catch new vulnerabilities in dependencies
@@ -338,6 +339,7 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 - Review k3s-agent service logs: `journalctl -u k3s-agent -f`
 
 **Security scans failing:**
+
 - Ensure full history is fetched (`fetch-depth: 0`)
 - TruffleHog errors: check `--only-verified` and `--debug` flags compatibility
 - Trivy cache issues: re-run workflow to fetch fresh data

@@ -460,7 +460,7 @@ jobs:
 
   run-k3s:
     name: "Terraform K8S"
-    needs: [tailscale-setup, k3s-setup]
+    needs: [k3s-setup]
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     defaults:

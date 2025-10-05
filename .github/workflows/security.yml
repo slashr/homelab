@@ -105,8 +105,10 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.sha }}
           # Scan only changes in PR for faster feedback
-          extra_args: --since-commit ${{ github.event.pull_request.base.sha }} --only-verified
+          extra_args: --only-verified
 
       - name: Run TruffleHog OSS (Main/Scheduled - deep scan)
         if: github.event_name != 'pull_request'

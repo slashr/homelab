@@ -243,18 +243,10 @@ jobs:
         run: ansible-lint
 
       - name: Setup SSH
-        shell: bash
-        run: |
-         eval `ssh-agent -s`
-         mkdir -p /home/runner/.ssh/
-         touch /home/runner/.ssh/id_rsa
-         # Create the SSH Private Key used to connect to all the servers using the Secret
-         echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-         # Create the Ansible Vault password file for decryption
-         echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
-         chmod 600 /home/runner/.ssh/id_rsa
-         # Disable strict host key checking
-         echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
+          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run vpn-playbook
         id: vpn_playbook
@@ -329,18 +321,10 @@ jobs:
         run: ansible-lint
 
       - name: Setup SSH
-        shell: bash
-        run: |
-         eval `ssh-agent -s`
-         mkdir -p /home/runner/.ssh/
-         touch /home/runner/.ssh/id_rsa
-         # Create the SSH Private Key used to connect to all the servers using the Secret
-         echo -e "${{secrets.SSH_AUTH_PRIVATE_KEY}}" > /home/runner/.ssh/id_rsa
-         # Create the Ansible Vault password file for decryption
-         echo -e "${{secrets.ANSIBLE_VAULT_PASSWORD}}" > ./vault.pass
-         chmod 600 /home/runner/.ssh/id_rsa
-         # Disable strict host key checking
-         echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
+        uses: ./.github/actions/setup-ssh
+        with:
+          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
+          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run k3s-playbook
         id: k3s_playbook

@@ -109,12 +109,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          # Fetch full history for main/scheduled scans, shallow for PRs
+          fetch-depth: ${{ github.event_name == 'pull_request' && 1 || 0 }}
 
-      - name: Run TruffleHog OSS
+      - name: Run TruffleHog OSS (PR - incremental scan)
+        if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.sha }}
+          # Scan only changes in PR for faster feedback
+          extra_args: --only-verified
+
+      - name: Run TruffleHog OSS (Main/Scheduled - deep scan)
+        if: github.event_name != 'pull_request'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          # Deep scan with full history
           extra_args: --debug --only-verified
 
   security-summary:

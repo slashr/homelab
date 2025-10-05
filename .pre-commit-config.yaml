@@ -5,6 +5,8 @@ repos:
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
+        args:
+          - --hook-config=--retry-once-with-cleanup=true
   - repo: https://github.com/ansible/ansible-lint
     rev: v25.6.1
     hooks:

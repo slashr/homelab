@@ -96,15 +96,6 @@ jobs:
         id: plan
         run: terraform plan -no-color -out=terraform.tfplan
 
-      # Save plan as artifact for review
-      - name: Save Terraform Plan
-        uses: actions/upload-artifact@v4
-        if: github.event_name == 'pull_request'
-        with:
-          name: gcp-terraform-plan
-          path: ./gcp/terraform.tfplan
-          retention-days: 5
-
       - name: Terraform Apply
         id: apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -231,14 +222,10 @@ jobs:
         id: plan
         run: terraform plan -no-color -out=plan.tfplan
 
-      # Save plan as artifact for review
-      - name: Save Terraform Plan
-        uses: actions/upload-artifact@v4
-        if: github.event_name == 'pull_request'
-        with:
-          name: oracle-terraform-plan
-          path: ./oracle/plan.tfplan
-          retention-days: 5
+      # SECURITY: Plan artifacts NOT uploaded - terraform.tfvars contains sensitive credentials
+      # Variables like oci_private_key and ssh_authorized_keys are not marked sensitive,
+      # so plan files would contain secrets in plain text accessible to all repo contributors.
+      # Review plans in workflow logs instead.
 
       - name: Terraform Apply
         id: apply
@@ -552,14 +539,10 @@ jobs:
         id: plan
         run: terraform plan -no-color -out=plan.tfplan
 
-      # Save plan as artifact for review
-      - name: Save Terraform Plan
-        uses: actions/upload-artifact@v4
-        if: github.event_name == 'pull_request'
-        with:
-          name: kubernetes-terraform-plan
-          path: ./kubernetes/plan.tfplan
-          retention-days: 5
+      # SECURITY: Plan artifacts NOT uploaded - terraform.tfvars contains sensitive credentials
+      # Variables like cloudflare_api_token and kube_client_cert are not marked sensitive,
+      # so plan files would contain secrets in plain text accessible to all repo contributors.
+      # Review plans in workflow logs instead.
 
       - name: Terraform Apply
         id: apply

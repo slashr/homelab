@@ -1,0 +1,73 @@
+---
+name: 'Setup Ansible Environment'
+description: 'Install and configure Ansible, Tailscale, and run linters'
+inputs:
+  tailscale_client_id:
+    description: 'Tailscale OAuth client ID'
+    required: true
+  tailscale_client_secret:
+    description: 'Tailscale OAuth client secret'
+    required: true
+  ssh_private_key:
+    description: 'SSH private key for server authentication'
+    required: true
+  ansible_vault_password:
+    description: 'Ansible vault password for decrypting files'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    # Setup Tailscale network on the Actions worker
+    # Enables connection to k3s nodes using Tailscale public IP
+    - name: Tailscale
+      uses: tailscale/github-action@v3.3.0
+      with:
+        oauth-client-id: ${{ inputs.tailscale_client_id }}
+        oauth-secret: ${{ inputs.tailscale_client_secret }}
+        tags: tag:k3s
+
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.x'
+
+    - name: Cache pip downloads
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install ansible-lint
+      shell: bash
+      run: pip3 install ansible-core ansible-lint
+
+    - name: Cache Ansible collections
+      uses: actions/cache@v4
+      with:
+        path: ~/.ansible/collections/ansible_collections
+        key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-ansible-collections-
+
+    - name: Install Ansible collections
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: ansible-galaxy collection install -r ansible/requirements.yml --force
+
+    - name: Setup and Run Pre-commit
+      uses: ./.github/actions/setup-precommit
+
+    - name: Run ansible-lint
+      shell: bash
+      working-directory: ansible
+      run: ansible-lint
+
+    - name: Setup SSH
+      uses: ./.github/actions/setup-ssh
+      with:
+        ssh_private_key: ${{ inputs.ssh_private_key }}
+        ansible_vault_password: ${{ inputs.ansible_vault_password }}
+

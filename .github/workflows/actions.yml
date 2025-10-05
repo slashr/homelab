@@ -39,38 +39,8 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
 
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install pre-commit
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       # Add caching for Terraform plugins
       - name: Cache Terraform plugins
@@ -164,38 +134,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install pre-commit
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4
@@ -296,28 +236,8 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
-      - name: Install pre-commit
-        run: pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Run ansible-lint.
         run: ansible-lint
@@ -402,28 +322,8 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
-      - name: Install pre-commit
-        run: pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            else
-              BASE_SHA="${{ github.event.before }}"
-            fi
-            CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-            if [ -n "$CHANGED_FILES" ]; then
-              pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-            else
-              pre-commit run --all-files
-            fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Run ansible-lint.
         run: ansible-lint
@@ -479,38 +379,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache pip downloads
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install pre-commit
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run pre-commit
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-          if [ -n "$CHANGED_FILES" ]; then
-            pre-commit run --files "$CHANGED_FILES" --hook-stage manual
-          else
-            pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
-          fi
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4

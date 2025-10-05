@@ -4,8 +4,20 @@ run-name: Security scan
 on:
   push:
     branches: [main, staging]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'AGENTS.md'
+      - 'archive/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'AGENTS.md'
+      - 'archive/**'
   schedule:
     # Run security scans daily at 2 AM UTC
     - cron: '0 2 * * *'

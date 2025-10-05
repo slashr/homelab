@@ -1,127 +1,67 @@
-resource "oci_core_instance" "amd1" {
-
-  availability_domain = data.oci_identity_availability_domains.availability_domains.availability_domains[0].name
-  compartment_id      = var.compartment_id
-  shape               = "VM.Standard.E2.1.Micro"
-  display_name        = "amd1"
-
-  shape_config {
-    memory_in_gbs = 1
-    ocpus         = 1
-  }
-
-  metadata = {
-    ssh_authorized_keys = var.ssh_authorized_keys,
-    #user_data = filebase64("${path.module}/scripts/init.sh")
-  }
-
-  create_vnic_details {
-    assign_public_ip          = false
-    subnet_id                 = oci_core_subnet.public_subnet.id
-    assign_private_dns_record = true
-    private_ip                = "10.0.0.10"
-    hostname_label            = "amd1"
-  }
-
-  source_details {
-    #Required
-    source_id   = var.amd_source_image_id
-    source_type = "image"
-  }
-}
-
-resource "oci_core_instance" "amd2" {
-
-  availability_domain = data.oci_identity_availability_domains.availability_domains.availability_domains[0].name
-  compartment_id      = var.compartment_id
-  shape               = "VM.Standard.E2.1.Micro"
-  display_name        = "amd2"
-
-  shape_config {
-    memory_in_gbs = 1
-    ocpus         = 1
-  }
-
-  metadata = {
-    ssh_authorized_keys = var.ssh_authorized_keys,
-    #user_data = filebase64("${path.module}/scripts/init.sh")
-  }
-
-  create_vnic_details {
-    assign_public_ip          = true
-    subnet_id                 = oci_core_subnet.public_subnet.id
-    assign_private_dns_record = true
-    private_ip                = "10.0.0.20"
-    hostname_label            = "amd2"
-  }
-
-  source_details {
-    #Required
-    source_id   = var.amd_source_image_id
-    source_type = "image"
+locals {
+  instances = {
+    amd1 = {
+      shape               = "VM.Standard.E2.1.Micro"
+      memory_in_gbs       = 1
+      ocpus               = 1
+      private_ip          = "10.0.0.10"
+      assign_public_ip    = false
+      source_image_id     = var.amd_source_image_id
+    }
+    amd2 = {
+      shape               = "VM.Standard.E2.1.Micro"
+      memory_in_gbs       = 1
+      ocpus               = 1
+      private_ip          = "10.0.0.20"
+      assign_public_ip    = true
+      source_image_id     = var.amd_source_image_id
+    }
+    arm1 = {
+      shape               = "VM.Standard.A1.Flex"
+      memory_in_gbs       = 12
+      ocpus               = 2
+      private_ip          = "10.0.0.30"
+      assign_public_ip    = true
+      source_image_id     = var.ampere_source_image_id
+    }
+    arm2 = {
+      shape               = "VM.Standard.A1.Flex"
+      memory_in_gbs       = 12
+      ocpus               = 2
+      private_ip          = "10.0.0.40"
+      assign_public_ip    = true
+      source_image_id     = var.ampere_source_image_id
+    }
   }
 }
 
-resource "oci_core_instance" "arm1" {
+resource "oci_core_instance" "instances" {
+  for_each = local.instances
 
   availability_domain = data.oci_identity_availability_domains.availability_domains.availability_domains[0].name
   compartment_id      = var.compartment_id
-  shape               = "VM.Standard.A1.Flex"
-  display_name        = "arm1"
+  shape               = each.value.shape
+  display_name        = each.key
 
   shape_config {
-    memory_in_gbs = 12
-    ocpus         = 2
+    memory_in_gbs = each.value.memory_in_gbs
+    ocpus         = each.value.ocpus
   }
 
   metadata = {
-    ssh_authorized_keys = var.ssh_authorized_keys,
-    #user_data = filebase64("${path.module}/scripts/init.sh")
+    ssh_authorized_keys = var.ssh_authorized_keys
   }
 
   create_vnic_details {
-    assign_public_ip          = true
+    assign_public_ip          = each.value.assign_public_ip
     subnet_id                 = oci_core_subnet.public_subnet.id
     assign_private_dns_record = true
-    private_ip                = "10.0.0.30"
-    hostname_label            = "arm1"
+    private_ip                = each.value.private_ip
+    hostname_label            = each.key
   }
 
   source_details {
-    #Required
-    source_id   = var.ampere_source_image_id
-    source_type = "image"
-  }
-}
-
-resource "oci_core_instance" "arm2" {
-
-  availability_domain = data.oci_identity_availability_domains.availability_domains.availability_domains[0].name
-  compartment_id      = var.compartment_id
-  shape               = "VM.Standard.A1.Flex"
-  display_name        = "arm2"
-
-  shape_config {
-    memory_in_gbs = 12
-    ocpus         = 2
-  }
-
-  metadata = {
-    ssh_authorized_keys = var.ssh_authorized_keys,
-    #user_data = filebase64("${path.module}/scripts/init.sh")
-  }
-
-  create_vnic_details {
-    assign_public_ip          = true
-    subnet_id                 = oci_core_subnet.public_subnet.id
-    assign_private_dns_record = true
-    private_ip                = "10.0.0.40"
-    hostname_label            = "arm2"
-  }
-
-  source_details {
-    #Required
-    source_id   = var.ampere_source_image_id
+    source_id   = each.value.source_image_id
     source_type = "image"
   }
 }

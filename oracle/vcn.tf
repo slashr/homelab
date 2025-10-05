@@ -6,9 +6,9 @@ resource "oci_core_vcn" "vcn" {
   dns_label    = "vcn"
 }
 
-# Fetches the private IP of the Wireguard OCI instance
+# Fetches the private IP of the VPN gateway OCI instance (amd1)
 data "oci_core_private_ips" "wireguard_private_ip" {
-  ip_address = oci_core_instance.amd1.private_ip
+  ip_address = oci_core_instance.instances["amd1"].private_ip
   subnet_id  = oci_core_subnet.public_subnet.id
 }
 

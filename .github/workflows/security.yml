@@ -27,6 +27,7 @@ jobs:
   security-scan:
     name: Security Vulnerability Scan
     runs-on: ubuntu-latest
+    # Run comprehensive SARIF scans on all events (uploads to Security tab)
     permissions:
       security-events: write
       contents: read
@@ -70,8 +71,10 @@ jobs:
           category: 'trivy-config'
 
   dependency-scan:
-    name: Dependency Security Scan
+    name: Dependency Security Scan (Fail-Fast)
     runs-on: ubuntu-latest
+    # Fast-fail scan for PRs only - deep scans happen via security-scan job
+    if: github.event_name == 'pull_request'
     permissions:
       contents: read
 
@@ -134,7 +137,8 @@ jobs:
     name: Security Summary
     runs-on: ubuntu-latest
     permissions: {}
-    needs: [security-scan, dependency-scan, secret-scan]
+    # dependency-scan only runs on PRs, so make it optional
+    needs: [security-scan, secret-scan]
     if: always()
 
     steps:
@@ -144,7 +148,12 @@ jobs:
           echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Vulnerability Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Dependency Scan | ${{ needs.dependency-scan.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Secret Detection | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "✅ PR quick security checks completed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔍 Comprehensive security scan completed" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check the Security tab for detailed results." >> $GITHUB_STEP_SUMMARY

@@ -89,21 +89,11 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-      # Plan summary for PRs
       - name: Terraform Plan Summary
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -f terraform.tfplan ]; then
-            echo "## GCP Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-            ADDED=$(terraform show -json terraform.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
-            CHANGED=$(terraform show -json terraform.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
-            DESTROYED=$(terraform show -json terraform.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
-            echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
-          fi
+        uses: ./.github/actions/terraform-plan-summary
+        with:
+          plan_file: 'terraform.tfplan'
+          job_name: 'GCP'
 
   oracle-setup:
     name: "Terraform Oracle"
@@ -171,21 +161,11 @@ jobs:
             echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-      # Plan summary for PRs
       - name: Terraform Plan Summary
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -f plan.tfplan ]; then
-            echo "## Oracle Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-            ADDED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
-            CHANGED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
-            DESTROYED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
-            echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
-          fi
+        uses: ./.github/actions/terraform-plan-summary
+        with:
+          plan_file: 'plan.tfplan'
+          job_name: 'Oracle'
 
   tailscale-setup:
     name: "Ansible Tailscale"
@@ -440,18 +420,8 @@ jobs:
             echo "Drift detection completed with unexpected exit code: $exitcode" >> $GITHUB_STEP_SUMMARY
           fi
 
-      # Plan summary for PRs (safe if no plan file)
       - name: Terraform Plan Summary
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -f plan.tfplan ]; then
-            echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-            ADDED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
-            CHANGED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
-            DESTROYED=$(terraform show -json plan.tfplan | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
-            echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
-            echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
-          fi
+        uses: ./.github/actions/terraform-plan-summary
+        with:
+          plan_file: 'plan.tfplan'
+          job_name: 'Kubernetes'

@@ -44,6 +44,8 @@ https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ
 
 ## Secrets
 
+- Store the kubeconfig client certificate, key, and cluster CA certificate in Terraform Cloud as sensitive environment variables (`TF_KUBE_CLIENT_CERT`, `TF_KUBE_CLIENT_KEY`, and `TF_KUBE_CLUSTER_CA_CERT`).
+
 ## Servers
 - michael-pi        Raspberry Pi 5 8GB 1    192.168.1.100      172.20.60.100
 - jim-pi            Raspberry Pi 5 8GB 2    192.168.1.101      172.20.60.101

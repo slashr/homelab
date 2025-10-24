@@ -96,6 +96,7 @@ Configures SSH authentication with private key and disables strict host checking
 **Kubernetes:**
 - `TF_KUBE_CLIENT_CERT` — Base64-encoded kubeconfig client certificate
 - `TF_KUBE_CLIENT_KEY` — Base64-encoded kubeconfig client key
+- `TF_KUBE_CLUSTER_CA_CERT` — Base64-encoded kubeconfig cluster CA certificate
 
 **Cloudflare:**
 - `TF_CLOUDFLARE_API_TOKEN` — API token with DNS permissions for cert-manager and external-dns

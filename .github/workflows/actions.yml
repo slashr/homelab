@@ -261,6 +261,7 @@ jobs:
       TF_VAR_cloudflare_api_token: ${{ secrets.TF_CLOUDFLARE_API_TOKEN }}
       TF_VAR_kube_client_cert: ${{ secrets.TF_KUBE_CLIENT_CERT }}
       TF_VAR_kube_client_key: ${{ secrets.TF_KUBE_CLIENT_KEY }}
+      TF_VAR_kube_cluster_ca_cert: ${{ secrets.TF_KUBE_CLUSTER_CA_CERT }}
     steps:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2

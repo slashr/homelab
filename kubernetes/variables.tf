@@ -38,3 +38,13 @@ variable "kube_client_key" {
     error_message = "kube_client_key must be valid base64-encoded data."
   }
 }
+
+variable "kube_cluster_ca_cert" {
+  description = "Rpi Kube cluster CA certificate base64 encoded"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = can(base64decode(var.kube_cluster_ca_cert))
+    error_message = "kube_cluster_ca_cert must be valid base64-encoded data."
+  }
+}

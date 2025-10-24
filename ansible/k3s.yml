@@ -164,6 +164,9 @@
         - node: jim-pi
           location: home
           name: jim
+        - node: dwight-pi
+          location: home
+          name: dwight
         - node: stanley-arm1
           location: cloud
           name: stanley

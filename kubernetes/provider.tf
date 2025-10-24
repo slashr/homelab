@@ -30,25 +30,25 @@ locals {
 }
 
 provider "kubectl" {
-  host               = local.k8s_api_endpoint
-  load_config_file   = false
-  client_certificate = base64decode(var.kube_client_cert)
-  client_key         = base64decode(var.kube_client_key)
+  host                   = local.k8s_api_endpoint
+  load_config_file       = false
+  client_certificate     = base64decode(var.kube_client_cert)
+  client_key             = base64decode(var.kube_client_key)
   cluster_ca_certificate = base64decode(var.kube_cluster_ca_cert)
 }
 
 provider "kubernetes" {
-  host               = local.k8s_api_endpoint
-  client_certificate = base64decode(var.kube_client_cert)
-  client_key         = base64decode(var.kube_client_key)
+  host                   = local.k8s_api_endpoint
+  client_certificate     = base64decode(var.kube_client_cert)
+  client_key             = base64decode(var.kube_client_key)
   cluster_ca_certificate = base64decode(var.kube_cluster_ca_cert)
 }
 
 provider "helm" {
   kubernetes = {
-    host               = local.k8s_api_endpoint
-    client_certificate = base64decode(var.kube_client_cert)
-    client_key         = base64decode(var.kube_client_key)
+    host                   = local.k8s_api_endpoint
+    client_certificate     = base64decode(var.kube_client_cert)
+    client_key             = base64decode(var.kube_client_key)
     cluster_ca_certificate = base64decode(var.kube_cluster_ca_cert)
   }
 }

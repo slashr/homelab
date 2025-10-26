@@ -9,3 +9,58 @@
     cache_valid_time: 3600
   become: true
   tags: packages
+
+- name: Set timezone
+  community.general.timezone:
+    name: Europe/London
+  become: true
+  tags: system
+
+- name: Ensure locale en_GB.UTF-8 exists
+  community.general.locale_gen:
+    name: en_GB.UTF-8
+    state: present
+  become: true
+  tags: system
+
+- name: Set en_GB.UTF-8 as default locale
+  ansible.builtin.command: update-locale LANG=en_GB.UTF-8
+  become: true
+  changed_when: false
+  tags: system
+
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  tags: system
+
+- name: Enable unattended-upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    mode: '0644'
+  become: true
+  tags: system
+
+- name: Create custom MOTD
+  ansible.builtin.copy:
+    dest: /etc/motd
+    content: |
+      ╔═══════════════════════════════════════╗
+      ║  {{ ansible_hostname }}
+      ║  IP: {{ ansible_default_ipv4.address }}
+      ║  OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+      ║  Kernel: {{ ansible_kernel }}
+      ╚═══════════════════════════════════════╝
+    mode: '0644'
+  become: true
+  tags: system

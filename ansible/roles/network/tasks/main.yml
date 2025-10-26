@@ -46,6 +46,7 @@
 - name: Immediately disable WiFi power save (runtime)
   ansible.builtin.command: iwconfig wlan0 power off
   become: true
+  when: not ansible_check_mode
   register: iwconfig_result
   changed_when: iwconfig_result.rc == 0
   failed_when: false

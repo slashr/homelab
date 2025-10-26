@@ -97,80 +97,80 @@ All planned PRs are listed below in logical execution order.
 
 ### Raspberry Pi Configuration
 
-- [x] **PR #1: Pi Inventory + Variables**
+- [x] **PR #1: Add Raspberry Pi inventory group and configuration variables**
   - Add `[pis]` group to `ansible/hosts.ini` (michael-pi, jim-pi, dwight-pi)
   - Create `ansible/group_vars/pis.yml` with common config
 
-- [x] **PR #2: GitHub Actions Dry-Run Check**
+- [x] **PR #2: Add Ansible dry-run checks to GitHub Actions**
   - Add `--check --diff` step to CI pipeline for Pi playbooks
 
-- [x] **PR #3: Common Role - Packages**
+- [x] **PR #3: Install essential system packages on Raspberry Pis**
   - Install base packages: vim, curl, htop, iotop, git, tmux
 
-- [x] **PR #4: Common Role - System Config**
+- [x] **PR #4: Configure timezone, locale, and automatic security updates**
   - Timezone/locale, unattended-upgrades, MOTD
 
-- [x] **PR #5: Network Role - WiFi Power Save Fix** 🔥
+- [x] **PR #5: Fix WiFi power save causing network latency and retries** 🔥
   - Disable WiFi power save to fix latency issues (jim-pi: 8s → <20ms)
   - **Priority: CRITICAL** - Fixes WiFi retries causing node health issues
   - Risk: Medium - Keep SSH session open during apply
 
-- [x] **PR #6: Network Role - DNS Config**
+- [x] **PR #6: Configure DNS with AdGuard on dwight-pi**
   - Primary DNS: dwight-pi (100.100.1.102), fallbacks: Cloudflare, Google
 
-- [x] **PR #7: Network Role - NTP Sync**
+- [x] **PR #7: Configure NTP time synchronization**
   - Configure NTP for time synchronization
 
-- [ ] **PR #8: k3s Prerequisites - Runtime Config**
-- Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
-- Kernel modules: br_netfilter, overlay
+- [ ] **PR #8: Add k3s runtime prerequisites role for Raspberry Pis**
+  - Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
+  - Kernel modules: br_netfilter, overlay
 
-- [ ] **PR #9: k3s Prerequisites - Boot Config**
-- Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
+- [ ] **PR #9: Configure k3s boot parameters for cgroup support**
+  - Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
   - Risk: Medium - Requires reboot
 
 ### Security Hardening - Raspberry Pis
 
-- [ ] **PR #10: Pi Security - SSH Hardening**
+- [ ] **PR #10: Harden SSH access on Raspberry Pis (key-only authentication)**
   - SSH: key-only auth, no root login, no password auth
   - Risk: Medium - Keep 2 SSH sessions open during apply
 
-- [ ] **PR #11: Pi Security - UFW Firewall**
+- [ ] **PR #11: Configure UFW firewall on Raspberry Pis**
   - Default deny incoming, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
 
 ### Security Hardening - Public Cloud Nodes
 
-- [ ] **PR #12: Public Nodes Inventory + Variables**
+- [ ] **PR #12: Add public cloud nodes inventory group and security variables**
   - Add `[public_nodes]` group to `ansible/hosts.ini` (angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1)
   - Create `ansible/group_vars/public_nodes.yml` with fail2ban and UFW config
 
-- [ ] **PR #13: fail2ban Role - SSH Protection** 🔥
+- [ ] **PR #13: Deploy fail2ban to block SSH brute force attacks on public nodes** 🔥
   - Deploy fail2ban with SSH jail (3 strikes → 24h ban)
   - **Priority: CRITICAL** - Mitigates 25,891 daily SSH brute force attacks
   - Rollout: toby-gcp1 → phyllis → stanley → angela
 
-- [ ] **PR #14: Public Nodes - UFW Firewall**
+- [ ] **PR #14: Configure UFW firewall with rate limiting on public nodes**
   - UFW with rate-limited SSH (6 conn/30s)
   - Allow Tailscale (41641/udp) and k3s traffic from Tailscale network only
   - Risk: Medium - Keep 2 SSH sessions open, test on toby-gcp1 first
 
-- [ ] **PR #15: Security Monitoring & Reporting**
+- [ ] **PR #15: Add fail2ban monitoring and daily attack reports**
   - Daily fail2ban reports: banned IPs, attack volumes, top attackers
   - Cron job at 9 AM daily
 
 ### Ansible Performance Optimization
 
-- [ ] **PR #16: Optimize vpn.yml Execution**
+- [ ] **PR #16: Optimize Ansible playbook execution with parallel strategy**
   - Add `strategy: free` for parallel host execution
   - Add `gather_facts: false` where not needed
 
-- [ ] **PR #17: Add ansible.cfg**
+- [ ] **PR #17: Add ansible.cfg with SSH performance optimizations**
   - Enable SSH pipelining and ControlPersist
-   - Set forks = 10
+  - Set forks = 10
 
-- [x] **PR #18: Skip VPN Playbook on PRs**
+- [x] **PR #18: Skip VPN playbook execution on pull requests**
   - Only run actual playbook on push to main
-   - Keep dry-run check on PRs
+  - Keep dry-run check on PRs
 
 ---
 

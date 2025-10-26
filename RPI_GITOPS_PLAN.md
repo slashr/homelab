@@ -226,19 +226,23 @@ ssh jim-pi "timedatectl status"
 ```
 
 **Verify:**
+
 - [ ] NTP synchronized: yes
 
 ### PR #9: Security Role - SSH Hardening
+
 - SSH: key-only, no root, no password auth ONLY
 - Size: ~80 lines
 - Risk: Medium (SSH lockout risk)
 
 **Safety:**
+
 - **Keep 2 SSH sessions open** before applying
 - Config validation: `sshd -t -f %s`
 - Backup created automatically
 
 **Testing:**
+
 ```bash
 # jim-pi first (keep 2nd session open!)
 ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags ssh
@@ -251,39 +255,46 @@ ssh -o PreferredAuthentications=password pi@jim-pi  # Should fail
 ```
 
 **Verify:**
+
 - [ ] Password auth blocked
 - [ ] Key auth works
 - [ ] No SSH lockout
 
 **Rollback:**
+
 ```bash
 ssh pi "sudo cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config"
 ssh pi "sudo systemctl restart sshd"
 ```
 
 ### PR #10: Security Role - Firewall (UFW)
+
 - UFW: default deny, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
 - Size: ~70 lines
 - Risk: Low
 
 **Testing:**
+
 ```bash
 ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags firewall
 ssh jim-pi "sudo ufw status verbose"
 ```
 
 **Verify:**
+
 - [ ] UFW active
 - [ ] Required ports allowed
 - [ ] Can still SSH in
 
 ### PR #11: k3s Prerequisites - Runtime Config
+
 - Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
 - Kernel modules: br_netfilter, overlay
 - Size: ~60 lines
 - Risk: Low (no reboot needed)
 
 **Testing:**
+
 ```bash
 ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags k3s_runtime
 
@@ -293,21 +304,25 @@ ssh jim-pi "lsmod | grep br_netfilter"   # Should be loaded
 ```
 
 **Verify:**
+
 - [ ] Sysctls applied
 - [ ] Modules loaded
 - [ ] Persistent across reboots
 
 ### PR #12: k3s Prerequisites - Boot Config
+
 - Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
 - Size: ~50 lines
 - Risk: Medium (requires reboot)
 
 **Safety:**
+
 - Backup `/boot/firmware/cmdline.txt` created automatically
 - Apply to jim-pi first (worker, less critical)
 - Verify k3s still works after reboot
 
 **Testing:**
+
 ```bash
 # jim-pi first
 ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags k3s_boot
@@ -323,10 +338,12 @@ kubectl get nodes  # jim-pi should be Ready
 ```
 
 **Verify:**
+
 - [ ] Boot cmdline has cgroup params
 - [ ] k3s nodes Ready after reboot
 
 **Rollback:**
+
 ```bash
 ssh pi "sudo cp /boot/firmware/cmdline.txt.backup /boot/firmware/cmdline.txt"
 ssh pi "sudo reboot"
@@ -357,6 +374,7 @@ ansible-playbook -i hosts.ini playbooks/pis.yml
 ## Success Criteria
 
 **Technical:**
+
 - WiFi latency: <20ms avg (from 8000ms)
 - WiFi retries: <100 accumulated (from 343-4325)
 - All nodes: Ready status
@@ -365,6 +383,7 @@ ansible-playbook -i hosts.ini playbooks/pis.yml
 - Idempotent: 2 runs = 0 changes
 
 **Operational:**
+
 - Documentation complete
 - `verify.yml` passes
 - New Pi can join via playbook only
@@ -416,4 +435,3 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff
 - Fix won't survive reboot until PR #6 merged
 - All Pis have same WiFi issue, just different severity
 - dwight-pi: 4325 retries (worst), jim-pi: 343 retries
-

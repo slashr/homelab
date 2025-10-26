@@ -16,14 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Define reusable runner configuration
-  x-runner-config: &runner-config
-    runs-on: self-hosted
-
   gcp-setup:
-    <<: *runner-config
     name: "Terraform GCP"
     if: ${{ github.ref != 'refs/heads/staging' }}
+    runs-on: self-hosted
     timeout-minutes: 30  # Add timeout to prevent hanging jobs
     defaults:
       run:
@@ -100,9 +96,9 @@ jobs:
           job_name: 'GCP'
 
   oracle-setup:
-    <<: *runner-config
     name: "Terraform Oracle"
     if: ${{ github.ref != 'refs/heads/staging' }}
+    runs-on: self-hosted
     timeout-minutes: 30
     defaults:
       run:
@@ -173,9 +169,9 @@ jobs:
           job_name: 'Oracle'
 
   tailscale-setup:
-    <<: *runner-config
     name: "Ansible Tailscale"
     needs: [oracle-setup, gcp-setup]
+    runs-on: self-hosted
     timeout-minutes: 30
     defaults:
       run:
@@ -211,10 +207,10 @@ jobs:
           fi
 
   k3s-setup:
-    <<: *runner-config
     name: "Ansible K3S"
     needs: [tailscale-setup]
     if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && github.event_name == 'push') }}
+    runs-on: self-hosted
     timeout-minutes: 45
     defaults:
       run:
@@ -252,10 +248,10 @@ jobs:
           fi
 
   run-k3s:
-    <<: *runner-config
     name: "Terraform K8S"
     needs: [k3s-setup]
     if: ${{ github.ref != 'refs/heads/staging' }}
+    runs-on: self-hosted
     timeout-minutes: 30
     defaults:
       run:

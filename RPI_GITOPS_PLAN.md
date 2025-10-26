@@ -12,10 +12,9 @@ Ansible roles for: base system, security, network (WiFi fix), k3s prereqs
 
 ```
 ansible/
-├── inventory/
-│   ├── hosts.ini              # Add [pis] group
-│   └── group_vars/
-│       └── pis.yml            # Common Pi config
+├── hosts.ini                  # Add [pis] group
+├── group_vars/
+│   └── pis.yml                # Common Pi config
 ├── roles/
 │   ├── common/                # Packages, timezone, updates
 │   ├── security/              # SSH hardening, UFW
@@ -31,7 +30,7 @@ ansible/
 ## Key Configuration
 
 ```yaml
-# inventory/group_vars/pis.yml
+# group_vars/pis.yml
 wifi_power_save_disabled: true
 dns_servers:
   - 100.100.1.102  # dwight-pi (AdGuard) via Tailscale
@@ -51,7 +50,7 @@ base_packages: [vim, curl, htop, iotop, git, tmux]
 
 ### PR #2: Inventory + Variables
 - Add `[pis]` group to `hosts.ini` with michael-pi, jim-pi, dwight-pi
-- Create `inventory/group_vars/pis.yml` with common config
+- Create `group_vars/pis.yml` with common config
 - Size: ~20 lines (super simple!)
 - Risk: Low (no execution)
 
@@ -66,9 +65,9 @@ dwight-pi
 
 **Testing:**
 ```bash
-ansible-inventory -i inventory/hosts.ini --list --yaml
-ansible pis -i inventory/hosts.ini -m debug -a "var=wifi_power_save_disabled"
-ansible pis -i inventory/hosts.ini -m ping
+ansible-inventory -i hosts.ini --list --yaml
+ansible pis -i hosts.ini -m debug -a "var=wifi_power_save_disabled"
+ansible pis -i hosts.ini -m ping
 ```
 
 ### PR #3: GitHub Actions Dry-Run Check
@@ -125,7 +124,7 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags packages
 
 **Testing:**
 ```bash
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags system
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags system
 ssh jim-pi "timedatectl"
 ssh jim-pi "systemctl status unattended-upgrades"
 ```
@@ -146,7 +145,7 @@ ssh jim-pi "systemctl status unattended-upgrades"
 
 **Testing:**
 ```bash
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags wifi
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags wifi
 
 # Verify
 ssh jim-pi "dmesg | grep 'power save'"  # Should say "disabled"
@@ -154,8 +153,8 @@ ssh jim-pi "ping -c 10 100.100.1.100 | tail -2"  # Should be <10ms avg
 ssh jim-pi "cat /proc/net/wireless"  # Retry count stops increasing
 
 # Then michael-pi, then dwight-pi
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit michael-pi --tags wifi
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit dwight-pi --tags wifi
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit michael-pi --tags wifi
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit dwight-pi --tags wifi
 ```
 
 **Verify:**
@@ -176,7 +175,7 @@ ssh pi "sudo systemctl reload NetworkManager"
 
 **Testing:**
 ```bash
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags dns
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags dns
 
 # Verify
 ssh jim-pi "cat /etc/resolv.conf"  # Check nameservers
@@ -196,7 +195,7 @@ ssh jim-pi "nslookup ads.doubleclick.net"  # Should be blocked
 
 **Testing:**
 ```bash
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags ntp
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags ntp
 ssh jim-pi "timedatectl status"
 ```
 
@@ -216,7 +215,7 @@ ssh jim-pi "timedatectl status"
 **Testing:**
 ```bash
 # jim-pi first (keep 2nd session open!)
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags ssh
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags ssh
 
 # In 2nd session, verify new connection works
 ssh jim-pi "echo 'SSH works'"
@@ -243,7 +242,7 @@ ssh pi "sudo systemctl restart sshd"
 
 **Testing:**
 ```bash
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags firewall
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags firewall
 ssh jim-pi "sudo ufw status verbose"
 ```
 
@@ -260,7 +259,7 @@ ssh jim-pi "sudo ufw status verbose"
 
 **Testing:**
 ```bash
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags k3s_runtime
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags k3s_runtime
 
 # Verify
 ssh jim-pi "sysctl net.ipv4.ip_forward"  # Should be 1
@@ -285,7 +284,7 @@ ssh jim-pi "lsmod | grep br_netfilter"   # Should be loaded
 **Testing:**
 ```bash
 # jim-pi first
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags k3s_boot
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags k3s_boot
 
 # Reboot
 ssh jim-pi "sudo reboot"
@@ -314,19 +313,19 @@ ssh pi "sudo reboot"
 ansible-playbook playbook.yml --syntax-check
 
 # 2. Dry run
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --check --diff
+ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff
 
 # 3. Apply to single node
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi
 
 # 4. Verify idempotency (0 changes)
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi
 
 # 5. Validation
-ansible-playbook -i inventory/hosts.ini playbooks/verify.yml --limit jim-pi
+ansible-playbook -i hosts.ini playbooks/verify.yml --limit jim-pi
 
 # 6. Roll out to all Pis
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml
+ansible-playbook -i hosts.ini playbooks/pis.yml
 ```
 
 ## Success Criteria
@@ -357,25 +356,25 @@ ansible-playbook -i inventory/hosts.ini playbooks/pis.yml
 
 ```bash
 # Full setup (in order)
-ansible-playbook -i inventory/hosts.ini playbooks/vpn.yml
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml
-ansible-playbook -i inventory/hosts.ini playbooks/k3s.yml
+ansible-playbook -i hosts.ini playbooks/vpn.yml
+ansible-playbook -i hosts.ini playbooks/pis.yml
+ansible-playbook -i hosts.ini playbooks/k3s.yml
 
 # Pi updates only
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml
+ansible-playbook -i hosts.ini playbooks/pis.yml
 
 # Single role/tag
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --tags wifi
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --tags dns
+ansible-playbook -i hosts.ini playbooks/pis.yml --tags wifi
+ansible-playbook -i hosts.ini playbooks/pis.yml --tags dns
 
 # Single node
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi
 
 # Verify all Pis
-ansible-playbook -i inventory/hosts.ini playbooks/verify.yml
+ansible-playbook -i hosts.ini playbooks/verify.yml
 
 # Drift detection
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --check --diff
+ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff
 ```
 
 ## Timeline

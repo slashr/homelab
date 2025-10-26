@@ -159,6 +159,7 @@
       ansible.builtin.command: >
         kubectl label node {{ item.node }} kubernetes.io/role=worker
         location={{ item.location }} name={{ item.name }}
+        {{ '--overwrite' if item.node_size is not defined else 'node-size=' + item.node_size + ' --overwrite' }}
       changed_when: false
       with_items:
         - node: jim-pi
@@ -176,6 +177,7 @@
         - node: angela-amd2
           location: cloud
           name: angela
+          node_size: micro
         - node: toby-gcp1
           location: cloud
           name: toby

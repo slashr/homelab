@@ -71,20 +71,37 @@ ansible pis -i inventory/hosts.ini -m debug -a "var=wifi_power_save_disabled"
 ansible pis -i inventory/hosts.ini -m ping
 ```
 
-### PR #3: Common Role - Packages
+### PR #3: GitHub Actions Dry-Run Check
+- Add Ansible check mode to CI pipeline
+- Runs on PRs to show what would change before merge
+- Size: ~30 lines (workflow only)
+- Risk: None (CI-only change)
+
+**Changes:**
+Add dry-run check step to `.github/workflows/actions.yml` in `tailscale-setup` job:
+- Runs `ansible-playbook --check --diff` on PRs only
+- Tests on jim-pi (limit)
+- Shows diff preview in PR summary
+- Skips gracefully if playbook doesn't exist
+
+**Testing:**
+```bash
+# Trigger by creating a PR - check the step summary in Actions
+```
+
+**Verify:**
+- [ ] Step shows up in PR checks
+- [ ] Skips gracefully when no playbook exists
+- [ ] Will show diff once playbooks are added
+
+### PR #4: Common Role - Packages
 - Install base packages only: vim, curl, htop, iotop, git, tmux
-- **Add GitHub Actions dry-run check** for Pi playbook
-- Size: ~100 lines (role + workflow enhancement)
+- Size: ~50 lines
 - Risk: Very Low
 
 **Changes:**
 1. Create `roles/common/tasks/main.yml` with package installation
 2. Create `playbooks/pis.yml` to apply common role
-3. Add dry-run check step to `.github/workflows/actions.yml`:
-   - Runs `--check --diff` on PRs only
-   - Tests on jim-pi (limit)
-   - Shows diff preview in PR summary
-   - Skips gracefully if playbook doesn't exist
 
 **Testing:**
 ```bash
@@ -172,7 +189,7 @@ ssh jim-pi "nslookup ads.doubleclick.net"  # Should be blocked
 - [ ] Ad blocking works
 - [ ] Fallback DNS configured
 
-### PR #7: Network Role - NTP Sync
+### PR #8: Network Role - NTP Sync
 - Configure NTP for time sync
 - Size: ~30 lines
 - Risk: Very Low
@@ -219,7 +236,7 @@ ssh pi "sudo cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config"
 ssh pi "sudo systemctl restart sshd"
 ```
 
-### PR #9: Security Role - Firewall (UFW)
+### PR #10: Security Role - Firewall (UFW)
 - UFW: default deny, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
 - Size: ~70 lines
 - Risk: Low
@@ -235,7 +252,7 @@ ssh jim-pi "sudo ufw status verbose"
 - [ ] Required ports allowed
 - [ ] Can still SSH in
 
-### PR #10: k3s Prerequisites - Runtime Config
+### PR #11: k3s Prerequisites - Runtime Config
 - Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
 - Kernel modules: br_netfilter, overlay
 - Size: ~60 lines
@@ -255,7 +272,7 @@ ssh jim-pi "lsmod | grep br_netfilter"   # Should be loaded
 - [ ] Modules loaded
 - [ ] Persistent across reboots
 
-### PR #11: k3s Prerequisites - Boot Config
+### PR #12: k3s Prerequisites - Boot Config
 - Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
 - Size: ~50 lines
 - Risk: Medium (requires reboot)
@@ -363,15 +380,15 @@ ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --check --diff
 
 ## Timeline
 
-- **Execution:** 11 PRs, sequential, each very small
-- **Status:** Planning complete, ready to implement
-- **Next:** PR #2 - Enhanced inventory
+- **Execution:** 12 PRs, sequential, each very small
+- **Status:** Planning complete, PR #1 merged, PR #2 in review
+- **Next:** PR #3 - GitHub Actions dry-run check
 - **Strategy:** Smaller PRs = safer rollout, easier to verify, faster to rollback
 
 ## Notes
 
 - jim-pi currently has **temporary manual fix** (WiFi power save disabled)
-- Fix won't survive reboot until PR #5 merged
+- Fix won't survive reboot until PR #6 merged
 - All Pis have same WiFi issue, just different severity
 - dwight-pi: 4325 retries (worst), jim-pi: 343 retries
 

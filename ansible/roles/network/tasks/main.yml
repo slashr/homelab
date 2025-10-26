@@ -52,3 +52,34 @@
   failed_when: false
   tags: wifi
 
+# DNS Configuration - AdGuard on dwight-pi with fallbacks
+- name: Configure DNS servers
+  ansible.builtin.template:
+    src: ../templates/resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+  become: true
+  tags: dns
+
+- name: Prevent dhcpcd from overwriting resolv.conf
+  ansible.builtin.lineinfile:
+    path: /etc/dhcpcd.conf
+    line: 'nohook resolv.conf'
+    create: true
+    mode: '0644'
+  become: true
+  when: dhcpcd_status.status is defined and dhcpcd_status.status.ActiveState == "active"
+  tags: dns
+
+- name: Prevent NetworkManager from overwriting resolv.conf
+  ansible.builtin.copy:
+    dest: /etc/NetworkManager/conf.d/dns.conf
+    content: |
+      [main]
+      dns=none
+    mode: '0644'
+  become: true
+  when: nm_status.status is defined and nm_status.status.ActiveState == "active"
+  notify: Restart NetworkManager
+  tags: dns
+

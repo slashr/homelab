@@ -258,7 +258,7 @@ jobs:
     if: |
       !cancelled() &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
-      (github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'workflow_dispatch' ||
        (github.ref == 'refs/heads/main' && github.event_name == 'push'))
     runs-on: ubuntu-latest
     timeout-minutes: 45

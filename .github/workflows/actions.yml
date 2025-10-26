@@ -50,6 +50,9 @@ jobs:
               - 'ansible/k3s.yml'
               - 'ansible/playbooks/**'
               - 'ansible/roles/**'
+              - 'ansible/group_vars/**'
+              - 'ansible/hosts.ini'
+              - 'ansible/confs/**'
               - '.github/workflows/**'
             docs-only:
               - '**/*.md'

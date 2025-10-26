@@ -61,18 +61,19 @@ For each PR:
 
 All Ansible playbooks targeting Raspberry Pis use a staged rollout pattern:
 
-1. **jim-pi first** (canary) - catches issues early
-2. **michael-pi and dwight-pi** - only if jim-pi succeeds
+1. **dwight-pi first** (canary) - catches issues early
+2. **jim-pi second** - regular worker
+3. **michael-pi last** (k3s master) - most critical
 
 **CI/CD Behavior:**
 
 - **PR dry-run**: Checks all 3 Pis simultaneously (shows what would change)
-- **Main branch apply**: Runs jim-pi first, then others (staged deployment)
+- **Main branch apply**: Runs dwight → jim → michael (staged deployment)
 
 **Why:**
 
-- Safer: Issues caught on jim-pi before affecting k3s master (michael-pi) or Pi-hole (dwight-pi)
-- Clear: Explicit failure isolation
+- Safer: Issues caught on dwight-pi before affecting workers or k3s master
+- Clear: k3s master (michael-pi) updated last as it's most critical
 - Fast: Parallel dry-run for quick validation
 
 ---

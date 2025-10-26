@@ -296,7 +296,7 @@ jobs:
 
       - name: Run vpn-playbook
         id: vpn_playbook
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
 
@@ -342,7 +342,7 @@ jobs:
 
       - name: Run pis-playbook
         id: pis_playbook
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |

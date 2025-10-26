@@ -1,16 +1,18 @@
 # Raspberry Pi GitOps Migration Plan
 
 ## Problem
+
 - jim-pi going unhealthy (8s WiFi latency → monitoring failures)
 - Configuration drift across all Pis (jim: 343 retries, dwight: 4325 retries)
 - No standardized config management
 
 ## Solution
+
 Ansible roles for: base system, security, network (WiFi fix), k3s prereqs
 
 ## Architecture
 
-```
+```text
 ansible/
 ├── hosts.ini                  # Add [pis] group
 ├── group_vars/
@@ -44,17 +46,20 @@ base_packages: [vim, curl, htop, iotop, git, tmux]
 ## Implementation (12 PRs)
 
 ### PR #1: Planning Document ✅
+
 - **This file**
 - Size: ~50 lines
 - Risk: None
 
 ### PR #2: Inventory + Variables
+
 - Add `[pis]` group to `hosts.ini` with michael-pi, jim-pi, dwight-pi
 - Create `group_vars/pis.yml` with common config
 - Size: ~20 lines (super simple!)
 - Risk: Low (no execution)
 
 **Changes:**
+
 ```ini
 # hosts.ini - just add this at the end
 [pis]
@@ -64,6 +69,7 @@ dwight-pi
 ```
 
 **Testing:**
+
 ```bash
 ansible-inventory -i hosts.ini --list --yaml
 ansible pis -i hosts.ini -m debug -a "var=wifi_power_save_disabled"
@@ -71,51 +77,62 @@ ansible pis -i hosts.ini -m ping
 ```
 
 ### PR #3: GitHub Actions Dry-Run Check
+
 - Add Ansible check mode to CI pipeline
 - Runs on PRs to show what would change before merge
 - Size: ~30 lines (workflow only)
 - Risk: None (CI-only change)
 
 **Changes:**
+
 Add dry-run check step to `.github/workflows/actions.yml` in `tailscale-setup` job:
+
 - Runs `ansible-playbook --check --diff` on PRs only
 - Tests on jim-pi (limit)
 - Shows diff preview in PR summary
 - Skips gracefully if playbook doesn't exist
 
 **Testing:**
+
 ```bash
 # Trigger by creating a PR - check the step summary in Actions
 ```
 
 **Verify:**
+
 - [ ] Step shows up in PR checks
 - [ ] Skips gracefully when no playbook exists
 - [ ] Will show diff once playbooks are added
 
 ### PR #4: Common Role - Packages
+
 - Install base packages only: vim, curl, htop, iotop, git, tmux
 - Size: ~50 lines
 - Risk: Very Low
 
 **Changes:**
+
 1. Create `roles/common/tasks/main.yml` with package installation
 2. Create `playbooks/pis.yml` to apply common role
 
 **Testing:**
+
 ```bash
 # Local dry-run
-ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff --limit jim-pi --tags packages
+ansible-playbook -i hosts.ini playbooks/pis.yml \
+  --check --diff --limit jim-pi --tags packages
 
 # Actual apply
 ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags packages
 ```
 
 **Verify:**
+
 - [ ] `which vim && which htop && which git` all succeed
 - [ ] GitHub Actions shows dry-run diff in PR summary
 
 ### PR #5: Common Role - System Config
+
 - Timezone/locale (Europe/London, en_GB.UTF-8)
 - Unattended-upgrades for security patches
 - MOTD with node info
@@ -130,20 +147,24 @@ ssh jim-pi "systemctl status unattended-upgrades"
 ```
 
 **Verify:**
+
 - [ ] Timezone correct
 - [ ] Unattended-upgrades running
 - [ ] MOTD shows node info
 
 ### PR #6: Network Role - WiFi Fix 🔥 **CRITICAL**
+
 - **Disable WiFi power save ONLY** (NetworkManager + dhcpcd detection)
 - Size: ~60 lines
 - Risk: Medium (network changes)
 
 **Safety:**
+
 - Apply to jim-pi first (already manually fixed)
 - Keep SSH session open during apply
 
 **Testing:**
+
 ```bash
 ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags wifi
 
@@ -158,17 +179,20 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --limit dwight-pi --tags wifi
 ```
 
 **Verify:**
+
 - [ ] Power save disabled on all nodes
 - [ ] Latency <20ms to master
 - [ ] WiFi retry count stops increasing
 
 **Rollback:**
+
 ```bash
 ssh pi "sudo sed -i 's/wifi.powersave = 1/wifi.powersave = 2/' /etc/NetworkManager/conf.d/wifi-powersave.conf"
 ssh pi "sudo systemctl reload NetworkManager"
 ```
 
 ### PR #7: Network Role - DNS Config
+
 - Configure DNS: dwight-pi (100.100.1.102) primary, fallbacks
 - Size: ~40 lines
 - Risk: Low
@@ -184,11 +208,13 @@ ssh jim-pi "nslookup ads.doubleclick.net"  # Should be blocked
 ```
 
 **Verify:**
+
 - [ ] DNS resolves via dwight-pi
 - [ ] Ad blocking works
 - [ ] Fallback DNS configured
 
 ### PR #8: Network Role - NTP Sync
+
 - Configure NTP for time sync
 - Size: ~30 lines
 - Risk: Very Low

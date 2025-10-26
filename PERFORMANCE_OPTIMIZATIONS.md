@@ -191,14 +191,39 @@ time ansible-playbook -i hosts.ini vpn.yml
 - ❌ Downloads/installs even if already installed (idempotent but slower on reruns)
 - 🤔 Not recommended - the check is valuable
 
+## CI/CD Optimization: Skip Actual Playbook Runs on PRs
+
+**Current workflow (`.github/workflows/actions.yml`):**
+1. Dry-run check (PR only) - validates syntax, shows diffs
+2. Run vpn-playbook - actually applies changes
+
+**Problem:** Step 2 is redundant on PRs since dry-run already validates!
+
+**Optimization:**
+```yaml
+- name: Run vpn-playbook
+  id: vpn_playbook
+  if: github.event_name == 'push'  # <-- Add this: only run on push to main
+  run: |
+    ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
+```
+
+**Impact:**
+- PRs: Only dry-run (~30s faster, no actual changes)
+- Main branch: Full execution (dry-run + actual run for safety)
+
+**Benefit:** Faster PR feedback + no risk of applying changes during review
+
 ## Recommendation
 
 **Do This Now:**
 1. Add `strategy: free` to Play 2 (Tailscale installation)
 2. Verify no facts are used, then add `gather_facts: false`
 3. Add ansible.cfg with pipelining
+4. **Skip actual vpn-playbook run on PRs** (only dry-run)
 
 **Expected Result:** 
 - Current: ~3-5 minutes
-- After: ~1-2 minutes
-- **60-70% faster!**
+- After: ~1-2 minutes (main branch)
+- **PR checks: ~30s** (dry-run only)
+- **60-70% faster overall!**

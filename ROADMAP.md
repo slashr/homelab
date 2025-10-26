@@ -97,78 +97,78 @@ All planned PRs are listed below in logical execution order. Mark items as ✅ w
 
 ### Raspberry Pi Configuration
 
-#### PR: Pi Inventory + Variables ✅
+#### PR #1: Pi Inventory + Variables ✅
 - Add `[pis]` group to `ansible/hosts.ini` (michael-pi, jim-pi, dwight-pi)
 - Create `ansible/group_vars/pis.yml` with common config
 
-#### PR: GitHub Actions Dry-Run Check ✅
+#### PR #2: GitHub Actions Dry-Run Check ✅
 - Add `--check --diff` step to CI pipeline for Pi playbooks
 
-#### PR: Common Role - Packages ✅
+#### PR #3: Common Role - Packages ✅
 - Install base packages: vim, curl, htop, iotop, git, tmux
 
-#### PR: Common Role - System Config ✅
+#### PR #4: Common Role - System Config ✅
 - Timezone/locale, unattended-upgrades, MOTD
 
-#### PR: Network Role - WiFi Power Save Fix 🔥
+#### PR #5: Network Role - WiFi Power Save Fix 🔥
 - Disable WiFi power save to fix latency issues (jim-pi: 8s → <20ms)
 - **Priority: CRITICAL** - Fixes WiFi retries causing node health issues
 - Risk: Medium - Keep SSH session open during apply
 
-#### PR: Network Role - DNS Config ✅
+#### PR #6: Network Role - DNS Config ✅
 - Primary DNS: dwight-pi (100.100.1.102), fallbacks: Cloudflare, Google
 
-#### PR: Network Role - NTP Sync ✅
+#### PR #7: Network Role - NTP Sync ✅
 - Configure NTP for time synchronization
 
-#### PR: k3s Prerequisites - Runtime Config ✅
+#### PR #8: k3s Prerequisites - Runtime Config ✅
 - Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
 - Kernel modules: br_netfilter, overlay
 
-#### PR: k3s Prerequisites - Boot Config ✅
+#### PR #9: k3s Prerequisites - Boot Config ✅
 - Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
 - Risk: Medium - Requires reboot
 
 ### Security Hardening - Raspberry Pis
 
-#### PR: Pi Security - SSH Hardening ✅
+#### PR #10: Pi Security - SSH Hardening ✅
 - SSH: key-only auth, no root login, no password auth
 - Risk: Medium - Keep 2 SSH sessions open during apply
 
-#### PR: Pi Security - UFW Firewall ✅
+#### PR #11: Pi Security - UFW Firewall ✅
 - Default deny incoming, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
 
 ### Security Hardening - Public Cloud Nodes
 
-#### PR: Public Nodes Inventory + Variables
+#### PR #12: Public Nodes Inventory + Variables
 - Add `[public_nodes]` group to `ansible/hosts.ini` (angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1)
 - Create `ansible/group_vars/public_nodes.yml` with fail2ban and UFW config
 
-#### PR: fail2ban Role - SSH Protection 🔥
+#### PR #13: fail2ban Role - SSH Protection 🔥
 - Deploy fail2ban with SSH jail (3 strikes → 24h ban)
 - **Priority: CRITICAL** - Mitigates 25,891 daily SSH brute force attacks
 - Rollout: toby-gcp1 → phyllis → stanley → angela
 
-#### PR: Public Nodes - UFW Firewall
+#### PR #14: Public Nodes - UFW Firewall
 - UFW with rate-limited SSH (6 conn/30s)
 - Allow Tailscale (41641/udp) and k3s traffic from Tailscale network only
 - Risk: Medium - Keep 2 SSH sessions open, test on toby-gcp1 first
 
-#### PR: Security Monitoring & Reporting
+#### PR #15: Security Monitoring & Reporting
 - Daily fail2ban reports: banned IPs, attack volumes, top attackers
 - Cron job at 9 AM daily
 
 ### Ansible Performance Optimization
 
-#### PR: Optimize vpn.yml Execution
+#### PR #16: Optimize vpn.yml Execution
 - Add `strategy: free` for parallel host execution
 - Add `gather_facts: false` where not needed
 
-#### PR: Add ansible.cfg
+#### PR #17: Add ansible.cfg
 - Enable SSH pipelining and ControlPersist
    - Set forks = 10
 
-#### PR: Skip VPN Playbook on PRs
+#### PR #18: Skip VPN Playbook on PRs
 - Only run actual playbook on push to main
    - Keep dry-run check on PRs
 

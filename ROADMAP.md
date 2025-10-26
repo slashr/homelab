@@ -55,6 +55,27 @@ For each PR:
 - ❌ Forgetting to pull latest main before branching
 - ❌ Working on main branch directly
 
+## Deployment Strategy
+
+**Staged Rollout (Preferred for All Changes):**
+
+All Ansible playbooks targeting Raspberry Pis use a staged rollout pattern:
+
+1. **dwight-pi** - catches issues early
+2. **jim-pi** - regular worker
+3. **michael-pi** - most critical, updated last
+
+**CI/CD Behavior:**
+
+- **PR dry-run**: Checks all 3 Pis simultaneously
+- **Main branch apply**: Runs dwight → jim → michael
+
+**Why:**
+
+- Safer: Issues caught on dwight-pi before affecting workers or master
+- Clear: michael-pi updated last as it's most critical
+- Fast: Parallel dry-run for quick validation
+
 ---
 
 ## Active Project: Raspberry Pi GitOps Migration

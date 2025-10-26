@@ -1,0 +1,51 @@
+---
+# fail2ban role - Protect against SSH brute force attacks
+
+- name: Install fail2ban
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  register: fail2ban_install
+  until: fail2ban_install is success
+  retries: 3
+  delay: 5
+  tags:
+    - fail2ban
+    - security
+
+- name: Ensure fail2ban service is enabled and started
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+  become: true
+  tags:
+    - fail2ban
+    - security
+
+- name: Create fail2ban jail.local configuration
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  become: true
+  notify: Restart fail2ban
+  tags:
+    - fail2ban
+    - security
+
+- name: Ensure fail2ban is running
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: started
+  become: true
+  tags:
+    - fail2ban
+    - security
+

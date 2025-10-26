@@ -11,6 +11,7 @@ For each PR:
 2. ✅ Get reviewed by `@codex`:
    - Codex will usually start the review automatically and leave comments if any
    - Address comments by either fixing them or replying why a fix isn't needed
+   - **IMPORTANT:** Reply directly to Codex's inline comments (not as independent PR comment) to maintain context
    - If subsequent fixes are pushed after initial PR creation, request re-review using `@codex review`
 3. ✅ Notify user for final approval
 4. ✅ Merge only after user confirmation

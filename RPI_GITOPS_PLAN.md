@@ -3,6 +3,7 @@
 ## PR Workflow
 
 For each PR:
+
 1. ✅ Ensure all tests are green
 2. ✅ Get reviewed by `@codex` (comment on PR)
 3. ✅ Notify user for final approval

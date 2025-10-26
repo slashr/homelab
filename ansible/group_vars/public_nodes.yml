@@ -1,0 +1,17 @@
+---
+# Security configuration for public cloud nodes
+# These nodes are publicly accessible and require enhanced security measures
+
+# fail2ban configuration - protect against SSH brute force attacks
+fail2ban_enabled: true
+fail2ban_bantime: 86400    # 24 hours (in seconds)
+fail2ban_maxretry: 3       # 3 failed attempts trigger ban
+fail2ban_findtime: 600     # within 10 minutes (in seconds)
+fail2ban_destemail: ""     # Optional: email for ban notifications
+
+# UFW firewall configuration
+ufw_enabled: true
+ufw_default_incoming: deny
+ufw_default_outgoing: allow
+ufw_ssh_rate_limit: true   # Rate limit SSH connections (6 per 30 seconds)
+

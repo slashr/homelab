@@ -42,7 +42,7 @@ ssh_password_authentication: false
 base_packages: [vim, curl, htop, iotop, git, tmux]
 ```
 
-## Implementation (11 PRs)
+## Implementation (12 PRs)
 
 ### PR #1: Planning Document ✅
 - **This file**
@@ -99,7 +99,7 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags packages
 - [ ] `which vim && which htop && which git` all succeed
 - [ ] GitHub Actions shows dry-run diff in PR summary
 
-### PR #4: Common Role - System Config
+### PR #5: Common Role - System Config
 - Timezone/locale (Europe/London, en_GB.UTF-8)
 - Unattended-upgrades for security patches
 - MOTD with node info
@@ -118,7 +118,7 @@ ssh jim-pi "systemctl status unattended-upgrades"
 - [ ] Unattended-upgrades running
 - [ ] MOTD shows node info
 
-### PR #5: Network Role - WiFi Fix 🔥 **CRITICAL**
+### PR #6: Network Role - WiFi Fix 🔥 **CRITICAL**
 - **Disable WiFi power save ONLY** (NetworkManager + dhcpcd detection)
 - Size: ~60 lines
 - Risk: Medium (network changes)
@@ -152,7 +152,7 @@ ssh pi "sudo sed -i 's/wifi.powersave = 1/wifi.powersave = 2/' /etc/NetworkManag
 ssh pi "sudo systemctl reload NetworkManager"
 ```
 
-### PR #6: Network Role - DNS Config
+### PR #7: Network Role - DNS Config
 - Configure DNS: dwight-pi (100.100.1.102) primary, fallbacks
 - Size: ~40 lines
 - Risk: Low
@@ -186,7 +186,7 @@ ssh jim-pi "timedatectl status"
 **Verify:**
 - [ ] NTP synchronized: yes
 
-### PR #8: Security Role - SSH Hardening
+### PR #9: Security Role - SSH Hardening
 - SSH: key-only, no root, no password auth ONLY
 - Size: ~80 lines
 - Risk: Medium (SSH lockout risk)

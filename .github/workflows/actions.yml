@@ -12,7 +12,9 @@ permissions:
 
 # Add concurrency control to prevent conflicting deployments
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # PRs: each run gets unique group (parallel execution)
+  # main/staging: serialized to prevent Terraform state race conditions
+  group: ${{ github.event_name == 'pull_request' && github.run_id || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: false
 
 jobs:

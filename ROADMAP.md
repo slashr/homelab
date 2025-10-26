@@ -1,6 +1,69 @@
-# Raspberry Pi GitOps Migration Plan
+# Homelab Development Roadmap
 
-## Problem
+This document tracks all planned work, active projects, and their implementation details.
+Each project is broken down into manageable PRs with clear scope, testing, and verification steps.
+
+## PR Workflow
+
+For each PR:
+
+1. ✅ Ensure all tests are green
+2. ✅ Get reviewed by `@codex`:
+   - Codex will usually start the review automatically and leave comments if any
+   - Address comments by either fixing them or replying why a fix isn't needed
+   - **IMPORTANT:** Reply directly to Codex's inline comments (not as independent PR comment) to maintain context
+   - If subsequent fixes are pushed after initial PR creation, request re-review using `@codex review`
+3. ✅ Notify user for final approval
+4. ✅ Merge only after user confirmation
+
+## Branch Management (Critical!)
+
+**ALWAYS follow this sequence when starting a new PR:**
+
+1. **Start from main:**
+
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+2. **Create new feature branch:**
+
+   ```bash
+   git checkout -b <feature-branch-name>
+   ```
+
+3. **Verify you're on the right branch:**
+
+   ```bash
+   git branch --show-current  # Should show feature-branch-name, NOT main
+   ```
+
+4. **When checking PR status, ensure you're monitoring the FEATURE BRANCH:**
+   - PR checks run against the feature branch
+   - Don't switch to main while debugging PR issues
+   - Use `git branch --show-current` if confused
+
+5. **If you accidentally start from wrong branch:**
+   - Don't push! Rebase onto main first
+   - Or delete branch and start over
+
+**Common Mistakes to Avoid:**
+
+- ❌ Creating branch from another unmerged feature branch
+- ❌ Switching to main while debugging PR checks
+- ❌ Forgetting to pull latest main before branching
+- ❌ Working on main branch directly
+
+---
+
+## Active Project: Raspberry Pi GitOps Migration
+
+**Status:** In Progress (PR #256)  
+**Goal:** Bring michael-pi, jim-pi, and dwight-pi under Ansible GitOps management  
+**Scope:** Essential config only (OS, SSH, network, k3s prerequisites)
+
+### Problem
 
 - jim-pi going unhealthy (8s WiFi latency → monitoring failures)
 - Configuration drift across all Pis (jim: 343 retries, dwight: 4325 retries)
@@ -435,3 +498,49 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff
 - Fix won't survive reboot until PR #6 merged
 - All Pis have same WiFi issue, just different severity
 - dwight-pi: 4325 retries (worst), jim-pi: 343 retries
+
+---
+
+## Future Projects / Backlog
+
+### Ansible Performance Optimization
+
+**Goal:** Reduce CI/CD pipeline execution time from 3-5 minutes to 1-2 minutes
+
+**Problem:** Ansible Tailscale job is slow due to sequential execution and redundant runs on PRs
+
+**Scope:**
+
+- Add `strategy: free` to vpn.yml for parallel host execution
+- Add `gather_facts: false` where facts aren't needed
+- Configure SSH pipelining and ControlPersist in ansible.cfg
+- Skip actual playbook execution on PRs (dry-run only)
+
+**PRs:**
+
+1. **PR: Optimize vpn.yml execution strategy**
+   - Add `strategy: free` to Play 2 (Tailscale installation)
+   - Add `gather_facts: false` after verifying facts aren't used
+   - Test: Measure before/after execution time
+
+2. **PR: Add ansible.cfg with SSH optimizations**
+   - Enable pipelining
+   - Configure ControlPersist
+   - Set forks = 10
+
+3. **PR: Skip vpn-playbook execution on PRs**
+   - Add `if: github.event_name == 'push'` to actual playbook run
+   - Keep dry-run check on PRs
+   - Only apply changes on push to main
+
+**Expected Impact:**
+
+- Main branch: 3-5 min → 1-2 min (60-70% faster)
+- PR checks: 3-5 min → ~30s (dry-run only)
+- No functionality changes, pure optimization
+
+**Timeline:** 3 small PRs, <1 day total
+
+---
+
+*Add new projects below. Each should include Project Name, Goal, Scope, PRs, Timeline.*

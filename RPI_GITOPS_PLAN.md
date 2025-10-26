@@ -73,16 +73,31 @@ ansible pis -i inventory/hosts.ini -m ping
 
 ### PR #3: Common Role - Packages
 - Install base packages only: vim, curl, htop, iotop, git, tmux
-- Size: ~50 lines
+- **Add GitHub Actions dry-run check** for Pi playbook
+- Size: ~100 lines (role + workflow enhancement)
 - Risk: Very Low
+
+**Changes:**
+1. Create `roles/common/tasks/main.yml` with package installation
+2. Create `playbooks/pis.yml` to apply common role
+3. Add dry-run check step to `.github/workflows/actions.yml`:
+   - Runs `--check --diff` on PRs only
+   - Tests on jim-pi (limit)
+   - Shows diff preview in PR summary
+   - Skips gracefully if playbook doesn't exist
 
 **Testing:**
 ```bash
-ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --limit jim-pi --tags packages
+# Local dry-run
+ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff --limit jim-pi --tags packages
+
+# Actual apply
+ansible-playbook -i hosts.ini playbooks/pis.yml --limit jim-pi --tags packages
 ```
 
 **Verify:**
 - [ ] `which vim && which htop && which git` all succeed
+- [ ] GitHub Actions shows dry-run diff in PR summary
 
 ### PR #4: Common Role - System Config
 - Timezone/locale (Europe/London, en_GB.UTF-8)

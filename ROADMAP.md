@@ -93,83 +93,83 @@ All Ansible playbooks targeting Raspberry Pis use a staged rollout pattern:
 
 ## Roadmap Tasks
 
-All planned PRs are listed below in logical execution order. Mark items as ✅ when the PR is merged.
+All planned PRs are listed below in logical execution order.
 
 ### Raspberry Pi Configuration
 
-#### PR #1: Pi Inventory + Variables ✅
-- Add `[pis]` group to `ansible/hosts.ini` (michael-pi, jim-pi, dwight-pi)
-- Create `ansible/group_vars/pis.yml` with common config
+- [x] **PR #1: Pi Inventory + Variables**
+  - Add `[pis]` group to `ansible/hosts.ini` (michael-pi, jim-pi, dwight-pi)
+  - Create `ansible/group_vars/pis.yml` with common config
 
-#### PR #2: GitHub Actions Dry-Run Check ✅
-- Add `--check --diff` step to CI pipeline for Pi playbooks
+- [x] **PR #2: GitHub Actions Dry-Run Check**
+  - Add `--check --diff` step to CI pipeline for Pi playbooks
 
-#### PR #3: Common Role - Packages ✅
-- Install base packages: vim, curl, htop, iotop, git, tmux
+- [x] **PR #3: Common Role - Packages**
+  - Install base packages: vim, curl, htop, iotop, git, tmux
 
-#### PR #4: Common Role - System Config ✅
-- Timezone/locale, unattended-upgrades, MOTD
+- [x] **PR #4: Common Role - System Config**
+  - Timezone/locale, unattended-upgrades, MOTD
 
-#### PR #5: Network Role - WiFi Power Save Fix 🔥
-- Disable WiFi power save to fix latency issues (jim-pi: 8s → <20ms)
-- **Priority: CRITICAL** - Fixes WiFi retries causing node health issues
-- Risk: Medium - Keep SSH session open during apply
+- [ ] **PR #5: Network Role - WiFi Power Save Fix** 🔥
+  - Disable WiFi power save to fix latency issues (jim-pi: 8s → <20ms)
+  - **Priority: CRITICAL** - Fixes WiFi retries causing node health issues
+  - Risk: Medium - Keep SSH session open during apply
 
-#### PR #6: Network Role - DNS Config ✅
-- Primary DNS: dwight-pi (100.100.1.102), fallbacks: Cloudflare, Google
+- [x] **PR #6: Network Role - DNS Config**
+  - Primary DNS: dwight-pi (100.100.1.102), fallbacks: Cloudflare, Google
 
-#### PR #7: Network Role - NTP Sync ✅
-- Configure NTP for time synchronization
+- [x] **PR #7: Network Role - NTP Sync**
+  - Configure NTP for time synchronization
 
-#### PR #8: k3s Prerequisites - Runtime Config ✅
+- [x] **PR #8: k3s Prerequisites - Runtime Config**
 - Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
 - Kernel modules: br_netfilter, overlay
 
-#### PR #9: k3s Prerequisites - Boot Config ✅
+- [x] **PR #9: k3s Prerequisites - Boot Config**
 - Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
-- Risk: Medium - Requires reboot
+  - Risk: Medium - Requires reboot
 
 ### Security Hardening - Raspberry Pis
 
-#### PR #10: Pi Security - SSH Hardening ✅
-- SSH: key-only auth, no root login, no password auth
-- Risk: Medium - Keep 2 SSH sessions open during apply
+- [x] **PR #10: Pi Security - SSH Hardening**
+  - SSH: key-only auth, no root login, no password auth
+  - Risk: Medium - Keep 2 SSH sessions open during apply
 
-#### PR #11: Pi Security - UFW Firewall ✅
-- Default deny incoming, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
+- [x] **PR #11: Pi Security - UFW Firewall**
+  - Default deny incoming, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
 
 ### Security Hardening - Public Cloud Nodes
 
-#### PR #12: Public Nodes Inventory + Variables
-- Add `[public_nodes]` group to `ansible/hosts.ini` (angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1)
-- Create `ansible/group_vars/public_nodes.yml` with fail2ban and UFW config
+- [ ] **PR #12: Public Nodes Inventory + Variables**
+  - Add `[public_nodes]` group to `ansible/hosts.ini` (angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1)
+  - Create `ansible/group_vars/public_nodes.yml` with fail2ban and UFW config
 
-#### PR #13: fail2ban Role - SSH Protection 🔥
-- Deploy fail2ban with SSH jail (3 strikes → 24h ban)
-- **Priority: CRITICAL** - Mitigates 25,891 daily SSH brute force attacks
-- Rollout: toby-gcp1 → phyllis → stanley → angela
+- [ ] **PR #13: fail2ban Role - SSH Protection** 🔥
+  - Deploy fail2ban with SSH jail (3 strikes → 24h ban)
+  - **Priority: CRITICAL** - Mitigates 25,891 daily SSH brute force attacks
+  - Rollout: toby-gcp1 → phyllis → stanley → angela
 
-#### PR #14: Public Nodes - UFW Firewall
-- UFW with rate-limited SSH (6 conn/30s)
-- Allow Tailscale (41641/udp) and k3s traffic from Tailscale network only
-- Risk: Medium - Keep 2 SSH sessions open, test on toby-gcp1 first
+- [ ] **PR #14: Public Nodes - UFW Firewall**
+  - UFW with rate-limited SSH (6 conn/30s)
+  - Allow Tailscale (41641/udp) and k3s traffic from Tailscale network only
+  - Risk: Medium - Keep 2 SSH sessions open, test on toby-gcp1 first
 
-#### PR #15: Security Monitoring & Reporting
-- Daily fail2ban reports: banned IPs, attack volumes, top attackers
-- Cron job at 9 AM daily
+- [ ] **PR #15: Security Monitoring & Reporting**
+  - Daily fail2ban reports: banned IPs, attack volumes, top attackers
+  - Cron job at 9 AM daily
 
 ### Ansible Performance Optimization
 
-#### PR #16: Optimize vpn.yml Execution
-- Add `strategy: free` for parallel host execution
-- Add `gather_facts: false` where not needed
+- [ ] **PR #16: Optimize vpn.yml Execution**
+  - Add `strategy: free` for parallel host execution
+  - Add `gather_facts: false` where not needed
 
-#### PR #17: Add ansible.cfg
-- Enable SSH pipelining and ControlPersist
+- [ ] **PR #17: Add ansible.cfg**
+  - Enable SSH pipelining and ControlPersist
    - Set forks = 10
 
-#### PR #18: Skip VPN Playbook on PRs
-- Only run actual playbook on push to main
+- [ ] **PR #18: Skip VPN Playbook on PRs**
+  - Only run actual playbook on push to main
    - Keep dry-run check on PRs
 
 ---

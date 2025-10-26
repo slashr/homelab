@@ -1,0 +1,7 @@
+---
+- name: Configure Raspberry Pi nodes
+  hosts: pis
+  become: true
+  roles:
+    - role: ../roles/common
+

@@ -7,14 +7,18 @@
     name: NetworkManager
   register: nm_status
   failed_when: false
-  tags: wifi
+  tags:
+    - wifi
+    - dns
 
 - name: Check if dhcpcd is active
   ansible.builtin.systemd:
     name: dhcpcd
   register: dhcpcd_status
   failed_when: false
-  tags: wifi
+  tags:
+    - wifi
+    - dns
 
 - name: Disable WiFi power save via NetworkManager
   ansible.builtin.copy:

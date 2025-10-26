@@ -110,7 +110,7 @@ All planned PRs are listed below in logical execution order.
 - [x] **PR #4: Common Role - System Config**
   - Timezone/locale, unattended-upgrades, MOTD
 
-- [ ] **PR #5: Network Role - WiFi Power Save Fix** 🔥
+- [x] **PR #5: Network Role - WiFi Power Save Fix** 🔥
   - Disable WiFi power save to fix latency issues (jim-pi: 8s → <20ms)
   - **Priority: CRITICAL** - Fixes WiFi retries causing node health issues
   - Risk: Medium - Keep SSH session open during apply
@@ -121,21 +121,21 @@ All planned PRs are listed below in logical execution order.
 - [x] **PR #7: Network Role - NTP Sync**
   - Configure NTP for time synchronization
 
-- [x] **PR #8: k3s Prerequisites - Runtime Config**
+- [ ] **PR #8: k3s Prerequisites - Runtime Config**
 - Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
 - Kernel modules: br_netfilter, overlay
 
-- [x] **PR #9: k3s Prerequisites - Boot Config**
+- [ ] **PR #9: k3s Prerequisites - Boot Config**
 - Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
   - Risk: Medium - Requires reboot
 
 ### Security Hardening - Raspberry Pis
 
-- [x] **PR #10: Pi Security - SSH Hardening**
+- [ ] **PR #10: Pi Security - SSH Hardening**
   - SSH: key-only auth, no root login, no password auth
   - Risk: Medium - Keep 2 SSH sessions open during apply
 
-- [x] **PR #11: Pi Security - UFW Firewall**
+- [ ] **PR #11: Pi Security - UFW Firewall**
   - Default deny incoming, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
 
 ### Security Hardening - Public Cloud Nodes
@@ -168,7 +168,7 @@ All planned PRs are listed below in logical execution order.
   - Enable SSH pipelining and ControlPersist
    - Set forks = 10
 
-- [ ] **PR #18: Skip VPN Playbook on PRs**
+- [x] **PR #18: Skip VPN Playbook on PRs**
   - Only run actual playbook on push to main
    - Keep dry-run check on PRs
 

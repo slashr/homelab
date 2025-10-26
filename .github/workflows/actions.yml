@@ -256,22 +256,24 @@ jobs:
 
           # Check if pis playbook exists
           if [ -f playbooks/pis.yml ]; then
-            echo "### Changes to jim-pi (preview)" >> $GITHUB_STEP_SUMMARY
-            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            echo "### Pis Playbook Check (jim-pi preview)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
             ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml \
-              --limit jim-pi --check --diff 2>&1 | tee dry_run.log || true
+              --limit jim-pi --check 2>&1 | tee dry_run.log || true
             cat dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           else
             echo "ℹ️ No pis playbook yet - skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Always check vpn playbook
+          # Always check vpn playbook (no diff - contains vault-encrypted sensitive configs)
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### VPN Playbook Check" >> $GITHUB_STEP_SUMMARY
-          echo '```diff' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Running syntax check only (--check without --diff to protect vault-encrypted content)" >> $GITHUB_STEP_SUMMARY
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml \
-            --vault-password-file ./vault.pass --check --diff 2>&1 | tee vpn_dry_run.log || true
+            --vault-password-file ./vault.pass --check 2>&1 | tee vpn_dry_run.log || true
           cat vpn_dry_run.log >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 

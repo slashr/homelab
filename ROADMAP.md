@@ -15,6 +15,45 @@ For each PR:
 3. ✅ Notify user for final approval
 4. ✅ Merge only after user confirmation
 
+## Branch Management (Critical!)
+
+**ALWAYS follow this sequence when starting a new PR:**
+
+1. **Start from main:**
+
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+2. **Create new feature branch:**
+
+   ```bash
+   git checkout -b <feature-branch-name>
+   ```
+
+3. **Verify you're on the right branch:**
+
+   ```bash
+   git branch --show-current  # Should show feature-branch-name, NOT main
+   ```
+
+4. **When checking PR status, ensure you're monitoring the FEATURE BRANCH:**
+   - PR checks run against the feature branch
+   - Don't switch to main while debugging PR issues
+   - Use `git branch --show-current` if confused
+
+5. **If you accidentally start from wrong branch:**
+   - Don't push! Rebase onto main first
+   - Or delete branch and start over
+
+**Common Mistakes to Avoid:**
+
+- ❌ Creating branch from another unmerged feature branch
+- ❌ Switching to main while debugging PR checks
+- ❌ Forgetting to pull latest main before branching
+- ❌ Working on main branch directly
+
 ---
 
 ## Active Project: Raspberry Pi GitOps Migration

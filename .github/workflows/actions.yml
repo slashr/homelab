@@ -256,7 +256,7 @@ jobs:
 
           # Check if pis playbook exists
           if [ -f playbooks/pis.yml ]; then
-            echo "### Pis Playbook Check (all Pis)" >> $GITHUB_STEP_SUMMARY
+            echo "### Pis Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
             ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml \

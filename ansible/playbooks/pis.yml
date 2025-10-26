@@ -1,6 +1,6 @@
 ---
-# Staged rollout: dwight-pi (canary) → jim-pi → michael-pi (k3s master last)
-- name: Configure dwight-pi (canary)
+# Staged rollout: dwight-pi → jim-pi → michael-pi
+- name: Configure dwight-pi
   hosts: dwight-pi
   become: true
   roles:
@@ -12,7 +12,7 @@
   roles:
     - role: ../roles/common
 
-- name: Configure michael-pi (k3s master)
+- name: Configure michael-pi
   hosts: michael-pi
   become: true
   roles:

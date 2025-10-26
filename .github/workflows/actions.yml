@@ -191,7 +191,7 @@ jobs:
   tailscale-setup:
     name: "Ansible Tailscale"
     needs: [oracle-setup, gcp-setup]
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
       run:
@@ -230,7 +230,7 @@ jobs:
     name: "Ansible K3S"
     needs: [tailscale-setup]
     if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && github.event_name == 'push') }}
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
       run:

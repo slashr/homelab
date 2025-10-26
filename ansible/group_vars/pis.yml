@@ -1,19 +1,20 @@
 ---
-# Common configuration for all Raspberry Pi nodes
-# Applied via roles in playbooks/pis.yml
+# Common configuration for all Raspberry Pi nodes (michael-pi, jim-pi, dwight-pi)
 
-# Network Configuration
+# WiFi stability fix (critical for network reliability)
 wifi_power_save_disabled: true
+
+# DNS configuration (AdGuard on dwight-pi for ad blocking)
 dns_servers:
   - 100.100.1.102  # dwight-pi (AdGuard) via Tailscale
   - 1.1.1.1        # Cloudflare fallback
   - 8.8.8.8        # Google fallback
 
-# Security Configuration
+# SSH hardening
 ssh_permit_root_login: false
 ssh_password_authentication: false
 
-# Base Packages
+# Base system packages
 base_packages:
   - vim
   - curl

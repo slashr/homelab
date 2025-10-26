@@ -33,6 +33,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
@@ -112,16 +117,21 @@ jobs:
       TF_VAR_fingerprint: ${{ secrets.TF_FINGERPRINT }}
       TF_VAR_compartment_id: ${{ secrets.TF_COMPARTMENT_ID }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
-
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Setup and Run Pre-commit
         uses: ./.github/actions/setup-precommit
@@ -263,16 +273,21 @@ jobs:
       TF_VAR_kube_client_key: ${{ secrets.TF_KUBE_CLIENT_KEY }}
       TF_VAR_kube_cluster_ca_cert: ${{ secrets.TF_KUBE_CLUSTER_CA_CERT }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"
-
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Setup and Run Pre-commit
         uses: ./.github/actions/setup-precommit

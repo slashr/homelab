@@ -1,0 +1,54 @@
+---
+# WiFi Power Save Fix - Critical for network stability
+# Disables WiFi power management to prevent latency spikes and packet loss
+
+- name: Check if NetworkManager is active
+  ansible.builtin.systemd:
+    name: NetworkManager
+  register: nm_status
+  failed_when: false
+  tags: wifi
+
+- name: Check if dhcpcd is active
+  ansible.builtin.systemd:
+    name: dhcpcd
+  register: dhcpcd_status
+  failed_when: false
+  tags: wifi
+
+- name: Disable WiFi power save via NetworkManager
+  ansible.builtin.copy:
+    dest: /etc/NetworkManager/conf.d/wifi-powersave.conf
+    content: |
+      [connection]
+      wifi.powersave = 2
+    mode: '0644'
+  become: true
+  when: nm_status.status is defined and nm_status.status.ActiveState == "active"
+  notify: Restart NetworkManager
+  tags: wifi
+
+- name: Disable WiFi power save via dhcpcd hook
+  ansible.builtin.copy:
+    dest: /etc/dhcpcd.enter-hook
+    content: |
+      #!/bin/sh
+      # Disable WiFi power management for stability
+      if [ "$interface" = "wlan0" ]; then
+          /sbin/iwconfig wlan0 power off 2>/dev/null || true
+      fi
+    mode: '0755'
+  become: true
+  when: dhcpcd_status.status is defined and dhcpcd_status.status.ActiveState == "active"
+  notify: Restart dhcpcd
+  tags: wifi
+
+- name: Immediately disable WiFi power save (runtime)
+  ansible.builtin.command: iwconfig wlan0 power off
+  become: true
+  when: not ansible_check_mode
+  register: iwconfig_result
+  changed_when: iwconfig_result.rc == 0
+  failed_when: false
+  tags: wifi
+

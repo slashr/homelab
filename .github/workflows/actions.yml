@@ -216,9 +216,11 @@ jobs:
 
   tailscale-setup:
     name: "Ansible Tailscale"
-    needs: [changes]
+    needs: [changes, oracle-setup, gcp-setup]
     if: |
       !cancelled() &&
+      (needs.oracle-setup.result == 'success' || needs.oracle-setup.result == 'skipped') &&
+      (needs.gcp-setup.result == 'success' || needs.gcp-setup.result == 'skipped') &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -260,6 +262,7 @@ jobs:
     needs: [changes, tailscale-setup]
     if: |
       !cancelled() &&
+      (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
       (github.event_name == 'workflow_dispatch' ||
        (github.ref == 'refs/heads/main' && github.event_name == 'push'))
@@ -305,6 +308,7 @@ jobs:
     needs: [changes, k3s-setup]
     if: |
       !cancelled() &&
+      (needs.k3s-setup.result == 'success' || needs.k3s-setup.result == 'skipped') &&
       github.ref != 'refs/heads/staging' &&
       (needs.changes.outputs.kubernetes == 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest

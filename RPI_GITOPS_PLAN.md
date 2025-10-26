@@ -5,7 +5,10 @@
 For each PR:
 
 1. ✅ Ensure all tests are green
-2. ✅ Get reviewed by `@codex` (comment on PR)
+2. ✅ Get reviewed by `@codex`:
+   - Codex will usually start the review automatically and leave comments if any
+   - Address comments by either fixing them or replying why a fix isn't needed
+   - If subsequent fixes are pushed after initial PR creation, request re-review using `@codex review`
 3. ✅ Notify user for final approval
 4. ✅ Merge only after user confirmation
 

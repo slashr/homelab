@@ -1,4 +1,7 @@
-# Raspberry Pi GitOps Migration Plan
+# Homelab Development Roadmap
+
+This document tracks all planned work, active projects, and their implementation details.
+Each project is broken down into manageable PRs with clear scope, testing, and verification steps.
 
 ## PR Workflow
 
@@ -12,7 +15,15 @@ For each PR:
 3. ✅ Notify user for final approval
 4. ✅ Merge only after user confirmation
 
-## Problem
+---
+
+## Active Project: Raspberry Pi GitOps Migration
+
+**Status:** In Progress (PR #256)  
+**Goal:** Bring michael-pi, jim-pi, and dwight-pi under Ansible GitOps management  
+**Scope:** Essential config only (OS, SSH, network, k3s prerequisites)
+
+### Problem
 
 - jim-pi going unhealthy (8s WiFi latency → monitoring failures)
 - Configuration drift across all Pis (jim: 343 retries, dwight: 4325 retries)
@@ -447,3 +458,15 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff
 - Fix won't survive reboot until PR #6 merged
 - All Pis have same WiFi issue, just different severity
 - dwight-pi: 4325 retries (worst), jim-pi: 343 retries
+
+---
+
+## Future Projects / Backlog
+
+*Add new projects here as they are planned. Each should include:*
+
+- **Project Name**
+- **Goal:** What problem does it solve?
+- **Scope:** What's included/excluded?
+- **PRs:** Breakdown of implementation steps
+- **Timeline:** Rough estimate

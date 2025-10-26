@@ -8,13 +8,26 @@ Each project is broken down into manageable PRs with clear scope, testing, and v
 For each PR:
 
 1. ✅ Ensure all tests are green
-2. ✅ Get reviewed by `@codex`:
-   - Codex will usually start the review automatically and leave comments if any
-   - Address comments by either fixing them or replying why a fix isn't needed
+
+2. ✅ **Check for Codex review comments** (CRITICAL - don't skip!):
+
+   ```bash
+   # Step 1: Check if Codex reviewed
+   gh pr view <PR_NUMBER> --json reviews --jq '.reviews[] | select(.author.login == "chatgpt-codex-connector") | {state: .state}'
+   
+   # Step 2: Get inline comments (P1/P2/P3 issues)
+   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, author: .user.login, path: .path, line: .line, body: .body}'
+   ```
+
+3. ✅ Address ALL Codex comments:
+   - **Fix issues** OR **explain why no fix is needed**
    - **IMPORTANT:** Reply directly to Codex's inline comments (not as independent PR comment) to maintain context
-   - If subsequent fixes are pushed after initial PR creation, request re-review using `@codex review`
-3. ✅ Notify user for final approval
-4. ✅ Merge only after user confirmation
+   - Use: `gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments/<COMMENT_ID>/replies -X POST -f body="..."`
+   - If subsequent fixes are pushed, request re-review: `@codex review`
+
+4. ✅ Notify user for final approval
+
+5. ✅ Merge only after user confirmation
 
 ## Branch Management (Critical!)
 

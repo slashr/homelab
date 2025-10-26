@@ -254,8 +254,20 @@ jobs:
           echo "## 🔍 Ansible Dry-Run Preview" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Check if pis playbook exists
-          if [ -f playbooks/pis.yml ]; then
+          # Detect which playbooks have changes
+          PIS_CHANGED=false
+          VPN_CHANGED=false
+
+          if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/pis\.yml|roles/(common|network)/|group_vars/pis\.yml)'; then
+            PIS_CHANGED=true
+          fi
+
+          if git diff --name-only origin/main...HEAD | grep -E '^ansible/(vpn\.yml|confs/)'; then
+            VPN_CHANGED=true
+          fi
+
+          # Check pis playbook only if related files changed
+          if [ "$PIS_CHANGED" = true ] && [ -f playbooks/pis.yml ]; then
             echo "### Pis Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
@@ -264,21 +276,27 @@ jobs:
             cat dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           else
-            echo "ℹ️ No pis playbook yet - skipping dry-run" >> $GITHUB_STEP_SUMMARY
+            echo "⏭️ Pis playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Always check vpn playbook (no diff - contains vault-encrypted sensitive configs)
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### VPN Playbook Check" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "Running syntax check only (--check without --diff to protect vault-encrypted content)" >> $GITHUB_STEP_SUMMARY
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml \
-            --vault-password-file ./vault.pass --check 2>&1 | tee vpn_dry_run.log || true
-          cat vpn_dry_run.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Check vpn playbook only if related files changed
+          if [ "$VPN_CHANGED" = true ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### VPN Playbook Check" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "Running syntax check only (--check without --diff to protect vault-encrypted content)" >> $GITHUB_STEP_SUMMARY
+            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml \
+              --vault-password-file ./vault.pass --check 2>&1 | tee vpn_dry_run.log || true
+            cat vpn_dry_run.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⏭️ VPN playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Run vpn-playbook
         id: vpn_playbook
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
 
@@ -286,17 +304,67 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.vpn_playbook.outcome }}" = "success" ]; then
-            echo "vpn-playbook succeeded." >> $GITHUB_STEP_SUMMARY
+            echo "✅ vpn-playbook succeeded." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.vpn_playbook.outcome }}" = "skipped" ]; then
+            echo "⏭️ vpn-playbook skipped (PR dry-run only)." >> $GITHUB_STEP_SUMMARY
           else
-            echo "vpn-playbook failed." >> $GITHUB_STEP_SUMMARY
+            echo "❌ vpn-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  k3s-setup:
-    name: "Ansible K3S"
+  pis-setup:
+    name: "Ansible Pis"
     needs: [changes, tailscale-setup]
     if: |
       !cancelled() &&
       (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./ansible
+
+    steps:
+      - name: Check out the codebase
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup Ansible Environment
+        uses: ./.github/actions/setup-ansible
+        with:
+          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
+
+      - name: Run pis-playbook
+        id: pis_playbook
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
+        run: |
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml
+
+      - name: pis-playbook Summary
+        if: always()
+        run: |
+          if [ "${{ steps.pis_playbook.outcome }}" = "success" ]; then
+            echo "✅ pis-playbook succeeded." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.pis_playbook.outcome }}" = "skipped" ]; then
+            echo "⏭️ pis-playbook skipped (PR dry-run only)." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ pis-playbook failed." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  k3s-setup:
+    name: "Ansible K3S"
+    needs: [changes, pis-setup]
+    if: |
+      !cancelled() &&
+      (needs.pis-setup.result == 'success' || needs.pis-setup.result == 'skipped') &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
       (github.event_name == 'workflow_dispatch' ||
        (github.ref == 'refs/heads/main' && github.event_name == 'push'))

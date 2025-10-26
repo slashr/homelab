@@ -5,15 +5,18 @@
   become: true
   roles:
     - role: ../roles/common
+    - role: ../roles/network
 
 - name: Configure jim-pi
   hosts: jim-pi
   become: true
   roles:
     - role: ../roles/common
+    - role: ../roles/network
 
 - name: Configure michael-pi
   hosts: michael-pi
   become: true
   roles:
     - role: ../roles/common
+    - role: ../roles/network

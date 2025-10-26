@@ -279,6 +279,7 @@ jobs:
 
       - name: Run vpn-playbook
         id: vpn_playbook
+        if: github.event_name == 'push'
         run: |
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
 
@@ -286,9 +287,11 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.vpn_playbook.outcome }}" = "success" ]; then
-            echo "vpn-playbook succeeded." >> $GITHUB_STEP_SUMMARY
+            echo "✅ vpn-playbook succeeded." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.vpn_playbook.outcome }}" = "skipped" ]; then
+            echo "⏭️ vpn-playbook skipped (PR dry-run only)." >> $GITHUB_STEP_SUMMARY
           else
-            echo "vpn-playbook failed." >> $GITHUB_STEP_SUMMARY
+            echo "❌ vpn-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
   pis-setup:

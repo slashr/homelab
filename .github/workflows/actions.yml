@@ -253,7 +253,7 @@ jobs:
         run: |
           echo "## 🔍 Ansible Dry-Run Preview" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Check if pis playbook exists
           if [ -f playbooks/pis.yml ]; then
             echo "### Changes to jim-pi (preview)" >> $GITHUB_STEP_SUMMARY
@@ -265,7 +265,7 @@ jobs:
           else
             echo "ℹ️ No pis playbook yet - skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Always check vpn playbook
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### VPN Playbook Check" >> $GITHUB_STEP_SUMMARY

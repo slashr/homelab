@@ -20,6 +20,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: read
     outputs:
       gcp: ${{ steps.filter.outputs.gcp }}
@@ -213,7 +214,7 @@ jobs:
 
   tailscale-setup:
     name: "Ansible Tailscale"
-    needs: [changes, oracle-setup, gcp-setup]
+    needs: [changes]
     if: |
       !cancelled() &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'push')

@@ -246,6 +246,35 @@ jobs:
           ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
+      - name: Dry-run check (PR only)
+        if: github.event_name == 'pull_request'
+        id: dry_run
+        continue-on-error: true
+        run: |
+          echo "## 🔍 Ansible Dry-Run Preview" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if pis playbook exists
+          if [ -f playbooks/pis.yml ]; then
+            echo "### Changes to jim-pi (preview)" >> $GITHUB_STEP_SUMMARY
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml \
+              --limit jim-pi --check --diff 2>&1 | tee dry_run.log || true
+            cat dry_run.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ No pis playbook yet - skipping dry-run" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Always check vpn playbook
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### VPN Playbook Check" >> $GITHUB_STEP_SUMMARY
+          echo '```diff' >> $GITHUB_STEP_SUMMARY
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml \
+            --vault-password-file ./vault.pass --check --diff 2>&1 | tee vpn_dry_run.log || true
+          cat vpn_dry_run.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: Run vpn-playbook
         id: vpn_playbook
         run: |

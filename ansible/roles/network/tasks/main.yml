@@ -24,7 +24,7 @@
       wifi.powersave = 2
     mode: '0644'
   become: true
-  when: nm_status.status.ActiveState == "active"
+  when: nm_status.status is defined and nm_status.status.ActiveState == "active"
   notify: Restart NetworkManager
   tags: wifi
 
@@ -39,7 +39,7 @@
       fi
     mode: '0755'
   become: true
-  when: dhcpcd_status.status.ActiveState == "active"
+  when: dhcpcd_status.status is defined and dhcpcd_status.status.ActiveState == "active"
   notify: Restart dhcpcd
   tags: wifi
 

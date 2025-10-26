@@ -1,6 +1,19 @@
 ---
-- name: Configure Raspberry Pi nodes
-  hosts: pis
+# Staged rollout: dwight-pi → jim-pi → michael-pi
+- name: Configure dwight-pi
+  hosts: dwight-pi
+  become: true
+  roles:
+    - role: ../roles/common
+
+- name: Configure jim-pi
+  hosts: jim-pi
+  become: true
+  roles:
+    - role: ../roles/common
+
+- name: Configure michael-pi
+  hosts: michael-pi
   become: true
   roles:
     - role: ../roles/common

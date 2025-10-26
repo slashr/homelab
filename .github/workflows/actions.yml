@@ -19,7 +19,7 @@ jobs:
   gcp-setup:
     name: "Terraform GCP"
     if: ${{ github.ref != 'refs/heads/staging' }}
-    runs-on: ubuntu-latest  # Use ubuntu-latest for Python 3.9+ (required by pre-commit)
+    runs-on: self-hosted
     timeout-minutes: 30  # Add timeout to prevent hanging jobs
     defaults:
       run:
@@ -98,7 +98,7 @@ jobs:
   oracle-setup:
     name: "Terraform Oracle"
     if: ${{ github.ref != 'refs/heads/staging' }}
-    runs-on: ubuntu-latest  # Use ubuntu-latest for Python 3.9+ (required by pre-commit)
+    runs-on: self-hosted
     timeout-minutes: 30
     defaults:
       run:
@@ -251,7 +251,7 @@ jobs:
     name: "Terraform K8S"
     needs: [k3s-setup]
     if: ${{ github.ref != 'refs/heads/staging' }}
-    runs-on: ubuntu-latest  # Use ubuntu-latest for Python 3.9+ (required by pre-commit)
+    runs-on: self-hosted
     timeout-minutes: 30
     defaults:
       run:

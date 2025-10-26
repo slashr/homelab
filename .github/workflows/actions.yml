@@ -55,11 +55,10 @@ jobs:
 
   gcp-setup:
     needs: changes
+    name: "Terraform GCP"
     if: |
       github.ref != 'refs/heads/staging' &&
       (needs.changes.outputs.gcp == 'true' || github.event_name == 'push')
-    name: "Terraform GCP"
-    if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30  # Add timeout to prevent hanging jobs
     defaults:

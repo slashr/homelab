@@ -16,6 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  runs-on: self-hosted
   gcp-setup:
     name: "Terraform GCP"
     if: ${{ github.ref != 'refs/heads/staging' }}

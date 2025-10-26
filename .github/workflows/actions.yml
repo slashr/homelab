@@ -16,7 +16,48 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Detect which files changed to skip irrelevant jobs
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      gcp: ${{ steps.filter.outputs.gcp }}
+      oracle: ${{ steps.filter.outputs.oracle }}
+      kubernetes: ${{ steps.filter.outputs.kubernetes }}
+      ansible: ${{ steps.filter.outputs.ansible }}
+      docs-only: ${{ steps.filter.outputs.docs-only }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            gcp:
+              - 'gcp/**'
+              - '.github/workflows/**'
+            oracle:
+              - 'oracle/**'
+              - '.github/workflows/**'
+            kubernetes:
+              - 'kubernetes/**'
+              - '.github/workflows/**'
+            ansible:
+              - 'ansible/vpn.yml'
+              - 'ansible/k3s.yml'
+              - 'ansible/playbooks/**'
+              - 'ansible/roles/**'
+              - '.github/workflows/**'
+            docs-only:
+              - '**/*.md'
+              - 'LICENSE'
+              - 'AGENTS.md'
+
   gcp-setup:
+    needs: changes
+    if: |
+      github.ref != 'refs/heads/staging' &&
+      (needs.changes.outputs.gcp == 'true' || github.event_name == 'push')
     name: "Terraform GCP"
     if: ${{ github.ref != 'refs/heads/staging' }}
     runs-on: ubuntu-latest
@@ -96,8 +137,11 @@ jobs:
           job_name: 'GCP'
 
   oracle-setup:
+    needs: changes
     name: "Terraform Oracle"
-    if: ${{ github.ref != 'refs/heads/staging' }}
+    if: |
+      github.ref != 'refs/heads/staging' &&
+      (needs.changes.outputs.oracle == 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -170,7 +214,10 @@ jobs:
 
   tailscale-setup:
     name: "Ansible Tailscale"
-    needs: [oracle-setup, gcp-setup]
+    needs: [changes, oracle-setup, gcp-setup]
+    if: |
+      !cancelled() &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -208,8 +255,12 @@ jobs:
 
   k3s-setup:
     name: "Ansible K3S"
-    needs: [tailscale-setup]
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/main' && github.event_name == 'push') }}
+    needs: [changes, tailscale-setup]
+    if: |
+      !cancelled() &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
+      (github.event_name == 'workflow_dispatch' || 
+       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -249,8 +300,11 @@ jobs:
 
   run-k3s:
     name: "Terraform K8S"
-    needs: [k3s-setup]
-    if: ${{ github.ref != 'refs/heads/staging' }}
+    needs: [changes, k3s-setup]
+    if: |
+      !cancelled() &&
+      github.ref != 'refs/heads/staging' &&
+      (needs.changes.outputs.kubernetes == 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:

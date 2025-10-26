@@ -1,5 +1,13 @@
 # Raspberry Pi GitOps Migration Plan
 
+## PR Workflow
+
+For each PR:
+1. ✅ Ensure all tests are green
+2. ✅ Get reviewed by `@codex` (comment on PR)
+3. ✅ Notify user for final approval
+4. ✅ Merge only after user confirmation
+
 ## Problem
 
 - jim-pi going unhealthy (8s WiFi latency → monitoring failures)

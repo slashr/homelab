@@ -1,0 +1,84 @@
+---
+name: Configure Raspberry Pis
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ansible/playbooks/pis.yml'
+      - 'ansible/roles/**'
+      - 'ansible/inventory/**'
+      - 'ansible/group_vars/**'
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      limit:
+        description: 'Limit to specific host (e.g., jim-pi)'
+        required: false
+        type: string
+      tags:
+        description: 'Run specific tags (e.g., wifi,dns)'
+        required: false
+        type: string
+      check_mode:
+        description: 'Dry run (check mode)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ansible-pis:
+    name: Configure Pis
+    runs-on: self-hosted  # Uses your homelab runner
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./ansible
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        run: |
+          python3 --version
+          pip3 --version
+      
+      - name: Install Ansible
+        run: |
+          pip3 install --user ansible
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r requirements.yml
+        continue-on-error: true
+      
+      - name: Verify inventory
+        run: ansible-inventory -i inventory/hosts.ini --list --yaml
+      
+      - name: Ping all Pis
+        run: ansible pis -i inventory/hosts.ini -m ping
+        continue-on-error: true
+      
+      - name: Run Ansible playbook (dry run)
+        if: ${{ github.event.inputs.check_mode == 'true' || github.event_name == 'pull_request' }}
+        run: |
+          ansible-playbook -i inventory/hosts.ini playbooks/pis.yml \
+            --check --diff \
+            ${{ github.event.inputs.limit && format('--limit {0}', github.event.inputs.limit) || '' }} \
+            ${{ github.event.inputs.tags && format('--tags {0}', github.event.inputs.tags) || '' }}
+      
+      - name: Run Ansible playbook (apply)
+        if: ${{ github.event.inputs.check_mode != 'true' && github.event_name != 'pull_request' }}
+        run: |
+          ansible-playbook -i inventory/hosts.ini playbooks/pis.yml \
+            ${{ github.event.inputs.limit && format('--limit {0}', github.event.inputs.limit) || '' }} \
+            ${{ github.event.inputs.tags && format('--tags {0}', github.event.inputs.tags) || '' }}
+      
+      - name: Verify playbook idempotency
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          ansible-playbook -i inventory/hosts.ini playbooks/pis.yml --check --diff
+

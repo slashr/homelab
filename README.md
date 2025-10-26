@@ -10,6 +10,8 @@
 
 This Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a GCP VM and three Raspberry Pis.
 
+📋 **See [ROADMAP.md](ROADMAP.md) for planned work, active projects, and PR workflow guidelines.**
+
 ## Terraform Oracle Job
 - Creates 4 Free Tier servers
 - amd1 is used for Tailscale VPN setup between Pi and Oracle

@@ -98,79 +98,164 @@ All planned PRs are listed below in logical execution order.
 ### Raspberry Pi Configuration
 
 - [x] **PR #1: Add Raspberry Pi inventory group and configuration variables**
-  - Add `[pis]` group to `ansible/hosts.ini` (michael-pi, jim-pi, dwight-pi)
-  - Create `ansible/group_vars/pis.yml` with common config
+  - Added `[pis]` group to `ansible/hosts.ini` with michael-pi, jim-pi, dwight-pi
+  - Created `ansible/group_vars/pis.yml` with shared configuration
+  - Configured Tailscale IPs (100.100.1.x), ansible_user, python interpreter paths
+  - Base packages list, DNS servers, WiFi settings all centralized
 
 - [x] **PR #2: Add Ansible dry-run checks to GitHub Actions**
-  - Add `--check --diff` step to CI pipeline for Pi playbooks
+  - Added dry-run validation in `.github/workflows/actions.yml` (line 270)
+  - Runs `ansible-playbook --check` on PRs before merge
+  - Only runs if Pi-related files changed (reduces CI time)
+  - Shows diff preview in PR summary for review
 
 - [x] **PR #3: Install essential system packages on Raspberry Pis**
-  - Install base packages: vim, curl, htop, iotop, git, tmux
+  - Created `ansible/roles/common/tasks/main.yml`
+  - Installs: vim, curl, htop, iotop, git, tmux via apt
+  - Uses `base_packages` variable from group_vars for flexibility
+  - Tagged with `packages` for selective execution
 
 - [x] **PR #4: Configure timezone, locale, and automatic security updates**
-  - Timezone/locale, unattended-upgrades, MOTD
+  - Set timezone to Europe/Berlin, locale to en_GB.UTF-8
+  - Installed and enabled unattended-upgrades for automatic security patches
+  - Created custom MOTD showing hostname, IP, OS version, kernel
+  - All in `ansible/roles/common/tasks/main.yml`, tagged with `system`
 
 - [x] **PR #5: Fix WiFi power save causing network latency and retries** 🔥
-  - Disable WiFi power save to fix latency issues (jim-pi: 8s → <20ms)
-  - **Priority: CRITICAL** - Fixes WiFi retries causing node health issues
-  - Risk: Medium - Keep SSH session open during apply
+  - **Priority: CRITICAL** - Fixed jim-pi latency (8000ms → <20ms), reduced retries (4325 → <100)
+  - Implemented in `ansible/roles/network/tasks/main.yml`
+  - Detects NetworkManager or dhcpcd and configures accordingly
+  - NetworkManager: Creates `/etc/NetworkManager/conf.d/wifi-powersave.conf` with `wifi.powersave = 2`
+  - dhcpcd: Creates `/etc/dhcpcd.enter-hook` to run `iwconfig wlan0 power off`
+  - Immediately disables at runtime: `iwconfig wlan0 power off`
+  - Tagged with `wifi` for targeted deployment
 
 - [x] **PR #6: Configure DNS with AdGuard on dwight-pi**
-  - Primary DNS: dwight-pi (100.100.1.102), fallbacks: Cloudflare, Google
+  - Primary DNS: 100.100.1.102 (dwight-pi AdGuard via Tailscale)
+  - Fallbacks: 1.1.1.1 (Cloudflare), 8.8.8.8 (Google)
+  - Template: `ansible/roles/network/templates/resolv.conf.j2` → `/etc/resolv.conf`
+  - Prevents overwrite by NetworkManager and dhcpcd
+  - Provides ad-blocking and works when Pis are remote from LAN
 
 - [x] **PR #7: Configure NTP time synchronization**
-  - Configure NTP for time synchronization
+  - Enables and starts `systemd-timesyncd` service
+  - Configures NTP servers: 0-3.pool.ntp.org, fallback to Cloudflare/Google time servers
+  - Config file: `/etc/systemd/timesyncd.conf`
+  - Ensures accurate timestamps for logs and scheduled tasks
+  - Tagged with `ntp` in `ansible/roles/network/tasks/main.yml`
 
 - [ ] **PR #8: Add k3s runtime prerequisites role for Raspberry Pis**
-  - Sysctls: `net.ipv4.ip_forward=1`, bridge-nf-call-iptables
-  - Kernel modules: br_netfilter, overlay
+  - Create `ansible/roles/k3s_prereqs/tasks/main.yml` with runtime configuration
+  - Set sysctls: `net.ipv4.ip_forward=1`, `net.bridge.bridge-nf-call-iptables=1`, `net.bridge.bridge-nf-call-ip6tables=1`
+  - Load kernel modules: `br_netfilter`, `overlay` (persist via `/etc/modules-load.d/k3s.conf`)
+  - Make persistent via `/etc/sysctl.d/k3s.conf`
+  - Add `k3s_prereqs` tag for selective execution
+  - Update `ansible/playbooks/pis.yml` to include k3s_prereqs role
+  - Test: `lsmod | grep br_netfilter` and `sysctl net.ipv4.ip_forward` should return 1
 
 - [ ] **PR #9: Configure k3s boot parameters for cgroup support**
-  - Boot cmdline: `cgroup_memory=1 cgroup_enable=memory`
-  - Risk: Medium - Requires reboot
+  - Modify `/boot/firmware/cmdline.txt` (or `/boot/cmdline.txt` on older Pis)
+  - Append: `cgroup_memory=1 cgroup_enable=memory cgroup_enable=cpuset`
+  - Create backup before modification: `/boot/firmware/cmdline.txt.backup`
+  - Requires reboot to take effect
+  - Add reboot task with confirmation prompt
+  - Test after reboot: `cat /proc/cmdline | grep cgroup`
+  - Risk: Medium - Requires reboot and Pi won't boot if cmdline is malformed
 
 ### Security Hardening - Raspberry Pis
 
 - [ ] **PR #10: Harden SSH access on Raspberry Pis (key-only authentication)**
-  - SSH: key-only auth, no root login, no password auth
-  - Risk: Medium - Keep 2 SSH sessions open during apply
+  - Create `ansible/roles/security/tasks/ssh.yml`
+  - Modify `/etc/ssh/sshd_config`: `PasswordAuthentication no`, `PermitRootLogin no`, `PubkeyAuthentication yes`
+  - Create backup: `/etc/ssh/sshd_config.backup`
+  - Validate config with `sshd -t` before restarting
+  - Restart sshd service after changes
+  - Add `security` and `ssh` tags
+  - Test: Attempt password auth should fail, key auth should work
+  - Risk: Medium - Keep 2 SSH sessions open to avoid lockout
 
 - [ ] **PR #11: Configure UFW firewall on Raspberry Pis**
-  - Default deny incoming, allow SSH (22), k3s (6443, 10250), Tailscale (41641)
+  - Create `ansible/roles/security/tasks/ufw.yml`
+  - Install `ufw` package
+  - Default policy: deny incoming, allow outgoing
+  - Allow SSH (22/tcp), k3s API (6443/tcp), kubelet (10250/tcp), Tailscale (41641/udp)
+  - Allow from Tailscale network: `100.100.0.0/16` for k3s traffic
+  - Enable UFW with `ufw enable`
+  - Add `firewall` tag
+  - Test: `ufw status verbose` and verify SSH still works
+  - Update `ansible/playbooks/pis.yml` to include security role
 
 ### Security Hardening - Public Cloud Nodes
 
 - [ ] **PR #12: Add public cloud nodes inventory group and security variables**
-  - Add `[public_nodes]` group to `ansible/hosts.ini` (angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1)
-  - Create `ansible/group_vars/public_nodes.yml` with fail2ban and UFW config
+  - Add `[public_nodes]` group to `ansible/hosts.ini` with all 4 public nodes
+  - Nodes: angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
+  - Create `ansible/group_vars/public_nodes.yml` with security config
+  - Variables: `fail2ban_enabled: true`, `fail2ban_bantime: 86400`, `fail2ban_maxretry: 3`, `fail2ban_findtime: 600`
+  - Variables: `ufw_enabled: true`, `ufw_ssh_rate_limit: true`
+  - Test: `ansible-inventory -i ansible/hosts.ini --list --yaml | grep -A 10 public_nodes`
 
 - [ ] **PR #13: Deploy fail2ban to block SSH brute force attacks on public nodes** 🔥
-  - Deploy fail2ban with SSH jail (3 strikes → 24h ban)
-  - **Priority: CRITICAL** - Mitigates 25,891 daily SSH brute force attacks
-  - Rollout: toby-gcp1 → phyllis → stanley → angela
+  - **Priority: CRITICAL** - Currently 25,891 SSH attacks/day (angela: 9,228, stanley: 7,907, phyllis: 5,825, toby: 2,931)
+  - Create `ansible/roles/fail2ban/` role structure
+  - Create `ansible/roles/fail2ban/tasks/main.yml` for installation
+  - Create `ansible/roles/fail2ban/templates/jail.local.j2` with SSH jail config
+  - Config: bantime=24h (86400s), maxretry=3, findtime=10min (600s)
+  - Create `ansible/roles/fail2ban/handlers/main.yml` to restart fail2ban
+  - Create `ansible/playbooks/security.yml` playbook for public nodes
+  - Staged rollout order: toby-gcp1 (lowest attacks) → phyllis → stanley → angela (highest attacks)
+  - Test: `fail2ban-client status sshd` should show jail active and monitoring
+  - Expected result: 90%+ reduction in successful attack processing
 
 - [ ] **PR #14: Configure UFW firewall with rate limiting on public nodes**
-  - UFW with rate-limited SSH (6 conn/30s)
-  - Allow Tailscale (41641/udp) and k3s traffic from Tailscale network only
-  - Risk: Medium - Keep 2 SSH sessions open, test on toby-gcp1 first
+  - Create `ansible/roles/firewall/tasks/main.yml` for public nodes
+  - Install `ufw` package
+  - Configure before enabling: Allow Tailscale (41641/udp) first to avoid lockout
+  - Allow SSH with rate limiting: `ufw limit 22/tcp` (max 6 connections per 30 seconds)
+  - Allow k3s traffic ONLY from Tailscale network: `ufw allow from 100.100.0.0/16 to any port 6443,10250 proto tcp`
+  - Default policy: deny incoming, allow outgoing
+  - Enable UFW: `ufw --force enable`
+  - Add to `ansible/playbooks/security.yml`
+  - Risk: Medium - Keep 2 SSH sessions open during deployment
+  - Test on toby-gcp1 first, then staged rollout
+  - Test: `ufw status verbose`, verify k3s API accessible from Tailscale, SSH rate limiting works
 
 - [ ] **PR #15: Add fail2ban monitoring and daily attack reports**
-  - Daily fail2ban reports: banned IPs, attack volumes, top attackers
-  - Cron job at 9 AM daily
+  - Create `/usr/local/bin/fail2ban-report.sh` monitoring script
+  - Script outputs: currently banned IPs, ban count (24h), top 10 attacker IPs (7d), recent bans (last 20)
+  - Uses `fail2ban-client status sshd` and `journalctl -u fail2ban`
+  - Create `ansible/roles/fail2ban/tasks/monitoring.yml`
+  - Add cron job: `0 9 * * * /usr/local/bin/fail2ban-report.sh` (runs at 9 AM daily)
+  - Optional: Configure email delivery if `fail2ban_destemail` is set
+  - Add `monitoring` tag for selective execution
+  - Test: Run script manually, verify output format
 
 ### Ansible Performance Optimization
 
 - [ ] **PR #16: Optimize Ansible playbook execution with parallel strategy**
-  - Add `strategy: free` for parallel host execution
-  - Add `gather_facts: false` where not needed
+  - Add `strategy: free` to Play 2 in `ansible/vpn.yml` (Tailscale installation across multiple nodes)
+  - Add `gather_facts: false` to plays that don't use ansible facts
+  - Review existing playbooks: `vpn.yml`, `pis.yml`, `k3s.yml` for optimization opportunities
+  - Parallel execution reduces wait time when one host is slower than others
+  - Expected impact: 40-60% faster execution (3-5min → 1-2min on main branch)
+  - Test: Run playbook and measure execution time before/after
 
 - [ ] **PR #17: Add ansible.cfg with SSH performance optimizations**
-  - Enable SSH pipelining and ControlPersist
-  - Set forks = 10
+  - Create `ansible/ansible.cfg` file
+  - Enable SSH pipelining: `pipelining = True` (reduces SSH connections)
+  - Enable ControlMaster: `ssh_args = -o ControlMaster=auto -o ControlPersist=60s`
+  - Increase parallel execution: `forks = 10` (default is 5)
+  - Disable host key checking for known hosts: `host_key_checking = False` (already done per-host)
+  - Optional: Enable fact caching to speed up reruns
+  - Expected impact: 20-30% faster SSH operations
+  - Test: Run playbook with `-vv` and observe SSH connection reuse
 
 - [x] **PR #18: Skip VPN playbook execution on pull requests**
-  - Only run actual playbook on push to main
-  - Keep dry-run check on PRs
+  - Modified `.github/workflows/actions.yml` line 299
+  - VPN playbook now only runs: `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`
+  - Dry-run check still runs on PRs for validation (line 288)
+  - Reduces CI time on PRs from 3-5min to ~30s
+  - Prevents redundant VPN reconfiguration on every PR
 
 ---
 

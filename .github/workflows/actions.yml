@@ -33,16 +33,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install pip
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:

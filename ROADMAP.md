@@ -503,10 +503,44 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff
 
 ## Future Projects / Backlog
 
-*Add new projects here as they are planned. Each should include:*
+### Ansible Performance Optimization
 
-- **Project Name**
-- **Goal:** What problem does it solve?
-- **Scope:** What's included/excluded?
-- **PRs:** Breakdown of implementation steps
-- **Timeline:** Rough estimate
+**Goal:** Reduce CI/CD pipeline execution time from 3-5 minutes to 1-2 minutes
+
+**Problem:** Ansible Tailscale job is slow due to sequential execution and redundant runs on PRs
+
+**Scope:**
+
+- Add `strategy: free` to vpn.yml for parallel host execution
+- Add `gather_facts: false` where facts aren't needed
+- Configure SSH pipelining and ControlPersist in ansible.cfg
+- Skip actual playbook execution on PRs (dry-run only)
+
+**PRs:**
+
+1. **PR: Optimize vpn.yml execution strategy**
+   - Add `strategy: free` to Play 2 (Tailscale installation)
+   - Add `gather_facts: false` after verifying facts aren't used
+   - Test: Measure before/after execution time
+
+2. **PR: Add ansible.cfg with SSH optimizations**
+   - Enable pipelining
+   - Configure ControlPersist
+   - Set forks = 10
+
+3. **PR: Skip vpn-playbook execution on PRs**
+   - Add `if: github.event_name == 'push'` to actual playbook run
+   - Keep dry-run check on PRs
+   - Only apply changes on push to main
+
+**Expected Impact:**
+
+- Main branch: 3-5 min → 1-2 min (60-70% faster)
+- PR checks: 3-5 min → ~30s (dry-run only)
+- No functionality changes, pure optimization
+
+**Timeline:** 3 small PRs, <1 day total
+
+---
+
+*Add new projects below. Each should include Project Name, Goal, Scope, PRs, Timeline.*

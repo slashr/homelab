@@ -188,22 +188,23 @@ All planned PRs are listed below in logical execution order.
 ### Security Hardening - Public Cloud Nodes
 
 - [ ] **PR #12: Add public cloud nodes inventory group and security variables**
-  - Add `[public_nodes]` group to `ansible/hosts.ini` with all 4 public nodes
-  - Nodes: angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
+  - Add `[public_nodes]` group to `ansible/hosts.ini` with all 5 public nodes
+  - Nodes: pam-amd1 (VPN gateway), angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
   - Create `ansible/group_vars/public_nodes.yml` with security config
   - Variables: `fail2ban_enabled: true`, `fail2ban_bantime: 86400`, `fail2ban_maxretry: 3`, `fail2ban_findtime: 600`
   - Variables: `ufw_enabled: true`, `ufw_ssh_rate_limit: true`
   - Test: `ansible-inventory -i ansible/hosts.ini --list --yaml | grep -A 10 public_nodes`
 
 - [ ] **PR #13: Deploy fail2ban to block SSH brute force attacks on public nodes** 🔥
-  - **Priority: CRITICAL** - Currently 25,891 SSH attacks/day (angela: 9,228, stanley: 7,907, phyllis: 5,825, toby: 2,931)
+  - **Priority: CRITICAL** - Currently 25,891+ SSH attacks/day (angela: 9,228, stanley: 7,907, phyllis: 5,825, toby: 2,931, pam-amd1: unknown)
   - Create `ansible/roles/fail2ban/` role structure
   - Create `ansible/roles/fail2ban/tasks/main.yml` for installation
   - Create `ansible/roles/fail2ban/templates/jail.local.j2` with SSH jail config
   - Config: bantime=24h (86400s), maxretry=3, findtime=10min (600s)
   - Create `ansible/roles/fail2ban/handlers/main.yml` to restart fail2ban
   - Create `ansible/playbooks/security.yml` playbook for public nodes
-  - Staged rollout order: toby-gcp1 (lowest attacks) → phyllis → stanley → angela (highest attacks)
+  - Staged rollout order: toby-gcp1 (lowest attacks) → phyllis → stanley → pam-amd1 → angela (highest attacks)
+  - **Note**: pam-amd1 is VPN gateway - extra caution during firewall changes
   - Test: `fail2ban-client status sshd` should show jail active and monitoring
   - Expected result: 90%+ reduction in successful attack processing
 
@@ -213,22 +214,25 @@ All planned PRs are listed below in logical execution order.
   - Configure before enabling: Allow Tailscale (41641/udp) first to avoid lockout
   - Allow SSH with rate limiting: `ufw limit 22/tcp` (max 6 connections per 30 seconds)
   - Allow k3s traffic ONLY from Tailscale network: `ufw allow from 100.100.0.0/16 to any port 6443,10250 proto tcp`
+  - **Special for pam-amd1**: Ensure VPN forwarding rules remain intact (check existing iptables rules)
   - Default policy: deny incoming, allow outgoing
   - Enable UFW: `ufw --force enable`
   - Add to `ansible/playbooks/security.yml`
   - Risk: Medium - Keep 2 SSH sessions open during deployment
-  - Test on toby-gcp1 first, then staged rollout
-  - Test: `ufw status verbose`, verify k3s API accessible from Tailscale, SSH rate limiting works
+  - Staged rollout: toby-gcp1 → phyllis → stanley → pam-amd1 → angela
+  - **Extra caution on pam-amd1**: It's the VPN gateway, test Tailscale connectivity before/after
+  - Test: `ufw status verbose`, verify k3s API accessible from Tailscale, SSH rate limiting works, VPN still forwards traffic
 
 - [ ] **PR #15: Add fail2ban monitoring and daily attack reports**
   - Create `/usr/local/bin/fail2ban-report.sh` monitoring script
   - Script outputs: currently banned IPs, ban count (24h), top 10 attacker IPs (7d), recent bans (last 20)
   - Uses `fail2ban-client status sshd` and `journalctl -u fail2ban`
   - Create `ansible/roles/fail2ban/tasks/monitoring.yml`
+  - Deploy to all 5 public nodes: pam-amd1, angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
   - Add cron job: `0 9 * * * /usr/local/bin/fail2ban-report.sh` (runs at 9 AM daily)
   - Optional: Configure email delivery if `fail2ban_destemail` is set
   - Add `monitoring` tag for selective execution
-  - Test: Run script manually, verify output format
+  - Test: Run script manually on each node, verify output format
 
 ### Ansible Performance Optimization
 

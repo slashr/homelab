@@ -257,6 +257,7 @@ jobs:
           # Detect which playbooks have changes
           PIS_CHANGED=false
           VPN_CHANGED=false
+          SECURITY_CHANGED=false
 
           if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/pis\.yml|roles/(common|network)/|group_vars/pis\.yml)'; then
             PIS_CHANGED=true
@@ -264,6 +265,10 @@ jobs:
 
           if git diff --name-only origin/main...HEAD | grep -E '^ansible/(vpn\.yml|confs/)'; then
             VPN_CHANGED=true
+          fi
+
+          if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/security\.yml|roles/(fail2ban|firewall)/|group_vars/public_nodes\.yml)'; then
+            SECURITY_CHANGED=true
           fi
 
           # Check pis playbook only if related files changed
@@ -292,6 +297,21 @@ jobs:
           else
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "⏭️ VPN playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check security playbook only if related files changed
+          if [ "$SECURITY_CHANGED" = true ] && [ -f playbooks/security.yml ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Security Playbook Check" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "Running syntax check for fail2ban and firewall deployment" >> $GITHUB_STEP_SUMMARY
+            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/security.yml \
+              --check 2>&1 | tee security_dry_run.log || true
+            cat security_dry_run.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⏭️ Security playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Run vpn-playbook
@@ -357,6 +377,53 @@ jobs:
             echo "⏭️ pis-playbook skipped (PR dry-run only)." >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ pis-playbook failed." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  security-setup:
+    name: "Ansible Security (Public Nodes)"
+    needs: [changes, tailscale-setup]
+    if: |
+      !cancelled() &&
+      (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./ansible
+
+    steps:
+      - name: Check out the codebase
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup Ansible Environment
+        uses: ./.github/actions/setup-ansible
+        with:
+          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
+          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+
+      - name: Run security-playbook
+        id: security_playbook
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/security.yml
+
+      - name: security-playbook Summary
+        if: always()
+        run: |
+          if [ "${{ steps.security_playbook.outcome }}" = "success" ]; then
+            echo "✅ security-playbook succeeded." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.security_playbook.outcome }}" = "skipped" ]; then
+            echo "⏭️ security-playbook skipped (PR dry-run only)." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ security-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
   k3s-setup:

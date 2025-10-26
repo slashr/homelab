@@ -1,0 +1,41 @@
+---
+# Security hardening playbook for public cloud nodes
+# Deploys fail2ban and UFW firewall to protect against attacks
+#
+# Staged rollout order (lowest to highest attack volume):
+#   1. toby-gcp1 (2,931 attacks/day)
+#   2. phyllis-arm2 (5,825 attacks/day)
+#   3. stanley-arm1 (7,907 attacks/day)
+#   4. pam-amd1 (VPN gateway - extra caution)
+#   5. angela-amd2 (9,228 attacks/day - highest)
+
+- name: Deploy fail2ban to toby-gcp1 (test node)
+  hosts: toby-gcp1
+  become: true
+  roles:
+    - role: ../roles/fail2ban
+
+- name: Deploy fail2ban to phyllis-arm2
+  hosts: phyllis-arm2
+  become: true
+  roles:
+    - role: ../roles/fail2ban
+
+- name: Deploy fail2ban to stanley-arm1
+  hosts: stanley-arm1
+  become: true
+  roles:
+    - role: ../roles/fail2ban
+
+- name: Deploy fail2ban to pam-amd1 (VPN gateway)
+  hosts: pam-amd1
+  become: true
+  roles:
+    - role: ../roles/fail2ban
+
+- name: Deploy fail2ban to angela-amd2 (highest attacks)
+  hosts: angela-amd2
+  become: true
+  roles:
+    - role: ../roles/fail2ban
+

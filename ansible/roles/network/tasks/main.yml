@@ -87,3 +87,30 @@
   notify: Restart NetworkManager
   tags: dns
 
+# NTP Configuration - Ensure time synchronization
+- name: Enable and start systemd-timesyncd
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    enabled: true
+    state: started
+  become: true
+  tags: ntp
+
+- name: Configure NTP servers
+  ansible.builtin.copy:
+    dest: /etc/systemd/timesyncd.conf
+    content: |
+      [Time]
+      NTP=0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org
+      FallbackNTP=time.cloudflare.com time.google.com
+    mode: '0644'
+  become: true
+  notify: Restart timesyncd
+  tags: ntp
+
+- name: Set timezone to Europe/Berlin
+  community.general.timezone:
+    name: Europe/Berlin
+  become: true
+  tags: ntp
+

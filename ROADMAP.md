@@ -14,7 +14,7 @@ For each PR:
    ```bash
    # Step 1: Check if Codex reviewed
    gh pr view <PR_NUMBER> --json reviews --jq '.reviews[] | select(.author.login == "chatgpt-codex-connector") | {state: .state}'
-   
+
    # Step 2: Get inline comments (P1/P2/P3 issues)
    gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, author: .user.login, path: .path, line: .line, body: .body}'
    ```
@@ -93,8 +93,8 @@ All Ansible playbooks targeting Raspberry Pis use a staged rollout pattern:
 
 ## Active Project: Raspberry Pi GitOps Migration
 
-**Status:** In Progress (PR #256)  
-**Goal:** Bring michael-pi, jim-pi, and dwight-pi under Ansible GitOps management  
+**Status:** In Progress (PR #256)
+**Goal:** Bring michael-pi, jim-pi, and dwight-pi under Ansible GitOps management
 **Scope:** Essential config only (OS, SSH, network, k3s prerequisites)
 
 ### Problem
@@ -579,8 +579,8 @@ ansible-playbook -i hosts.ini playbooks/pis.yml --check --diff
 
 ### Security Hardening - SSH Brute Force Protection
 
-**Status:** Planned  
-**Goal:** Eliminate SSH brute force attacks and reduce resource consumption on public nodes  
+**Status:** Planned
+**Goal:** Eliminate SSH brute force attacks and reduce resource consumption on public nodes
 **Priority:** 🔥 **CRITICAL**
 
 **Problem:**
@@ -589,7 +589,7 @@ Security audit revealed severe attack volume:
 - **25,891 SSH brute force attempts** in 24 hours across 4 public nodes
 - Angela: 9,228 attacks/day (6.4 per minute) - contributing to 800% CPU overload
 - Stanley: 7,907 attacks/day
-- Phyllis: 5,825 attacks/day  
+- Phyllis: 5,825 attacks/day
 - Toby-GCP: 2,931 attacks/day
 - **Zero protection**: No fail2ban, inactive/missing firewalls
 - 198 root login attempts in 7 days
@@ -847,7 +847,7 @@ sudo systemctl stop ufw
 
 Add fail2ban monitoring script and daily attack reports.
 
-- **Size:** ~80 lines  
+- **Size:** ~80 lines
 - **Risk:** None (monitoring only)
 
 **Changes:**
@@ -856,7 +856,7 @@ Add fail2ban monitoring script and daily attack reports.
    - Daily banned IP count
    - Top attacking IPs
    - Ban/unban events
-   
+
 2. **cron job** - Daily report at 9 AM
    - Run on each public node
    - Can optionally email results
@@ -939,7 +939,7 @@ ansible public_nodes -i ansible/hosts.ini -b -a "fail2ban-client set sshd unbani
 - UFW: Active with rate-limited SSH
 - Attack volume: Reduced by 90%+ (from 25,891/day to <2,000/day)
 - Banned IPs: 50-100 per day steady state
-- CPU usage (angela): Reduced by 10-15% 
+- CPU usage (angela): Reduced by 10-15%
 - SSH access: No legitimate lockouts
 - k3s: All pods healthy, API accessible
 - Idempotent: 2 runs = 0 changes
@@ -982,7 +982,7 @@ ansible public_nodes -i ansible/hosts.ini -b -a "fail2ban-client set sshd unbani
 After core deployment stabilizes:
 
 1. **Crowdsec Integration** - Shared threat intelligence, better than fail2ban alone
-2. **IP Whitelisting** - Restrict SSH to known IPs if static IP available  
+2. **IP Whitelisting** - Restrict SSH to known IPs if static IP available
 3. **SSH Port Change** - Move from 22 to 2222 (eliminates 99% of scanner traffic)
 4. **Oracle Security Lists** - Cloud-level firewall rules
 5. **2FA for SSH** - Google Authenticator PAM module

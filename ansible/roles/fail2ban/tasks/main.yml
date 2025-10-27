@@ -1,6 +1,17 @@
 ---
 # fail2ban role - Protect against SSH brute force attacks
 
+- name: Wait for apt lock to be released
+  ansible.builtin.shell: |
+    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+      sleep 1
+    done
+  changed_when: false
+  become: true
+  tags:
+    - fail2ban
+    - security
+
 - name: Install fail2ban
   ansible.builtin.apt:
     name: fail2ban
@@ -10,8 +21,8 @@
   become: true
   register: fail2ban_install
   until: fail2ban_install is success
-  retries: 3
-  delay: 5
+  retries: 5
+  delay: 10
   tags:
     - fail2ban
     - security

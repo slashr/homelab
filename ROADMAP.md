@@ -164,15 +164,15 @@ All planned PRs are listed below in logical execution order.
 
 ### Security Hardening - Raspberry Pis
 
-- [ ] **PR #10: Harden SSH access on Raspberry Pis (key-only authentication)**
-  - Create `ansible/roles/security/tasks/ssh.yml`
-  - Modify `/etc/ssh/sshd_config`: `PasswordAuthentication no`, `PermitRootLogin no`, `PubkeyAuthentication yes`
-  - Create backup: `/etc/ssh/sshd_config.backup`
-  - Validate config with `sshd -t` before restarting
-  - Restart sshd service after changes
-  - Add `security` and `ssh` tags
-  - Test: Attempt password auth should fail, key auth should work
-  - Risk: Medium - Keep 2 SSH sessions open to avoid lockout
+- [x] **PR #10: Harden SSH access on Raspberry Pis (key-only authentication)**
+  - Created `ansible/roles/security/` role with SSH hardening
+  - Template `/etc/ssh/sshd_config` with: `PasswordAuthentication no`, `PermitRootLogin no`, `PubkeyAuthentication yes`
+  - Creates backup before modification
+  - Validates config with `sshd -t` before applying
+  - Handler restarts sshd service after changes
+  - Tagged with `security` and `ssh` for selective execution
+  - Deployed and verified on dwight-pi and michael-pi (jim-pi currently offline)
+  - Additional hardening: MaxAuthTries 3, ClientAliveInterval 300, disabled X11Forwarding
 
 - [ ] **PR #11: Configure UFW firewall on Raspberry Pis**
   - Create `ansible/roles/security/tasks/ufw.yml`

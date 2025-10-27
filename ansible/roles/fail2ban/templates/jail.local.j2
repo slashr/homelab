@@ -24,6 +24,6 @@ action = %(action_)s
 [sshd]
 enabled = true
 port = ssh
-logpath = %(sshd_log)s
-backend = %(sshd_backend)s
+# Use systemd journal backend (works on all modern Ubuntu systems)
+backend = systemd
 

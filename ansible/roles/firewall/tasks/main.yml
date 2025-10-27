@@ -1,0 +1,138 @@
+---
+# UFW Firewall Configuration for Public Cloud Nodes
+# Adds rate limiting for SSH and restricts k3s traffic to Tailscale network
+
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+  become: true
+  tags: [firewall, ufw]
+
+# Check if this is VPN gateway BEFORE reset (to preserve NAT rules)
+- name: Check if this is the VPN gateway (pam-amd1)
+  ansible.builtin.set_fact:
+    is_vpn_gateway: "{{ (inventory_hostname == 'pam-amd1') | bool }}"
+  tags: [firewall, ufw]
+
+- name: Reset UFW to default state (skip on VPN gateway to preserve NAT)
+  community.general.ufw:
+    state: reset
+  become: true
+  when: not is_vpn_gateway
+  tags: [firewall, ufw]
+
+- name: Set UFW default incoming policy to deny
+  community.general.ufw:
+    default: deny
+    direction: incoming
+  become: true
+  tags: [firewall, ufw]
+
+- name: Set UFW default outgoing policy to allow
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+  become: true
+  tags: [firewall, ufw]
+
+- name: Set UFW default routed/forward policy to allow (required for k3s)
+  community.general.ufw:
+    default: allow
+    direction: routed
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow Tailscale (41641/udp) - MUST be before enabling firewall
+  community.general.ufw:
+    rule: allow
+    port: '41641'
+    proto: udp
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow SSH with rate limiting (22/tcp) - max 6 connections per 30s
+  community.general.ufw:
+    rule: limit
+    port: '22'
+    proto: tcp
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow k3s API server (6443/tcp) from Tailscale network only
+  community.general.ufw:
+    rule: allow
+    port: '6443'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow kubelet (10250/tcp) from Tailscale network only
+  community.general.ufw:
+    rule: allow
+    port: '10250'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow k3s metrics (10251/tcp) from Tailscale network only
+  community.general.ufw:
+    rule: allow
+    port: '10251'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow flannel VXLAN (8472/udp) from Tailscale network only
+  community.general.ufw:
+    rule: allow
+    port: '8472'
+    proto: udp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+# Additional VPN gateway configuration (already set is_vpn_gateway above)
+- name: Enable IP forwarding in UFW for VPN gateway
+  ansible.builtin.lineinfile:
+    path: /etc/default/ufw
+    regexp: '^DEFAULT_FORWARD_POLICY='
+    line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
+  become: true
+  when: is_vpn_gateway
+  tags: [firewall, ufw]
+
+- name: Enable UFW (forced, non-interactive)
+  community.general.ufw:
+    state: enabled
+  become: true
+  tags: [firewall, ufw]
+
+- name: Verify UFW is active
+  ansible.builtin.command: ufw status verbose
+  register: ufw_status
+  changed_when: false
+  become: true
+  tags: [firewall, ufw]
+
+- name: Display UFW status
+  ansible.builtin.debug:
+    var: ufw_status.stdout_lines
+  tags: [firewall, ufw]
+
+- name: Verify Tailscale connectivity (ping VPN gateway)
+  ansible.builtin.command: ping -c 3 {{ vpn_gateway_ip }}
+  register: tailscale_ping
+  changed_when: false
+  failed_when: false
+  tags: [firewall, ufw]
+
+- name: Display Tailscale connectivity status
+  ansible.builtin.debug:
+    msg: "Tailscale connectivity: {{ 'OK' if tailscale_ping.rc == 0 else 'FAILED - Check VPN!' }}"
+  tags: [firewall, ufw]
+

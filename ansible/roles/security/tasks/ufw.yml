@@ -59,7 +59,7 @@
     rule: allow
     port: '6443'
     proto: tcp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -68,7 +68,7 @@
     rule: allow
     port: '10250'
     proto: tcp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -77,7 +77,7 @@
     rule: allow
     port: '10251'
     proto: tcp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -86,7 +86,7 @@
     rule: allow
     port: '8472'
     proto: udp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 

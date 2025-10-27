@@ -16,7 +16,9 @@ repos:
     hooks:
       - id: ansible-lint
         files: ^ansible/.*\.(yml|yaml)$
-        stages: [commit]
+        stages: [pre-commit]
+        additional_dependencies:
+          - ansible-core==2.20.0rc2  # Required for Python 3.14 compatibility
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
     hooks:

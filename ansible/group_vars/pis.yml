@@ -14,6 +14,19 @@ dns_servers:
 ssh_permit_root_login: false
 ssh_password_authentication: false
 
+# UFW firewall configuration for Raspberry Pis
+ufw_enabled: true
+ufw_default_incoming: deny
+ufw_default_outgoing: allow
+ufw_ssh_rate_limit: true
+local_network_cidr: "192.168.1.0/24"
+tailscale_network_cidr: "100.100.0.0/16"
+
+# Pi-specific services (DNS, HTTP/HTTPS allowed from local + Tailscale)
+ufw_allow_dns: true        # Port 53 (AdGuard/Pi-hole)
+ufw_allow_http: true       # Port 80 (k3s ingress)
+ufw_allow_https: true      # Port 443 (k3s ingress)
+
 # Base system packages
 base_packages:
   - vim

@@ -1,6 +1,7 @@
 ---
 # UFW Firewall Configuration for Raspberry Pis
-# Configures firewall rules to allow k3s, SSH, and Tailscale traffic
+# Configures firewall rules to allow k3s, SSH, Tailscale, and Pi services
+# DNS/HTTP/HTTPS allowed from local network + Tailscale for flexibility
 
 - name: Install UFW
   ansible.builtin.apt:
@@ -89,41 +90,69 @@
   become: true
   tags: [firewall, ufw]
 
-# Special handling for dwight-pi (Pi-hole server)
-- name: Check if this is the Pi-hole server (dwight-pi)
-  ansible.builtin.set_fact:
-    is_pihole_server: "{{ inventory_hostname == 'dwight-pi' }}"
-  tags: [firewall, ufw]
-
-- name: Allow Pi-hole DNS (53/tcp) from local network
+# Raspberry Pi services - DNS, HTTP, HTTPS from local network + Tailscale
+# Applied to ALL Pis for flexibility (e.g., AdGuard can move between nodes)
+- name: Allow DNS (53/tcp+udp) from local network
   community.general.ufw:
     rule: allow
     port: '53'
-    proto: tcp
-    from_ip: 192.168.1.0/24
+    proto: "{{ item }}"
+    from_ip: "{{ local_network_cidr }}"
+  loop: [tcp, udp]
   become: true
-  when: is_pihole_server | bool
-  tags: [firewall, ufw, pihole]
+  when: ufw_allow_dns | default(false)
+  tags: [firewall, ufw, dns]
 
-- name: Allow Pi-hole DNS (53/udp) from local network
+- name: Allow DNS (53/tcp+udp) from Tailscale network
   community.general.ufw:
     rule: allow
     port: '53'
-    proto: udp
-    from_ip: 192.168.1.0/24
+    proto: "{{ item }}"
+    from_ip: "{{ tailscale_network_cidr }}"
+  loop: [tcp, udp]
   become: true
-  when: is_pihole_server | bool
-  tags: [firewall, ufw, pihole]
+  when: ufw_allow_dns | default(false)
+  tags: [firewall, ufw, dns]
 
-- name: Allow Pi-hole admin UI (80/tcp) from local network
+- name: Allow HTTP (80/tcp) from local network
   community.general.ufw:
     rule: allow
     port: '80'
     proto: tcp
-    from_ip: 192.168.1.0/24
+    from_ip: "{{ local_network_cidr }}"
   become: true
-  when: is_pihole_server | bool
-  tags: [firewall, ufw, pihole]
+  when: ufw_allow_http | default(false)
+  tags: [firewall, ufw, http]
+
+- name: Allow HTTP (80/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  when: ufw_allow_http | default(false)
+  tags: [firewall, ufw, http]
+
+- name: Allow HTTPS (443/tcp) from local network
+  community.general.ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+    from_ip: "{{ local_network_cidr }}"
+  become: true
+  when: ufw_allow_https | default(false)
+  tags: [firewall, ufw, https]
+
+- name: Allow HTTPS (443/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  when: ufw_allow_https | default(false)
+  tags: [firewall, ufw, https]
 
 - name: Enable UFW
   community.general.ufw:
@@ -142,4 +171,3 @@
   ansible.builtin.debug:
     var: ufw_status.stdout_lines
   tags: [firewall, ufw]
-

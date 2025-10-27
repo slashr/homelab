@@ -65,7 +65,7 @@
     rule: allow
     port: '6443'
     proto: tcp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -74,7 +74,7 @@
     rule: allow
     port: '10250'
     proto: tcp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -83,7 +83,7 @@
     rule: allow
     port: '10251'
     proto: tcp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -92,7 +92,7 @@
     rule: allow
     port: '8472'
     proto: udp
-    from_ip: 100.100.0.0/16
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -125,7 +125,7 @@
   tags: [firewall, ufw]
 
 - name: Verify Tailscale connectivity (ping VPN gateway)
-  ansible.builtin.command: ping -c 3 100.100.1.100
+  ansible.builtin.command: ping -c 3 {{ vpn_gateway_ip }}
   register: tailscale_ping
   changed_when: false
   failed_when: false

@@ -1,0 +1,72 @@
+---
+# k3s runtime prerequisites
+# Configures sysctls, kernel modules, and networking for k3s
+
+- name: Load br_netfilter kernel module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+  become: true
+  tags: [k3s_prereqs]
+
+- name: Load overlay kernel module
+  community.general.modprobe:
+    name: overlay
+    state: present
+  become: true
+  tags: [k3s_prereqs]
+
+- name: Ensure kernel modules load on boot
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k3s.conf
+    content: |
+      br_netfilter
+      overlay
+    mode: '0644'
+  become: true
+  tags: [k3s_prereqs]
+
+- name: Configure sysctl parameters for k3s
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/k3s.conf
+    state: present
+    reload: true
+  become: true
+  loop:
+    - { key: 'net.ipv4.ip_forward', value: '1' }
+    - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+    - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+  tags: [k3s_prereqs]
+
+- name: Verify kernel modules are loaded
+  ansible.builtin.command: lsmod
+  register: lsmod_output
+  changed_when: false
+  failed_when: false
+  tags: [k3s_prereqs]
+
+- name: Check br_netfilter module
+  ansible.builtin.assert:
+    that:
+      - "'br_netfilter' in lsmod_output.stdout"
+    fail_msg: "br_netfilter module is not loaded"
+    success_msg: "br_netfilter module is loaded"
+  tags: [k3s_prereqs]
+
+- name: Check overlay module
+  ansible.builtin.assert:
+    that:
+      - "'overlay' in lsmod_output.stdout"
+    fail_msg: "overlay module is not loaded"
+    success_msg: "overlay module is loaded"
+  tags: [k3s_prereqs]
+
+- name: Verify IP forwarding is enabled
+  ansible.builtin.command: sysctl net.ipv4.ip_forward
+  register: ip_forward_output
+  changed_when: false
+  failed_when: ip_forward_output.stdout.find('= 1') == -1
+  tags: [k3s_prereqs]
+

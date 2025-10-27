@@ -6,6 +6,7 @@
   roles:
     - role: ../roles/common
     - role: ../roles/network
+    - role: ../roles/k3s_prereqs
     - role: ../roles/security
 
 - name: Configure jim-pi
@@ -14,6 +15,7 @@
   roles:
     - role: ../roles/common
     - role: ../roles/network
+    - role: ../roles/k3s_prereqs
     - role: ../roles/security
 
 - name: Configure michael-pi
@@ -22,4 +24,5 @@
   roles:
     - role: ../roles/common
     - role: ../roles/network
+    - role: ../roles/k3s_prereqs
     - role: ../roles/security

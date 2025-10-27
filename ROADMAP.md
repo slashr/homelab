@@ -3,6 +3,10 @@
 This document tracks all planned work, active projects, and their implementation details.
 Each project is broken down into manageable PRs with clear scope, testing, and verification steps.
 
+📝 **See [COMPLETED.md](COMPLETED.md) for historical record of finished PRs.**
+
+---
+
 ## PR Workflow
 
 For each PR:
@@ -23,24 +27,20 @@ For each PR:
    gh pr comment <PR_NUMBER> --body "@codex review"
 
    # Step 2: Wait for Codex to complete (IMPORTANT!)
-   # - Main "Codex Review" appears within ~10-30 seconds
-   # - Inline P1/P2/P3 comments may take 2-3 minutes MORE to appear
+   # - Main "Codex Review" comment appears within ~10-30 seconds
+   # - Actual review replies may take 2-3 minutes MORE to appear
    # - ALWAYS wait at least 2-3 minutes after requesting review before checking
    sleep 180
 
-   # Step 3: Check for the main Codex review
-   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/reviews --jq '.[] | select(.user.login | contains("codex")) | {id: .id, state: .state, body: .body[0:200]}'
+   # Step 3: Find the main Codex comment ID
+   gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]" and (.body | contains("Codex Review"))) | {id: .id, created_at: .created_at}'
 
-   # Step 4: Check for inline code review comments (P1/P2/P3 issues)
-   # These are separate from the main review and contain the actual issues
-   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | select(.user.login | contains("codex")) | {path: .path, line: .line, body: .body[0:300]}'
-
-   # Step 5: Get full P1/P2/P3 issue details
-   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | select(.user.login | contains("codex")) | .body'
+   # Step 4: Check for review replies under the main comment
+   # (Codex posts P1/P2/P3 issues as replies to the main comment)
+   gh api repos/slashr/homelab/issues/comments/<MAIN_COMMENT_ID> --jq '.body'
+   
+   # Or view all replies in the PR thread on GitHub web UI
    ```
-
-   **Key difference:** Use `/pulls/<PR_NUMBER>/reviews` and `/pulls/<PR_NUMBER>/comments`
-   NOT `/issues/<PR_NUMBER>/comments` (issues endpoint doesn't show pull request reviews)
 
    **What to look for:**
    - 🔴 **P1 (orange badge)**: Critical bugs that MUST be fixed
@@ -67,6 +67,8 @@ For each PR:
 4. ✅ Notify user for final approval
 
 5. ✅ Merge only after user confirmation
+
+---
 
 ## Branch Management
 
@@ -107,6 +109,8 @@ For each PR:
 - ❌ Forgetting to pull latest main before branching
 - ❌ Working on main branch directly
 
+---
+
 ## Deployment Strategy
 
 **Staged Rollout (Preferred for All Changes):**
@@ -130,176 +134,109 @@ All Ansible playbooks targeting Raspberry Pis use a staged rollout pattern:
 
 ---
 
-## Roadmap Tasks
+## Active Roadmap
 
 All planned PRs are listed below in logical execution order.
 
-### Raspberry Pi Configuration
+### Documentation & Knowledge Management
 
-- [x] **PR #1: Add Raspberry Pi inventory group and configuration variables**
-  - Added `[pis]` group to `ansible/hosts.ini` with michael-pi, jim-pi, dwight-pi
-  - Created `ansible/group_vars/pis.yml` with shared configuration
-  - Configured Tailscale IPs (100.100.1.x), ansible_user, python interpreter paths
-  - Base packages list, DNS servers, WiFi settings all centralized
+- [ ] **PR #19: Add Backup and Restore Documentation** 📚
+  - **Priority:** High | **Effort:** Low (1-2 hours)
+  - Create `docs/BACKUP_RESTORE.md` with procedures for:
+    - Tailscale ACL backup/restore (including 10.42.0.0/16 Pod IP auto-approve)
+    - Ansible Vault password recovery
+    - kubeconfig backup/restore from michael-pi
+    - Oracle Reserved IP (130.61.64.164 with prevent_destroy)
+    - Critical GitHub Secrets inventory
+  - Add "Disaster Recovery" section to README.md
+  - **Test:** Follow docs in test scenario, verify configs can be restored
 
-- [x] **PR #2: Add Ansible dry-run checks to GitHub Actions**
-  - Added dry-run validation in `.github/workflows/actions.yml` (line 270)
-  - Runs `ansible-playbook --check` on PRs before merge
-  - Only runs if Pi-related files changed (reduces CI time)
-  - Shows diff preview in PR summary for review
+- [ ] **PR #20: Document Oracle Free Tier Resource Limits** 📝
+  - **Priority:** Low | **Effort:** Low (1 hour)
+  - Create `docs/ORACLE_FREE_TIER.md` documenting:
+    - Current usage: AMD (2/2 FULL), ARM (2/4 OCPUs, 24/24 GB FULL)
+    - ARM instance 30-day trial lifecycle
+    - What happens when capacity limits are hit
+  - Add monitoring script: `scripts/check-oracle-capacity.sh`
+  - Link from README.md and AGENTS.md
+  - **Test:** Verify current usage matches documentation
 
-- [x] **PR #3: Install essential system packages on Raspberry Pis**
-  - Created `ansible/roles/common/tasks/main.yml`
-  - Installs: vim, curl, htop, iotop, git, tmux via apt
-  - Uses `base_packages` variable from group_vars for flexibility
-  - Tagged with `packages` for selective execution
+### Infrastructure Refactoring
 
-- [x] **PR #4: Configure timezone, locale, and automatic security updates**
-  - Set timezone to Europe/Berlin, locale to en_GB.UTF-8
-  - Installed and enabled unattended-upgrades for automatic security patches
-  - Created custom MOTD showing hostname, IP, OS version, kernel
-  - All in `ansible/roles/common/tasks/main.yml`, tagged with `system`
+- [ ] **PR #21: Standardize Oracle Server Naming Convention** 🏷️
+  - **Priority:** Medium | **Effort:** Low (1 hour)
+  - Update `oracle/servers.tf`: Rename `amd1/amd2/arm1/arm2` → `pam-amd1/angela-amd2/stanley-arm1/phyllis-arm2`
+  - Update `moved` blocks to preserve Terraform state
+  - Align with Ansible inventory and k3s labels (consistency across all tools)
+  - **Test:** `terraform plan` shows only renaming (no destroy/recreate)
 
-- [x] **PR #5: Fix WiFi power save causing network latency and retries** 🔥
-  - **Priority: CRITICAL** - Fixed jim-pi latency (8000ms → <20ms), reduced retries (4325 → <100)
-  - Implemented in `ansible/roles/network/tasks/main.yml`
-  - Detects NetworkManager or dhcpcd and configures accordingly
-  - NetworkManager: Creates `/etc/NetworkManager/conf.d/wifi-powersave.conf` with `wifi.powersave = 2`
-  - dhcpcd: Creates `/etc/dhcpcd.enter-hook` to run `iwconfig wlan0 power off`
-  - Immediately disables at runtime: `iwconfig wlan0 power off`
-  - Tagged with `wifi` for targeted deployment
+- [ ] **PR #22: Standardize UFW Variable Names Across Groups** 🔧
+  - **Priority:** Low | **Effort:** Low (30 minutes)
+  - Move common variables to `ansible/group_vars/all.yml`:
+    - `tailscale_network_cidr: "100.100.0.0/16"`
+    - `vpn_gateway_ip: "100.100.1.100"`
+  - Keep group-specific in respective files (e.g., `local_network_cidr` in pis.yml only)
+  - Remove duplicate definitions
+  - **Test:** Run both playbooks, verify no variable resolution errors
 
-- [x] **PR #6: Configure DNS with AdGuard on dwight-pi**
-  - Primary DNS: 100.100.1.102 (dwight-pi AdGuard via Tailscale)
-  - Fallbacks: 1.1.1.1 (Cloudflare), 8.8.8.8 (Google)
-  - Template: `ansible/roles/network/templates/resolv.conf.j2` → `/etc/resolv.conf`
-  - Prevents overwrite by NetworkManager and dhcpcd
-  - Provides ad-blocking and works when Pis are remote from LAN
+### CI/CD Improvements
 
-- [x] **PR #7: Configure NTP time synchronization**
-  - Enables and starts `systemd-timesyncd` service
-  - Configures NTP servers: 0-3.pool.ntp.org, fallback to Cloudflare/Google time servers
-  - Config file: `/etc/systemd/timesyncd.conf`
-  - Ensures accurate timestamps for logs and scheduled tasks
-  - Tagged with `ntp` in `ansible/roles/network/tasks/main.yml`
+- [ ] **PR #23: Add k3s Playbook Dry-Run Validation** ✅
+  - **Priority:** Medium | **Effort:** Low (1 hour)
+  - Add to `.github/workflows/actions.yml` (around line 270):
+    - `ansible-playbook --check` for k3s.yml on PRs
+    - Include `k3s-master-config.yaml` in paths filter
+  - Consistent with existing vpn.yml and pis.yml validation
+  - **Test:** Create PR with k3s syntax error → CI catches it
 
-- [x] **PR #8: Add k3s runtime prerequisites role for Raspberry Pis**
-  - Created `ansible/roles/k3s_prereqs/tasks/main.yml` with runtime configuration
-  - Configured sysctls: `net.ipv4.ip_forward=1`, `net.bridge.bridge-nf-call-iptables=1`, `net.bridge.bridge-nf-call-ip6tables=1`
-  - Load kernel modules: `br_netfilter`, `overlay` (persisted via `/etc/modules-load.d/k3s.conf`)
-  - Made persistent via `/etc/sysctl.d/k3s.conf`
-  - Added `k3s_prereqs` tag for selective execution
-  - Updated `ansible/playbooks/pis.yml` to include k3s_prereqs role (lines 9, 18, 27)
-  - Deployed and verified on all 3 Raspberry Pis (michael-pi, jim-pi, dwight-pi)
+- [ ] **PR #24: Optimize GitHub Actions Caching Strategy** 🚀
+  - **Priority:** Low | **Effort:** Low (1 hour)
+  - Better Terraform cache key: `${{ hashFiles('**/*.tf') }}` (include all dirs)
+  - Add Ansible collections cache: `~/.ansible/collections`
+  - Cache key: `${{ hashFiles('ansible/requirements.yml') }}`
+  - Expected: 20-30% faster CI runs
+  - **Test:** Compare CI run times before/after
 
-- [x] **PR #9: Configure k3s boot parameters for cgroup support**
-  - Created `ansible/roles/k3s_prereqs/tasks/cgroup_boot.yml` for boot parameter configuration
-  - Detects correct cmdline.txt path (`/boot/firmware/cmdline.txt` for Pi 4+, `/boot/cmdline.txt` for older)
-  - Appends: `cgroup_memory=1 cgroup_enable=memory cgroup_enable=cpuset`
-  - Creates backup before modification, skips if already present
-  - Verified active on all 3 Raspberry Pis after reboot:
-    - dwight-pi: ✅ cgroup parameters active (Pi 4, uses `/boot/cmdline.txt`)
-    - jim-pi: ✅ cgroup parameters active (Pi 5, uses `/boot/firmware/cmdline.txt`)
-    - michael-pi: ✅ cgroup parameters active (Pi 5, uses `/boot/firmware/cmdline.txt`)
-  - cgroup2 filesystem properly mounted on all nodes
+- [ ] **PR #25: Add Pre-commit Hook for Sensitive File Detection** 🔒
+  - **Priority:** Medium | **Effort:** Low (1 hour)
+  - Update `.pre-commit-config.yaml`:
+    - Add `detect-secrets` hook with baseline
+    - Add custom `check-ansible-vault` hook
+  - Create `scripts/check-vault-encrypted.sh` to verify vault files are encrypted
+  - Prevent accidental commit of decrypted vault files
+  - **Test:** Try committing unencrypted file → blocked
 
-### Security Hardening - Raspberry Pis
+### Monitoring & Observability
 
-- [x] **PR #10: Harden SSH access on Raspberry Pis (key-only authentication)**
-  - Created `ansible/roles/security/` role with SSH hardening
-  - Template `/etc/ssh/sshd_config` with: `PasswordAuthentication no`, `PermitRootLogin no`, `PubkeyAuthentication yes`
-  - Creates backup before modification (`/etc/ssh/sshd_config.backup`)
-  - Validates config with `sshd -t` before applying
-  - Handler restarts sshd service after changes
-  - Tagged with `security` and `ssh` for selective execution
-  - Deployed and verified on all 3 Raspberry Pis (dwight-pi, jim-pi, michael-pi)
-  - Additional hardening: `MaxAuthTries 3`, `ClientAliveInterval 300`, disabled X11Forwarding
+- [ ] **PR #26: Add Health Checks and Status Dashboard** 📊
+  - **Priority:** Medium | **Effort:** Medium (3-4 hours)
+  - Create `ansible/playbooks/health-check.yml`:
+    - UFW status, fail2ban banned IPs, Tailscale connectivity
+    - k3s/k3s-agent service status, disk/memory usage
+    - System uptime
+  - Add `scripts/cluster-status.sh` wrapper with traffic light status
+  - **Test:** Run on healthy cluster → all green; simulate issues → warnings
 
-- [ ] **PR #11: Configure UFW firewall on Raspberry Pis**
-  - Create `ansible/roles/security/tasks/ufw.yml`
-  - Install `ufw` package
-  - Default policy: deny incoming, allow outgoing
-  - Allow SSH (22/tcp), k3s API (6443/tcp), kubelet (10250/tcp), Tailscale (41641/udp)
-  - Allow from Tailscale network: `100.100.0.0/16` for k3s traffic
-  - Enable UFW with `ufw enable`
-  - Add `firewall` tag
-  - Test: `ufw status verbose` and verify SSH still works
-  - Update `ansible/playbooks/pis.yml` to include security role
+- [ ] **PR #27: Add Tailscale VPN Status Monitoring** 🔍
+  - **Priority:** Medium | **Effort:** Medium (2-3 hours)
+  - Create `ansible/roles/monitoring/tasks/tailscale-check.yml`
+  - Script: `/usr/local/bin/tailscale-health-check.sh`
+    - Check Tailscale service, ping michael-pi & pam-amd1
+    - Verify latency < 100ms
+  - Add cron job: `*/5 * * * *` (every 5 minutes)
+  - Deploy via `ansible/playbooks/monitoring.yml`
+  - **Test:** Stop Tailscale → health check logs error
 
-### Security Hardening - Public Cloud Nodes
+### Data Protection
 
-- [x] **PR #12: Add public cloud nodes inventory group and security variables**
-  - Added `[public_nodes]` group to `ansible/hosts.ini` (lines 23-28) with all 5 public nodes
-  - Nodes: pam-amd1 (VPN gateway), angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
-  - Created `ansible/group_vars/public_nodes.yml` with security config
-  - Variables: `fail2ban_enabled: true`, `fail2ban_bantime: 86400`, `fail2ban_maxretry: 3`, `fail2ban_findtime: 600`
-  - Variables: `ufw_enabled: true`, `ufw_ssh_rate_limit: true`
-  - Inventory group available for security playbook targeting
-
-- [x] **PR #13: Deploy fail2ban to block SSH brute force attacks on public nodes** 🔥
-  - **Priority: CRITICAL** - Successfully deployed across all 5 public nodes
-  - Created `ansible/roles/fail2ban/` role structure (tasks, templates, handlers)
-  - Created `ansible/roles/fail2ban/tasks/main.yml` for installation
-  - Created `ansible/roles/fail2ban/templates/jail.local.j2` with SSH jail config
-  - Config: bantime=24h (86400s), maxretry=3, findtime=10min (600s)
-  - Created `ansible/roles/fail2ban/handlers/main.yml` to restart fail2ban
-  - Created `ansible/playbooks/security.yml` playbook for staged rollout
-  - Staged rollout order: toby-gcp1 → phyllis-arm2 → stanley-arm1 → pam-amd1 → angela-amd2
-  - Deployed and verified: pam-amd1 has 87 IPs banned, 446 total failed attempts blocked
-  - Result: Successfully blocking SSH brute force attacks across all public nodes
-
-- [ ] **PR #14: Configure UFW firewall with rate limiting on public nodes**
-  - Create `ansible/roles/firewall/tasks/main.yml` for public nodes
-  - Install `ufw` package
-  - Configure before enabling: Allow Tailscale (41641/udp) first to avoid lockout
-  - Allow SSH with rate limiting: `ufw limit 22/tcp` (max 6 connections per 30 seconds)
-  - Allow k3s traffic ONLY from Tailscale network: `ufw allow from 100.100.0.0/16 to any port 6443,10250 proto tcp`
-  - **Special for pam-amd1**: Ensure VPN forwarding rules remain intact (check existing iptables rules)
-  - Default policy: deny incoming, allow outgoing
-  - Enable UFW: `ufw --force enable`
-  - Add to `ansible/playbooks/security.yml`
-  - Risk: Medium - Keep 2 SSH sessions open during deployment
-  - Staged rollout: toby-gcp1 → phyllis → stanley → pam-amd1 → angela
-  - **Extra caution on pam-amd1**: It's the VPN gateway, test Tailscale connectivity before/after
-  - Test: `ufw status verbose`, verify k3s API accessible from Tailscale, SSH rate limiting works, VPN still forwards traffic
-
-- [ ] **PR #15: Add fail2ban monitoring and daily attack reports**
-  - Create `/usr/local/bin/fail2ban-report.sh` monitoring script
-  - Script outputs: currently banned IPs, ban count (24h), top 10 attacker IPs (7d), recent bans (last 20)
-  - Uses `fail2ban-client status sshd` and `journalctl -u fail2ban`
-  - Create `ansible/roles/fail2ban/tasks/monitoring.yml`
-  - Deploy to all 5 public nodes: pam-amd1, angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
-  - Add cron job: `0 9 * * * /usr/local/bin/fail2ban-report.sh` (runs at 9 AM daily)
-  - Optional: Configure email delivery if `fail2ban_destemail` is set
-  - Add `monitoring` tag for selective execution
-  - Test: Run script manually on each node, verify output format
-
-### Ansible Performance Optimization
-
-- [ ] **PR #16: Optimize Ansible playbook execution with parallel strategy**
-  - Add `strategy: free` to Play 2 in `ansible/vpn.yml` (Tailscale installation across multiple nodes)
-  - Add `gather_facts: false` to plays that don't use ansible facts
-  - Review existing playbooks: `vpn.yml`, `pis.yml`, `k3s.yml` for optimization opportunities
-  - Parallel execution reduces wait time when one host is slower than others
-  - Expected impact: 40-60% faster execution (3-5min → 1-2min on main branch)
-  - Test: Run playbook and measure execution time before/after
-
-- [ ] **PR #17: Add ansible.cfg with SSH performance optimizations**
-  - Create `ansible/ansible.cfg` file
-  - Enable SSH pipelining: `pipelining = True` (reduces SSH connections)
-  - Enable ControlMaster: `ssh_args = -o ControlMaster=auto -o ControlPersist=60s`
-  - Increase parallel execution: `forks = 10` (default is 5)
-  - Disable host key checking for known hosts: `host_key_checking = False` (already done per-host)
-  - Optional: Enable fact caching to speed up reruns
-  - Expected impact: 20-30% faster SSH operations
-  - Test: Run playbook with `-vv` and observe SSH connection reuse
-
-- [x] **PR #18: Skip VPN playbook execution on pull requests**
-  - Modified `.github/workflows/actions.yml` line 299
-  - VPN playbook now only runs: `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`
-  - Dry-run check still runs on PRs for validation (line 288)
-  - Reduces CI time on PRs from 3-5min to ~30s
-  - Prevents redundant VPN reconfiguration on every PR
+- [ ] **PR #28: Add Terraform State Backup Automation** 💾
+  - **Priority:** High | **Effort:** Medium (2-3 hours)
+  - Create `.github/workflows/backup-terraform-state.yml`
+  - Weekly backup (Sundays 3 AM UTC) of all TF Cloud workspaces
+  - Encrypt with GPG key (stored in GitHub Secrets)
+  - Commit to private backup branch
+  - Create `docs/TERRAFORM_STATE_RECOVERY.md` with restore procedure
+  - **Test:** Manual trigger → verify encrypted state files created
 
 ---
 
@@ -322,3 +259,20 @@ ansible public_nodes -i ansible/hosts.ini -b -a "fail2ban-client status sshd"
 # Drift detection
 ansible-playbook -i ansible/hosts.ini ansible/playbooks/pis.yml --check --diff
 ```
+
+---
+
+## Summary Statistics
+
+**Active PRs:** 10  
+**Completed PRs:** 16 (see [COMPLETED.md](COMPLETED.md))
+
+**Breakdown by Category:**
+
+- Documentation: 2 PRs
+- Refactoring: 2 PRs
+- CI/CD: 3 PRs
+- Monitoring: 2 PRs
+- Data Protection: 1 PR
+
+**Total Estimated Effort:** 12-16 hours

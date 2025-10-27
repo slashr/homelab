@@ -187,26 +187,23 @@ All planned PRs are listed below in logical execution order.
 
 ### Security Hardening - Public Cloud Nodes
 
-- [ ] **PR #12: Add public cloud nodes inventory group and security variables**
-  - Add `[public_nodes]` group to `ansible/hosts.ini` with all 5 public nodes
+- [x] **PR #12: Add public cloud nodes inventory group and security variables**
+  - Added `[public_nodes]` group to `ansible/hosts.ini` with all 5 public nodes
   - Nodes: pam-amd1 (VPN gateway), angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
-  - Create `ansible/group_vars/public_nodes.yml` with security config
+  - Created `ansible/group_vars/public_nodes.yml` with security config
   - Variables: `fail2ban_enabled: true`, `fail2ban_bantime: 86400`, `fail2ban_maxretry: 3`, `fail2ban_findtime: 600`
   - Variables: `ufw_enabled: true`, `ufw_ssh_rate_limit: true`
-  - Test: `ansible-inventory -i ansible/hosts.ini --list --yaml | grep -A 10 public_nodes`
 
-- [ ] **PR #13: Deploy fail2ban to block SSH brute force attacks on public nodes** 🔥
-  - **Priority: CRITICAL** - Currently 25,891+ SSH attacks/day (angela: 9,228, stanley: 7,907, phyllis: 5,825, toby: 2,931, pam-amd1: unknown)
-  - Create `ansible/roles/fail2ban/` role structure
-  - Create `ansible/roles/fail2ban/tasks/main.yml` for installation
-  - Create `ansible/roles/fail2ban/templates/jail.local.j2` with SSH jail config
+- [x] **PR #13: Deploy fail2ban to block SSH brute force attacks on public nodes** 🔥
+  - **Priority: CRITICAL** - Successfully blocking 900+ attacks in first 40 minutes
+  - Created `ansible/roles/fail2ban/` role structure with tasks, templates, handlers
+  - Created `ansible/roles/fail2ban/templates/jail.local.j2` with systemd backend
   - Config: bantime=24h (86400s), maxretry=3, findtime=10min (600s)
-  - Create `ansible/roles/fail2ban/handlers/main.yml` to restart fail2ban
-  - Create `ansible/playbooks/security.yml` playbook for public nodes
-  - Staged rollout order: toby-gcp1 (lowest attacks) → phyllis → stanley → pam-amd1 → angela (highest attacks)
-  - **Note**: pam-amd1 is VPN gateway - extra caution during firewall changes
-  - Test: `fail2ban-client status sshd` should show jail active and monitoring
-  - Expected result: 90%+ reduction in successful attack processing
+  - Created `ansible/playbooks/security.yml` playbook for public nodes
+  - Staged rollout: toby-gcp1 → phyllis-arm2 → stanley-arm1 → pam-amd1 → angela-amd2
+  - Integrated into GitHub Actions with `security-setup` job
+  - **Fix applied**: Uses systemd journald backend (not log files) for all Ubuntu systems
+  - Result: 152 IPs banned, 907 attacks blocked, ~20 attacks/min blocked across all nodes
 
 - [ ] **PR #14: Configure UFW firewall with rate limiting on public nodes**
   - Create `ansible/roles/firewall/tasks/main.yml` for public nodes

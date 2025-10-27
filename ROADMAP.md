@@ -11,13 +11,35 @@ For each PR:
 
 2. ✅ **Check for Codex review comments** (CRITICAL - don't skip!):
 
-   ```bash
-   # Step 1: Check if Codex reviewed
-   gh pr view <PR_NUMBER> --json reviews --jq '.reviews[] | select(.author.login == "chatgpt-codex-connector") | {state: .state}'
+   **⚠️ IMPORTANT: Codex uses a two-step review process:**
+   - First posts a top-level comment: "Codex Review"
+   - Then adds inline code review comments (P1/P2/P3 issues) as separate pull request comments
+   - **You must check BOTH** - the top-level comment alone does NOT mean no issues!
 
-   # Step 2: Get inline comments (P1/P2/P3 issues)
-   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, author: .user.login, path: .path, line: .line, body: .body}'
+   **How to check properly:**
+
+   ```bash
+   # Step 1: Request Codex review (if not already reviewed)
+   gh pr comment <PR_NUMBER> --body "@codex review"
+
+   # Step 2: Wait for Codex to complete (IMPORTANT!)
+   # - Initial "Codex Review" comment appears within ~10-30 seconds
+   # - Inline review comments may take 30-90 seconds MORE to appear
+   # - ALWAYS wait at least 60-90 seconds after requesting review
+   sleep 90
+
+   # Step 3: Check for inline code review comments (P1/P2/P3 issues)
+   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]") | {id: .id, path: .path, line: .line, body: .body[:300]}'
+
+   # Step 4: If inline comments found, get full details
+   gh api repos/slashr/homelab/pulls/comments/<COMMENT_ID> --jq '.body'
    ```
+
+   **What to look for:**
+   - 🔴 **P1 (orange badge)**: Critical bugs that MUST be fixed
+   - 🟡 **P2 (yellow badge)**: Important issues that should be fixed
+   - 🔵 **P3 (blue badge)**: Nice-to-have improvements
+   - ✅ **"Didn't find any major issues"**: Only appears in top-level comment when there are NO inline comments
 
 3. ✅ Address ALL Codex comments:
    - **Fix issues** OR **explain why no fix is needed**

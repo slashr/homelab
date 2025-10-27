@@ -74,4 +74,3 @@
 - name: Include cgroup boot parameters configuration
   ansible.builtin.include_tasks: cgroup_boot.yml
   tags: [k3s_prereqs, cgroup_boot]
-

@@ -47,7 +47,7 @@ runs:
     - name: Cache Ansible collections
       uses: actions/cache@v4
       with:
-        path: ~/.ansible/collections/ansible_collections
+        path: ~/.ansible/collections
         key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
         restore-keys: |
           ${{ runner.os }}-ansible-collections-
@@ -70,4 +70,3 @@ runs:
       with:
         ssh_private_key: ${{ inputs.ssh_private_key }}
         ansible_vault_password: ${{ inputs.ansible_vault_password }}
-

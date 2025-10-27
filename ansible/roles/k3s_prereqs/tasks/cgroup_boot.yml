@@ -61,7 +61,7 @@
 - name: Notify that reboot is required
   ansible.builtin.debug:
     msg: "⚠️  REBOOT REQUIRED: cgroup boot parameters have been updated in {{ cmdline_path }}"
-  when: cmdline_modified.changed
+  when: cmdline_modified is defined and cmdline_modified.changed
   tags: [k3s_prereqs, cgroup_boot]
 
 - name: Display current cmdline.txt

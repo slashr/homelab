@@ -82,6 +82,42 @@
   become: true
   tags: [firewall, ufw]
 
+# Special handling for dwight-pi (Pi-hole server)
+- name: Check if this is the Pi-hole server (dwight-pi)
+  ansible.builtin.set_fact:
+    is_pihole_server: "{{ inventory_hostname == 'dwight-pi' }}"
+  tags: [firewall, ufw]
+
+- name: Allow Pi-hole DNS (53/tcp) from local network
+  community.general.ufw:
+    rule: allow
+    port: '53'
+    proto: tcp
+    from_ip: 192.168.1.0/24
+  become: true
+  when: is_pihole_server | bool
+  tags: [firewall, ufw, pihole]
+
+- name: Allow Pi-hole DNS (53/udp) from local network
+  community.general.ufw:
+    rule: allow
+    port: '53'
+    proto: udp
+    from_ip: 192.168.1.0/24
+  become: true
+  when: is_pihole_server | bool
+  tags: [firewall, ufw, pihole]
+
+- name: Allow Pi-hole admin UI (80/tcp) from local network
+  community.general.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+    from_ip: 192.168.1.0/24
+  become: true
+  when: is_pihole_server | bool
+  tags: [firewall, ufw, pihole]
+
 - name: Enable UFW
   community.general.ufw:
     state: enabled

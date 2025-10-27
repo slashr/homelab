@@ -3,6 +3,7 @@
 - name: Configure VPN Server (pam-amd1)
   hosts: pam-amd1
   become: true
+  gather_facts: false
   handlers:
     - name: Load iptables rules
       ansible.builtin.command: iptables-restore /etc/iptables/rules.v4
@@ -54,6 +55,8 @@
     - oracle_workers
     - gcp_workers
   become: true
+  gather_facts: false
+  strategy: free  # Parallel execution - don't wait for slower hosts
   vars:
     tailscale_version: "latest"
     tailscale_args: ""

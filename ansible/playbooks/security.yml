@@ -2,12 +2,7 @@
 # Security hardening playbook for public cloud nodes
 # Deploys fail2ban and UFW firewall to protect against attacks
 #
-# Staged rollout order (lowest to highest attack volume):
-#   1. toby-gcp1 (2,931 attacks/day)
-#   2. phyllis-arm2 (5,825 attacks/day)
-#   3. stanley-arm1 (7,907 attacks/day)
-#   4. pam-amd1 (VPN gateway - extra caution)
-#   5. angela-amd2 (9,228 attacks/day - highest)
+# Staged rollout order: toby-gcp1 → phyllis-arm2 → stanley-arm1 → pam-amd1 → angela-amd2
 #
 # Performance optimization: gather_facts: false
 # - fail2ban and firewall roles do not use any Ansible facts
@@ -15,7 +10,7 @@
 # - Total time saved: ~20-25 seconds across 5 hosts
 # - Verified: All tasks use only hard-coded values or inventory_hostname
 
-- name: Deploy security hardening to toby-gcp1 (test node)
+- name: Deploy security hardening to toby-gcp1
   hosts: toby-gcp1
   gather_facts: false
   become: true
@@ -39,7 +34,7 @@
     - role: ../roles/fail2ban
     - role: ../roles/firewall
 
-- name: Deploy security hardening to pam-amd1 (VPN gateway)
+- name: Deploy security hardening to pam-amd1
   hosts: pam-amd1
   gather_facts: false
   become: true
@@ -47,7 +42,7 @@
     - role: ../roles/fail2ban
     - role: ../roles/firewall
 
-- name: Deploy security hardening to angela-amd2 (highest attacks)
+- name: Deploy security hardening to angela-amd2
   hosts: angela-amd2
   gather_facts: false
   become: true

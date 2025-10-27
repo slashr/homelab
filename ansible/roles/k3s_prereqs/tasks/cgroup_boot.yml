@@ -34,7 +34,7 @@
 
 - name: Check if cgroup parameters are already present
   ansible.builtin.set_fact:
-    cgroup_params_present: "{{ 'cgroup_memory=1' in cmdline_current and 'cgroup_enable=memory' in cmdline_current and 'cgroup_enable=cpuset' in cmdline_current }}"
+    cgroup_params_present: "{{ ('cgroup_memory=1' in cmdline_current and 'cgroup_enable=memory' in cmdline_current and 'cgroup_enable=cpuset' in cmdline_current) | bool }}"
   tags: [k3s_prereqs, cgroup_boot]
 
 - name: Create backup of cmdline.txt

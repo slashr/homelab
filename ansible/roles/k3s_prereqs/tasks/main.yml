@@ -1,6 +1,6 @@
 ---
 # k3s runtime prerequisites
-# Configures sysctls, kernel modules, and networking for k3s
+# Configures sysctls, kernel modules, networking, and boot parameters for k3s
 
 - name: Load br_netfilter kernel module
   community.general.modprobe:
@@ -70,3 +70,7 @@
   failed_when: ip_forward_output.stdout.find('= 1') == -1
   tags: [k3s_prereqs]
 
+# Configure cgroup boot parameters (requires reboot)
+- name: Include cgroup boot parameters configuration
+  ansible.builtin.include_tasks: cgroup_boot.yml
+  tags: [k3s_prereqs, cgroup_boot]

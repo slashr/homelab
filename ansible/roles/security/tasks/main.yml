@@ -1,33 +1,12 @@
 ---
-# SSH Hardening - Key-only authentication, disable password auth and root login
+# Security hardening tasks for Raspberry Pis
+# Includes SSH hardening and UFW firewall configuration
 
-- name: Backup current SSH config
-  ansible.builtin.copy:
-    src: /etc/ssh/sshd_config
-    dest: /etc/ssh/sshd_config.backup
-    remote_src: true
-    mode: '0600'
-  become: true
-  tags: ssh
+- name: Include SSH hardening tasks
+  ansible.builtin.include_tasks: ssh.yml
+  tags: [security, ssh]
 
-- name: Configure SSH hardening
-  ansible.builtin.template:
-    src: sshd_config.j2
-    dest: /etc/ssh/sshd_config
-    owner: root
-    group: root
-    mode: '0644'
-    validate: /usr/sbin/sshd -t -f %s
-    backup: true
-  become: true
-  notify: Restart sshd
-  tags: ssh
-
-- name: Ensure SSH service is enabled and running
-  ansible.builtin.systemd:
-    name: ssh
-    enabled: true
-    state: started
-  become: true
-  tags: ssh
+- name: Include UFW firewall tasks
+  ansible.builtin.include_tasks: ufw.yml
+  tags: [security, firewall, ufw]
 

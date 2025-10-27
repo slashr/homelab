@@ -1,0 +1,173 @@
+---
+# UFW Firewall Configuration for Raspberry Pis
+# Configures firewall rules to allow k3s, SSH, Tailscale, and Pi services
+# DNS/HTTP/HTTPS allowed from local network + Tailscale for flexibility
+
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+  become: true
+  tags: [firewall, ufw]
+
+- name: Reset UFW to default state
+  community.general.ufw:
+    state: reset
+  become: true
+  tags: [firewall, ufw]
+
+- name: Set UFW default incoming policy to deny
+  community.general.ufw:
+    default: deny
+    direction: incoming
+  become: true
+  tags: [firewall, ufw]
+
+- name: Set UFW default outgoing policy to allow
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+  become: true
+  tags: [firewall, ufw]
+
+- name: Set UFW default routed/forward policy to allow (required for k3s)
+  community.general.ufw:
+    default: allow
+    direction: routed
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow SSH (22/tcp) - CRITICAL to avoid lockout
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow Tailscale (41641/udp)
+  community.general.ufw:
+    rule: allow
+    port: '41641'
+    proto: udp
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow k3s API server (6443/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '6443'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow kubelet (10250/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '10250'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow k3s node metrics (10250/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '10251'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow k3s flannel VXLAN (8472/udp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '8472'
+    proto: udp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+# Raspberry Pi services - DNS, HTTP, HTTPS from local network + Tailscale
+# Applied to ALL Pis for flexibility (e.g., AdGuard can move between nodes)
+- name: Allow DNS (53/tcp+udp) from local network
+  community.general.ufw:
+    rule: allow
+    port: '53'
+    proto: "{{ item }}"
+    from_ip: "{{ local_network_cidr }}"
+  loop: [tcp, udp]
+  become: true
+  when: ufw_allow_dns | default(false)
+  tags: [firewall, ufw, dns]
+
+- name: Allow DNS (53/tcp+udp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '53'
+    proto: "{{ item }}"
+    from_ip: "{{ tailscale_network_cidr }}"
+  loop: [tcp, udp]
+  become: true
+  when: ufw_allow_dns | default(false)
+  tags: [firewall, ufw, dns]
+
+- name: Allow HTTP (80/tcp) from local network
+  community.general.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+    from_ip: "{{ local_network_cidr }}"
+  become: true
+  when: ufw_allow_http | default(false)
+  tags: [firewall, ufw, http]
+
+- name: Allow HTTP (80/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  when: ufw_allow_http | default(false)
+  tags: [firewall, ufw, http]
+
+- name: Allow HTTPS (443/tcp) from local network
+  community.general.ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+    from_ip: "{{ local_network_cidr }}"
+  become: true
+  when: ufw_allow_https | default(false)
+  tags: [firewall, ufw, https]
+
+- name: Allow HTTPS (443/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
+  become: true
+  when: ufw_allow_https | default(false)
+  tags: [firewall, ufw, https]
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+  become: true
+  tags: [firewall, ufw]
+
+- name: Verify UFW is active
+  ansible.builtin.command: ufw status verbose
+  register: ufw_status
+  changed_when: false
+  become: true
+  tags: [firewall, ufw]
+
+- name: Display UFW status
+  ansible.builtin.debug:
+    var: ufw_status.stdout_lines
+  tags: [firewall, ufw]

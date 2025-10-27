@@ -30,6 +30,13 @@
   become: true
   tags: [firewall, ufw]
 
+- name: Set UFW default routed/forward policy to allow (required for k3s)
+  community.general.ufw:
+    default: allow
+    direction: routed
+  become: true
+  tags: [firewall, ufw]
+
 - name: Allow SSH (22/tcp) - CRITICAL to avoid lockout
   community.general.ufw:
     rule: allow

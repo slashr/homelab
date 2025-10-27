@@ -50,10 +50,11 @@ For each PR:
      - **Accept and fix**: "Fixed in commit abc123 by [describe change]"
      - **Explain why no fix needed**: "Not fixing because [specific reason]"
    - Use GitHub web UI to reply to the comment thread, OR use CLI:
+
      ```bash
      gh api repos/slashr/homelab/issues/comments/<MAIN_COMMENT_ID>/replies -X POST -f body="..."
      ```
-   
+
    **After pushing fixes:**
    - Request re-review: `gh pr comment <PR_NUMBER> --body "@codex review"`
    - Wait 2-3 minutes for Codex to complete new review

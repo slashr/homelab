@@ -21,7 +21,7 @@ runs:
     # Setup Tailscale network on the Actions worker
     # Enables connection to k3s nodes using Tailscale public IP
     - name: Tailscale
-      uses: tailscale/github-action@v4.0.2
+      uses: tailscale/github-action@v4.0.3
       with:
         oauth-client-id: ${{ inputs.tailscale_client_id }}
         oauth-secret: ${{ inputs.tailscale_client_secret }}

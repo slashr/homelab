@@ -23,20 +23,24 @@ For each PR:
    gh pr comment <PR_NUMBER> --body "@codex review"
 
    # Step 2: Wait for Codex to complete (IMPORTANT!)
-   # - Main "Codex Review" comment appears within ~10-30 seconds
-   # - Actual review replies may take 2-3 minutes MORE to appear
+   # - Main "Codex Review" appears within ~10-30 seconds
+   # - Inline P1/P2/P3 comments may take 2-3 minutes MORE to appear
    # - ALWAYS wait at least 2-3 minutes after requesting review before checking
    sleep 180
 
-   # Step 3: Find the main Codex comment ID
-   gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]" and (.body | contains("Codex Review"))) | {id: .id, created_at: .created_at}'
+   # Step 3: Check for the main Codex review
+   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/reviews --jq '.[] | select(.user.login | contains("codex")) | {id: .id, state: .state, body: .body[0:200]}'
 
-   # Step 4: Check for review replies under the main comment
-   # (Codex posts P1/P2/P3 issues as replies to the main comment)
-   gh api repos/slashr/homelab/issues/comments/<MAIN_COMMENT_ID> --jq '.body'
-   
-   # Or view all replies in the PR thread on GitHub web UI
+   # Step 4: Check for inline code review comments (P1/P2/P3 issues)
+   # These are separate from the main review and contain the actual issues
+   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | select(.user.login | contains("codex")) | {path: .path, line: .line, body: .body[0:300]}'
+
+   # Step 5: Get full P1/P2/P3 issue details
+   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | select(.user.login | contains("codex")) | .body'
    ```
+
+   **Key difference:** Use `/pulls/<PR_NUMBER>/reviews` and `/pulls/<PR_NUMBER>/comments`
+   NOT `/issues/<PR_NUMBER>/comments` (issues endpoint doesn't show pull request reviews)
 
    **What to look for:**
    - 🔴 **P1 (orange badge)**: Critical bugs that MUST be fixed

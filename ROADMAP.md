@@ -179,35 +179,37 @@ All planned PRs are listed below in logical execution order.
   - Ensures accurate timestamps for logs and scheduled tasks
   - Tagged with `ntp` in `ansible/roles/network/tasks/main.yml`
 
-- [ ] **PR #8: Add k3s runtime prerequisites role for Raspberry Pis**
-  - Create `ansible/roles/k3s_prereqs/tasks/main.yml` with runtime configuration
-  - Set sysctls: `net.ipv4.ip_forward=1`, `net.bridge.bridge-nf-call-iptables=1`, `net.bridge.bridge-nf-call-ip6tables=1`
-  - Load kernel modules: `br_netfilter`, `overlay` (persist via `/etc/modules-load.d/k3s.conf`)
-  - Make persistent via `/etc/sysctl.d/k3s.conf`
-  - Add `k3s_prereqs` tag for selective execution
-  - Update `ansible/playbooks/pis.yml` to include k3s_prereqs role
-  - Test: `lsmod | grep br_netfilter` and `sysctl net.ipv4.ip_forward` should return 1
+- [x] **PR #8: Add k3s runtime prerequisites role for Raspberry Pis**
+  - Created `ansible/roles/k3s_prereqs/tasks/main.yml` with runtime configuration
+  - Configured sysctls: `net.ipv4.ip_forward=1`, `net.bridge.bridge-nf-call-iptables=1`, `net.bridge.bridge-nf-call-ip6tables=1`
+  - Load kernel modules: `br_netfilter`, `overlay` (persisted via `/etc/modules-load.d/k3s.conf`)
+  - Made persistent via `/etc/sysctl.d/k3s.conf`
+  - Added `k3s_prereqs` tag for selective execution
+  - Updated `ansible/playbooks/pis.yml` to include k3s_prereqs role (lines 9, 18, 27)
+  - Deployed and verified on all 3 Raspberry Pis (michael-pi, jim-pi, dwight-pi)
 
-- [ ] **PR #9: Configure k3s boot parameters for cgroup support**
-  - Modify `/boot/firmware/cmdline.txt` (or `/boot/cmdline.txt` on older Pis)
-  - Append: `cgroup_memory=1 cgroup_enable=memory cgroup_enable=cpuset`
-  - Create backup before modification: `/boot/firmware/cmdline.txt.backup`
-  - Requires reboot to take effect
-  - Add reboot task with confirmation prompt
-  - Test after reboot: `cat /proc/cmdline | grep cgroup`
-  - Risk: Medium - Requires reboot and Pi won't boot if cmdline is malformed
+- [x] **PR #9: Configure k3s boot parameters for cgroup support**
+  - Created `ansible/roles/k3s_prereqs/tasks/cgroup_boot.yml` for boot parameter configuration
+  - Detects correct cmdline.txt path (`/boot/firmware/cmdline.txt` for Pi 4+, `/boot/cmdline.txt` for older)
+  - Appends: `cgroup_memory=1 cgroup_enable=memory cgroup_enable=cpuset`
+  - Creates backup before modification, skips if already present
+  - Verified active on all 3 Raspberry Pis after reboot:
+    - dwight-pi: ✅ cgroup parameters active (Pi 4, uses `/boot/cmdline.txt`)
+    - jim-pi: ✅ cgroup parameters active (Pi 5, uses `/boot/firmware/cmdline.txt`)
+    - michael-pi: ✅ cgroup parameters active (Pi 5, uses `/boot/firmware/cmdline.txt`)
+  - cgroup2 filesystem properly mounted on all nodes
 
 ### Security Hardening - Raspberry Pis
 
 - [x] **PR #10: Harden SSH access on Raspberry Pis (key-only authentication)**
   - Created `ansible/roles/security/` role with SSH hardening
   - Template `/etc/ssh/sshd_config` with: `PasswordAuthentication no`, `PermitRootLogin no`, `PubkeyAuthentication yes`
-  - Creates backup before modification
+  - Creates backup before modification (`/etc/ssh/sshd_config.backup`)
   - Validates config with `sshd -t` before applying
   - Handler restarts sshd service after changes
   - Tagged with `security` and `ssh` for selective execution
-  - Deployed and verified on dwight-pi and michael-pi (jim-pi currently offline)
-  - Additional hardening: MaxAuthTries 3, ClientAliveInterval 300, disabled X11Forwarding
+  - Deployed and verified on all 3 Raspberry Pis (dwight-pi, jim-pi, michael-pi)
+  - Additional hardening: `MaxAuthTries 3`, `ClientAliveInterval 300`, disabled X11Forwarding
 
 - [ ] **PR #11: Configure UFW firewall on Raspberry Pis**
   - Create `ansible/roles/security/tasks/ufw.yml`
@@ -223,22 +225,24 @@ All planned PRs are listed below in logical execution order.
 ### Security Hardening - Public Cloud Nodes
 
 - [x] **PR #12: Add public cloud nodes inventory group and security variables**
-  - Added `[public_nodes]` group to `ansible/hosts.ini` with all 5 public nodes
+  - Added `[public_nodes]` group to `ansible/hosts.ini` (lines 23-28) with all 5 public nodes
   - Nodes: pam-amd1 (VPN gateway), angela-amd2, stanley-arm1, phyllis-arm2, toby-gcp1
   - Created `ansible/group_vars/public_nodes.yml` with security config
   - Variables: `fail2ban_enabled: true`, `fail2ban_bantime: 86400`, `fail2ban_maxretry: 3`, `fail2ban_findtime: 600`
   - Variables: `ufw_enabled: true`, `ufw_ssh_rate_limit: true`
+  - Inventory group available for security playbook targeting
 
 - [x] **PR #13: Deploy fail2ban to block SSH brute force attacks on public nodes** 🔥
-  - **Priority: CRITICAL** - Successfully blocking 900+ attacks in first 40 minutes
-  - Created `ansible/roles/fail2ban/` role structure with tasks, templates, handlers
-  - Created `ansible/roles/fail2ban/templates/jail.local.j2` with systemd backend
+  - **Priority: CRITICAL** - Successfully deployed across all 5 public nodes
+  - Created `ansible/roles/fail2ban/` role structure (tasks, templates, handlers)
+  - Created `ansible/roles/fail2ban/tasks/main.yml` for installation
+  - Created `ansible/roles/fail2ban/templates/jail.local.j2` with SSH jail config
   - Config: bantime=24h (86400s), maxretry=3, findtime=10min (600s)
-  - Created `ansible/playbooks/security.yml` playbook for public nodes
-  - Staged rollout: toby-gcp1 → phyllis-arm2 → stanley-arm1 → pam-amd1 → angela-amd2
-  - Integrated into GitHub Actions with `security-setup` job
-  - **Fix applied**: Uses systemd journald backend (not log files) for all Ubuntu systems
-  - Result: 152 IPs banned, 907 attacks blocked, ~20 attacks/min blocked across all nodes
+  - Created `ansible/roles/fail2ban/handlers/main.yml` to restart fail2ban
+  - Created `ansible/playbooks/security.yml` playbook for staged rollout
+  - Staged rollout order: toby-gcp1 → phyllis-arm2 → stanley-arm1 → pam-amd1 → angela-amd2
+  - Deployed and verified: pam-amd1 has 87 IPs banned, 446 total failed attempts blocked
+  - Result: Successfully blocking SSH brute force attacks across all public nodes
 
 - [ ] **PR #14: Configure UFW firewall with rate limiting on public nodes**
   - Create `ansible/roles/firewall/tasks/main.yml` for public nodes

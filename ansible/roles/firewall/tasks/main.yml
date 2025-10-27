@@ -85,7 +85,7 @@
 # Special handling for pam-amd1 (VPN gateway) - allow IP forwarding
 - name: Check if this is the VPN gateway (pam-amd1)
   ansible.builtin.set_fact:
-    is_vpn_gateway: "{{ inventory_hostname == 'pam-amd1' }}"
+    is_vpn_gateway: "{{ (inventory_hostname == 'pam-amd1') | bool }}"
   tags: [firewall, ufw]
 
 - name: Enable IP forwarding in UFW for VPN gateway

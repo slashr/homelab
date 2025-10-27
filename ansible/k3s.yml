@@ -6,6 +6,8 @@
     - gcp_workers
     - michael-pi
   become: true
+  gather_facts: false
+  strategy: free  # Parallel execution - update all nodes simultaneously
   tasks:
     - name: Updating instances
       ansible.builtin.apt:
@@ -23,6 +25,7 @@
 - name: Update K3S Master
   hosts: michael-pi
   become: true
+  gather_facts: false
   tasks:
     - name: Create /etc/rancher/k3s directory
       ansible.builtin.file:
@@ -83,6 +86,7 @@
 - name: Get Agent Token
   become: true
   hosts: michael-pi
+  gather_facts: false
   tasks:
     - name: Copy agent token
       ansible.builtin.slurp:
@@ -102,6 +106,8 @@
     - oracle_workers
     - gcp_workers
   become: true
+  gather_facts: false
+  strategy: free  # Parallel execution - install agents simultaneously
   tasks:
     - name: Check if k3s-agent is already installed
       ansible.builtin.stat:
@@ -151,6 +157,7 @@
 - name: Enabling Nodes
   hosts: michael-pi
   become: true
+  gather_facts: false
   tasks:
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:

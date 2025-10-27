@@ -11,19 +11,54 @@ For each PR:
 
 2. ✅ **Check for Codex review comments** (CRITICAL - don't skip!):
 
-   ```bash
-   # Step 1: Check if Codex reviewed
-   gh pr view <PR_NUMBER> --json reviews --jq '.reviews[] | select(.author.login == "chatgpt-codex-connector") | {state: .state}'
+   **⚠️ IMPORTANT: Codex uses a two-step comment structure:**
+   - First posts a **main comment**: "Codex Review"
+   - Then posts the **actual review issues as replies** to that main comment (P1/P2/P3 issues)
+   - **You must check the REPLIES** - the main comment alone does NOT contain the review details!
 
-   # Step 2: Get inline comments (P1/P2/P3 issues)
-   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, author: .user.login, path: .path, line: .line, body: .body}'
+   **How to find Codex review comments:**
+
+   ```bash
+   # Step 1: Request Codex review (if not already reviewed)
+   gh pr comment <PR_NUMBER> --body "@codex review"
+
+   # Step 2: Wait for Codex to complete (IMPORTANT!)
+   # - Main "Codex Review" comment appears within ~10-30 seconds
+   # - Actual review replies may take 2-3 minutes MORE to appear
+   # - ALWAYS wait at least 2-3 minutes after requesting review before checking
+   sleep 180
+
+   # Step 3: Find the main Codex comment ID
+   gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]" and (.body | contains("Codex Review"))) | {id: .id, created_at: .created_at}'
+
+   # Step 4: Check for review replies under the main comment
+   # (Codex posts P1/P2/P3 issues as replies to the main comment)
+   gh api repos/slashr/homelab/issues/comments/<MAIN_COMMENT_ID> --jq '.body'
+   
+   # Or view all replies in the PR thread on GitHub web UI
    ```
 
-3. ✅ Address ALL Codex comments:
-   - **Fix issues** OR **explain why no fix is needed**
-   - **IMPORTANT:** Reply directly to Codex's inline comments (not as independent PR comment) to maintain context
-   - Use: `gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments/<COMMENT_ID>/replies -X POST -f body="..."`
-   - If subsequent fixes are pushed, request re-review: `@codex review`
+   **What to look for:**
+   - 🔴 **P1 (orange badge)**: Critical bugs that MUST be fixed
+   - 🟡 **P2 (yellow badge)**: Important issues that should be fixed
+   - 🔵 **P3 (blue badge)**: Nice-to-have improvements
+   - ✅ **"Didn't find any major issues"**: Only appears when there are NO review issues
+
+3. ✅ Address ALL Codex review issues:
+   - **IMPORTANT:** Reply directly to Codex's comment thread (as a reply), NOT as a separate main PR comment
+   - Each reply should either:
+     - **Accept and fix**: "Fixed in commit abc123 by [describe change]"
+     - **Explain why no fix needed**: "Not fixing because [specific reason]"
+   - Use GitHub web UI to reply to the comment thread, OR use CLI:
+
+     ```bash
+     gh api repos/slashr/homelab/issues/comments/<MAIN_COMMENT_ID>/replies -X POST -f body="..."
+     ```
+
+   **After pushing fixes:**
+   - Request re-review: `gh pr comment <PR_NUMBER> --body "@codex review"`
+   - Wait 2-3 minutes for Codex to complete new review
+   - Check for new replies to confirm issues are resolved
 
 4. ✅ Notify user for final approval
 

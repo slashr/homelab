@@ -268,6 +268,7 @@ ansible-playbook -i ansible/hosts.ini ansible/playbooks/pis.yml --check --diff
 **Completed PRs:** 16 (see [COMPLETED.md](COMPLETED.md))
 
 **Breakdown by Category:**
+
 - Documentation: 2 PRs
 - Refactoring: 2 PRs
 - CI/CD: 3 PRs

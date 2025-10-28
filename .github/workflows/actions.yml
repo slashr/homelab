@@ -97,6 +97,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-terraform-gcp-
 
+      - name: Create plugin cache directory
+        run: mkdir -p ~/.terraform.d/plugin-cache
+
       - name: Terraform Format
         id: fmt
         run: terraform fmt -check
@@ -182,6 +185,9 @@ jobs:
           key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('oracle/**/*.tf', 'terraform-modules/**/*.tf') }}
           restore-keys: |
             ${{ runner.os }}-terraform-oracle-
+
+      - name: Create plugin cache directory
+        run: mkdir -p ~/.terraform.d/plugin-cache
 
       - name: Terraform Format
         id: fmt
@@ -513,6 +519,9 @@ jobs:
           key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('kubernetes/**/*.tf', 'terraform-modules/**/*.tf') }}
           restore-keys: |
             ${{ runner.os }}-terraform-k8s-
+
+      - name: Create plugin cache directory
+        run: mkdir -p ~/.terraform.d/plugin-cache
 
       - name: Terraform Format
         id: fmt

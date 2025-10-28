@@ -70,14 +70,21 @@ gh pr view <PR_NUMBER> --web
 
 **What to look for in the browser:**
 
-✅ **If Codex is happy:**
-- Look for comment from `chatgpt-codex-connector` saying: "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
-- No inline code comments with P1/P2/P3 badges
+**🚨 CRITICAL: Always check the MOST RECENT comment with timestamp!**
+- Scroll to the very bottom to see the latest comment
+- Check the timestamp (e.g., "2 minutes ago")
+- **Don't grep for old "didn't find any major issues" - check the actual latest comment!**
 
-⚠️ **If Codex found issues:**
-- Template comment: "💡 Codex Review - Here are some automated review suggestions"
-- Inline comments on specific lines with **P1/P2/P3 badges** (scroll through Files tab to see them)
+✅ **If Codex is happy (MOST RECENT comment):**
+- Look for **LATEST** comment from `chatgpt-codex-connector` saying: "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
+- Verify timestamp matches AFTER your re-review request
+- No NEW inline code comments with P1/P2/P3 badges
+
+⚠️ **If Codex found issues (check RECENT comments first):**
+- **NEW** template comment: "💡 Codex Review - Here are some automated review suggestions" (check timestamp!)
+- **NEW** inline comments on specific lines with **P1/P2/P3 badges** (scroll through Files changed tab)
 - Each inline comment shows file path, line number, and specific issue
+- Old/resolved comments will have "Outdated" label - ignore these!
 
 **Why browser is better:**
 - ✅ Instantly see all comments visually
@@ -290,21 +297,27 @@ browser_take_screenshot("pr-status.png")
 ```
 
 ### Fallback API Commands (only if browser unavailable)
+
+**⚠️ WARNING: These are complex and error-prone. Browser method is STRONGLY preferred.**
+
 ```bash
 # Check for recent inline review comments (last 10 minutes)
-# Use epoch timestamps since todate isn't available in GitHub CLI's jq 1.6
+# Note: gh api doesn't support --arg, must pipe through external jq
 CUTOFF=$(date -u -v-10M +%s 2>/dev/null || date -u -d '10 minutes ago' +%s)
-gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
-  --jq --arg cutoff "$CUTOFF" '[.[] | 
+gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments | \
+  jq --arg cutoff "$CUTOFF" '[.[] | 
     select(.user.login == "chatgpt-codex-connector") | 
     select((.created_at | fromdateiso8601) > ($cutoff | tonumber))] | length'
 
-# Check for approval comment  
-gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments \
-  --jq --arg cutoff "$CUTOFF" '.[] | 
+# Get MOST RECENT comment from Codex (not just any old "didn't find" message!)
+gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments | \
+  jq --arg cutoff "$CUTOFF" '.[] | 
     select(.user.login == "chatgpt-codex-connector") | 
-    select((.created_at | fromdateiso8601) > ($cutoff | tonumber)) | .body' \
-  | grep -i "didn't find any major issues"
+    select((.created_at | fromdateiso8601) > ($cutoff | tonumber))' | \
+  jq -s 'sort_by(.created_at) | reverse | .[0] | .body' | \
+  head -20
+  
+# CRITICAL: Don't grep for "didn't find" - READ the actual latest comment!
 ```
 
 ---
@@ -329,3 +342,23 @@ Codex uses TWO different comment types for different purposes:
 - **Main thread (issue comments)** = Approval/status updates
 
 Never confuse the two!
+
+### ⚠️ Common Mistakes That Lead to False Approvals:
+
+**❌ MISTAKE: Grepping for "didn't find any major issues" without checking timestamps**
+- This finds OLD approval messages from previous review cycles
+- You think it's approved when Codex just left a NEW P1 issue 2 minutes ago!
+
+**✅ CORRECT: Always check the MOST RECENT comment**
+- Look at timestamp: "2 minutes ago" vs "15 minutes ago"  
+- Read the LATEST comment, don't search for approval phrases
+- If using API, sort by `created_at` and take `.[0]` (most recent)
+
+**❌ MISTAKE: Using `gh api --arg` (not supported)**
+- `gh api` only supports `--jq`, not `--arg`
+- Must pipe through external `jq` for variables
+
+**✅ CORRECT: Pipe through external jq**
+```bash
+gh api repos/.../comments | jq --arg cutoff "$CUTOFF" '...'
+```

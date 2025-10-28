@@ -13,106 +13,214 @@ gh pr checks <PR_NUMBER> --watch
 
 ### 2. ✅ Check for Codex review (CRITICAL - don't skip!)
 
-**⚠️ IMPORTANT: Codex behavior differs from typical GitHub approvals**
+**⚠️ IMPORTANT: Understanding Codex Review Structure**
 
-Codex does NOT use GitHub's "Approve" feature. Instead, it leaves comments in two ways:
+Codex posts reviews in TWO separate places:
 
-**A) When there are issues to fix:**
-- Posts a main "Codex Review" comment
-- Posts actual review issues as REPLIES to that comment (P1/P2/P3 badges)
-- You MUST check the replies - the main comment alone doesn't contain details!
+#### A) Initial Review with Issues (if problems found)
 
-**B) When there are no issues:**
-- May post: "Codex Review: Didn't find any major issues. Breezy!"
-- May react with 👍 to the PR instead of commenting
-- If you only see the standard "If Codex has suggestions, it will comment" message with no follow-up, that means no issues found
-
-**How to request and check Codex reviews:**
-
-```bash
-# Request Codex review
-gh pr comment <PR_NUMBER> --body "@codex review"
-
-# Wait 2-3 minutes for review to complete
-# (Main comment appears quickly, but review details take longer)
-sleep 180
-
-# Method 1: Check via API for review comments
-gh api repos/<OWNER>/<REPO>/issues/<PR_NUMBER>/comments \
-  --jq '.[] | select(.user.login == "chatgpt-codex-connector") | {created_at: .created_at, body: .body}' \
-  | jq -s 'sort_by(.created_at) | reverse | .[0:3]'
-
-# Method 2: Check for inline review comments on code
-gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments \
-  --jq '.[] | select(.user.login == "chatgpt-codex-connector") | {path: .path, line: .line, body: .body}'
-
-# Method 3: View PR in browser to see comment threads
-gh pr view <PR_NUMBER> --web
+**1. Template Comment (Main Thread)**
+Codex posts a top-level comment:
 ```
+💡 Codex Review
 
-**What to look for:**
+Here are some automated review suggestions for this pull request.
+
+▶ 📖 About Codex in GitHub
+```
+This is just a **template header** - it contains NO actual feedback!
+
+**2. Inline Code Comments (The Actual Review)**
+The REAL review feedback appears as **inline comments on specific lines** in your code with P1/P2/P3 badges:
 - 🔴 **P1 (Critical)**: Must be fixed before merge
 - 🟡 **P2 (Important)**: Should be fixed before merge
 - 🔵 **P3 (Nice-to-have)**: Optional improvements
-- ✅ **"Didn't find any major issues. Breezy!"**: Approved!
-- 👍 **Reaction on PR**: Approved (no comment needed when clean)
+
+**CRITICAL**: Always check for inline comments! The main thread comment alone is meaningless.
+
+#### B) Approval Comment (when no issues or after fixes)
+
+After you fix issues and request re-review, Codex posts a **NEW separate main comment** (NOT a reply) saying:
+- "Codex Review: Didn't find any major issues. Breezy!"
+- "Codex Review: Didn't find any major issues. Bravo."
+- "Codex Review: Didn't find any major issues. Keep them coming!"
+- "Codex Review: Didn't find any major issues. More of your lovely PRs please."
+- Or similar variations with "Didn't find any major issues"
+
+---
+
+### 🌐 PRIMARY METHOD: Use Browser to Check Reviews
+
+**⚠️ IMPORTANT: AI should ALWAYS check Codex feedback - never ask the user to check!**
+
+**AI Workflow for checking Codex reviews:**
+
+```bash
+# Step 1: Request Codex review
+gh pr comment <PR_NUMBER> --body "@codex review"
+
+# Step 2: Wait for Codex (3-5 minutes - inline comments take longer than template)
+echo "Waiting for Codex review..." && sleep 180
+
+# Step 3: Open PR in browser (MINIMIZED to not disturb user) and check for feedback
+open -g -a "Google Chrome" "https://github.com/slashr/homelab/pull/<PR_NUMBER>"
+# The -g flag opens Chrome minimized/in background
+
+# Step 4: Use browser automation tools to check for Codex feedback
+# (Use Playwright MCP tools if available: browser_navigate, browser_snapshot, browser_take_screenshot)
+# Then scroll to bottom and take screenshot to analyze comments
+```
+
+**When browser automation is available (preferred):**
+```bash
+# Navigate to PR (browser opens minimized automatically)
+browser_navigate("https://github.com/slashr/homelab/pull/<PR_NUMBER>")
+
+# Take snapshot to check for comments
+browser_snapshot()
+
+# Look for latest Codex comments in the snapshot
+# Report findings to user
+```
+
+**What to look for in the browser:**
+
+**🚨 CRITICAL: Always check the MOST RECENT comment with timestamp!**
+- Scroll to the very bottom to see the latest comment
+- Check the timestamp (e.g., "2 minutes ago")
+- **Don't grep for old "didn't find any major issues" - check the actual latest comment!**
+
+✅ **If Codex is happy (MOST RECENT comment):**
+- Look for **LATEST** comment from `chatgpt-codex-connector[bot]` saying: "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
+- Verify timestamp matches AFTER your re-review request
+- No NEW inline code comments with P1/P2/P3 badges
+
+⚠️ **If Codex found issues (check RECENT comments first):**
+- **NEW** template comment: "💡 Codex Review - Here are some automated review suggestions" (check timestamp!)
+- **NEW** inline comments on specific lines with **P1/P2/P3 badges** (scroll through Files changed tab)
+- Each inline comment shows file path, line number, and specific issue
+- Old/resolved comments will have "Outdated" label - ignore these!
+
+**Why browser is better:**
+- ✅ Instantly see all comments visually
+- ✅ Inline code comments visible in context
+- ✅ Approval messages obvious and clear
+- ✅ No complex API/jq parsing needed
+- ✅ Can reply directly to inline comments via UI
+- ✅ More reliable than API timestamp filtering
+
+---
+
+### 🔧 FALLBACK: API Method (for automation/scripting)
+
+If browser access is unavailable, use API commands:
+
+```bash
+# Check for ANY unresolved inline comments (no time limit to avoid false approvals)
+gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
+  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length'
+
+# Check the MOST RECENT main comment for approval (no time filter)
+gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments \
+  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | sort_by(.created_at) | reverse | .[0].body' \
+  | grep -i "didn't find any major issues"
+```
 
 ### 3. ✅ Address Codex feedback
 
-When Codex posts review issues:
+When Codex posts inline review comments, you MUST reply directly to each inline comment (not as main thread comments):
 
-**CRITICAL: Reply inline to Codex's comment threads**
+#### How to Reply to Inline Comments
 
-⚠️ **DO NOT** use `gh pr comment <PR_NUMBER> --body "response"` to respond to Codex feedback!  
-This creates a **separate top-level comment** instead of threading your reply under the Codex issue.
-
-**✅ CORRECT METHOD - Reply inline via browser:**
-
+**❌ WRONG - Don't do this:**
 ```bash
-# Open PR in browser to reply inline
-gh pr view <PR_NUMBER> --web
-
-# In the browser:
-# 1. Find the Codex comment thread with the P1/P2/P3 badge
-# 2. Click the "Reply..." button WITHIN that thread
-# 3. Post your response there (not in the main comment box at bottom)
+# This creates spam and loses context
+gh pr comment <PR_NUMBER> --body "Fixed the issue in commit abc123"
 ```
 
-**Each inline reply should either:**
-- **Accept and fix**: "Fixed in commit abc123 by [description]"
-- **Explain why not fixing**: "Not fixing because [specific reason]"
+**✅ CORRECT - AI must reply inline to the specific review comment**
 
-**After posting inline replies and pushing fixes:**
+**⚠️ IMPORTANT: AI should handle inline replies - never ask user to check or reply!**
+
+**REQUIRED METHOD: Use Browser Automation**
+```bash
+# Open PR in browser (MINIMIZED to not disturb user)
+open -g -a "Google Chrome" "https://github.com/slashr/homelab/pull/<PR_NUMBER>"
+# The -g flag opens Chrome minimized/in background
+
+# If browser automation tools available (preferred):
+browser_navigate("https://github.com/slashr/homelab/pull/<PR_NUMBER>")
+# Then use browser tools to:
+# 1. Navigate to "Files changed" tab
+# 2. Find the inline comment with P1/P2/P3 badge
+# 3. Click "Reply" button directly on that comment
+# 4. Type response and submit
+```
+
+**Response Template:**
+Each reply should either:
+- **Accept and fix**: "Fixed in commit abc123 by excluding .terraform.lock.hcl from cache paths and keeping it only in cache key for invalidation."
+- **Explain why not fixing**: "Not fixing because [specific technical reason with context]."
+
+**❌ NEVER use gh CLI for Codex responses:**
+```bash
+# This creates a separate top-level comment - DON'T DO THIS!
+gh pr comment <PR_NUMBER> --body "response"
+gh pr review <PR_NUMBER> --comment --body "response"
+```
+
+**Note:** Direct inline replies via API are unreliable (often return 404). Browser automation is the ONLY reliable method.
+
+#### Full Fix and Re-review Workflow
 
 ```bash
-# Push fixes
+# Step 1: Make your fixes
 git add -A
-git commit -m "fix: address Codex feedback - [description]"
+git commit -m "fix: address Codex P1 feedback - [description]"
 git push origin <branch>
 
-# Request re-review (this can be top-level since it's a new request)
+# Step 2: Reply to inline comments via browser (preferred) or gh CLI
+gh pr view <PR_NUMBER> --web  # Reply in browser UI
+
+# Step 3: Request re-review (this can be top-level since it's a new request)
 gh pr comment <PR_NUMBER> --body "@codex review"
 
-# Wait and check again
-sleep 180
-gh api repos/<OWNER>/<REPO>/issues/<PR_NUMBER>/comments \
-  --jq '.[] | select(.user.login == "chatgpt-codex-connector") | .body' \
-  | grep -i "breezy\|didn't find any major issues" || echo "Check for new issues"
+# Step 4: Wait and check for approval (3-5 minutes)
+echo "Waiting for Codex re-review..." && sleep 180
+
+# Step 5: Check approval in browser
+gh pr view <PR_NUMBER> --web
+# OR with browser tools:
+# browser_navigate("https://github.com/slashr/homelab/pull/<PR_NUMBER>")
+# browser_evaluate("() => { window.scrollTo(0, document.body.scrollHeight); }")
+# browser_take_screenshot()
+# Look for: "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
 ```
 
 **Keep iterating until:**
-- Codex says "Didn't find any major issues" OR
-- Codex reacts with 👍 OR  
-- Only standard message appears (means no issues found)
+- ✅ All inline comments are addressed with replies
+- ✅ Codex posts approval: "Didn't find any major issues. Breezy!" (or similar)
+- ✅ No new inline comments appear
 
 ### 4. ✅ Notify user for final approval
 
 Once Codex is satisfied and all checks pass:
 ```bash
-# Summarize status
+# Verify final status
+echo "=== PR Status Summary ==="
+echo "PR: #<PR_NUMBER>"
+echo ""
+echo "Checks:"
+gh pr checks <PR_NUMBER> | grep -E "(pass|fail)" | head -15
+echo ""
+echo "Latest Codex Comment:"
+gh pr view <PR_NUMBER> --json comments \
+  --jq '.comments[] | select(.author.login == "chatgpt-codex-connector[bot]") | .body' \
+  | tail -1 | head -2
+echo ""
 echo "✅ All checks passing"
 echo "✅ Codex approved (no issues found)"
-echo "Ready to merge!"
+echo "✅ Ready to merge!"
 ```
 
 ### 5. ✅ Merge only after user confirmation
@@ -181,6 +289,7 @@ All Ansible playbooks targeting Raspberry Pis use a staged rollout pattern:
 
 ## Quick Reference Commands
 
+### Essential PR Commands
 ```bash
 # Check PR status
 gh pr checks <PR_NUMBER>
@@ -189,7 +298,7 @@ gh pr checks <PR_NUMBER> --watch
 # Request Codex review
 gh pr comment <PR_NUMBER> --body "@codex review"
 
-# View PR in browser
+# View PR in browser (PRIMARY METHOD - easiest for everything!)
 gh pr view <PR_NUMBER> --web
 
 # Check if you're on the right branch
@@ -199,3 +308,77 @@ git branch --show-current
 git checkout main && git pull origin main && git checkout -b feat/my-feature
 ```
 
+### Browser Tools (if available)
+```python
+# Navigate to PR
+browser_navigate("https://github.com/slashr/homelab/pull/<PR_NUMBER>")
+
+# Scroll to bottom to see comments
+browser_evaluate("() => { window.scrollTo(0, document.body.scrollHeight); }")
+
+# Take screenshot to see status
+browser_take_screenshot("pr-status.png")
+```
+
+### Fallback API Commands (only if browser unavailable)
+
+**⚠️ WARNING: These are complex and error-prone. Browser method is STRONGLY preferred.**
+
+```bash
+# Check for recent inline review comments (last 10 minutes)
+# Note: gh api doesn't support --arg, must pipe through external jq
+# NO time filter to avoid false approvals  
+gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments | \
+  jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length'
+
+# Get MOST RECENT comment from Codex (not just any old "didn't find" message!)
+gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments | \
+  jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | 
+    sort_by(.created_at) | reverse | .[0] | .body' | \
+  head -20
+  
+# CRITICAL: Don't grep for "didn't find" - READ the actual latest comment!
+```
+
+---
+
+## Codex Review Pattern Summary (Quick Reference)
+
+### When Codex Finds Issues:
+1. **Template comment** appears (ignore this, it's just a header)
+2. **Inline code comments** appear with P1/P2/P3 badges ← THE REAL REVIEW
+3. You fix the code and **reply inline to each comment**
+4. Request `@codex review` again
+5. Codex posts **new main comment**: "Didn't find any major issues..." ← APPROVAL
+
+### API Endpoints:
+- **Inline reviews** (code comments): `GET /repos/{owner}/{repo}/pulls/{pr}/comments`
+- **Main thread** (general comments): `GET /repos/{owner}/{repo}/issues/{pr}/comments`
+- **Reply to inline**: `POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies`
+
+### Key Insight:
+Codex uses TWO different comment types for different purposes:
+- **Inline (pull request review comments)** = Issues to fix
+- **Main thread (issue comments)** = Approval/status updates
+
+Never confuse the two!
+
+### ⚠️ Common Mistakes That Lead to False Approvals:
+
+**❌ MISTAKE: Grepping for "didn't find any major issues" without checking timestamps**
+- This finds OLD approval messages from previous review cycles
+- You think it's approved when Codex just left a NEW P1 issue 2 minutes ago!
+
+**✅ CORRECT: Always check the MOST RECENT comment**
+- Look at timestamp: "2 minutes ago" vs "15 minutes ago"  
+- Read the LATEST comment, don't search for approval phrases
+- If using API, sort by `created_at` and take `.[0]` (most recent)
+
+**❌ MISTAKE: Using `gh api --arg` (not supported)**
+- `gh api` only supports `--jq`, not `--arg`
+- Must pipe through external `jq` for variables
+
+**✅ CORRECT: Pipe through external jq**
+```bash
+gh api repos/.../comments | jq --arg cutoff "$CUTOFF" '...'
+```

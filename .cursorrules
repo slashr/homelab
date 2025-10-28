@@ -291,15 +291,19 @@ browser_take_screenshot("pr-status.png")
 
 ### Fallback API Commands (only if browser unavailable)
 ```bash
-# Check for recent inline review comments
+# Check for recent inline review comments (last 10 minutes)
+# Use epoch timestamps since todate isn't available in GitHub CLI's jq 1.6
+CUTOFF=$(date -u -v-10M +%s 2>/dev/null || date -u -d '10 minutes ago' +%s)
 gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
-  --jq '[.[] | select(.user.login == "chatgpt-codex-connector") | 
-    select(.created_at > (now - 600 | todate))] | length'
+  --jq --arg cutoff "$CUTOFF" '[.[] | 
+    select(.user.login == "chatgpt-codex-connector") | 
+    select((.created_at | fromdateiso8601) > ($cutoff | tonumber))] | length'
 
 # Check for approval comment  
 gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments \
-  --jq '.[] | select(.user.login == "chatgpt-codex-connector") | 
-    select(.created_at > (now - 600 | todate)) | .body' \
+  --jq --arg cutoff "$CUTOFF" '.[] | 
+    select(.user.login == "chatgpt-codex-connector") | 
+    select((.created_at | fromdateiso8601) > ($cutoff | tonumber)) | .body' \
   | grep -i "didn't find any major issues"
 ```
 

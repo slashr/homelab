@@ -88,18 +88,20 @@ gh pr comment <PR_NUMBER> --body "@codex review"
 # Step 2: Wait for Codex to complete review (3 minutes)
 echo "Waiting for Codex review..." && sleep 180
 
-# Step 3: Check for inline review comments (issues)
+# Step 3: Check for RECENT inline review comments (last 10 minutes only)
 echo "=== Checking for inline code review comments ===" 
-INLINE_COMMENTS=$(gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
-  --jq '[.[] | select(.user.login == "chatgpt-codex-connector")] | length')
+RECENT_INLINE=$(gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
+  --jq '[.[] | select(.user.login == "chatgpt-codex-connector") | 
+    select(.created_at > (now - 600 | todate))] | length')
 
-if [ "$INLINE_COMMENTS" -gt 0 ]; then
-  echo "⚠️ Found $INLINE_COMMENTS inline review comment(s) from Codex"
+if [ "$RECENT_INLINE" -gt 0 ]; then
+  echo "⚠️ Found $RECENT_INLINE recent inline review comment(s) from Codex"
   gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
     --jq '.[] | select(.user.login == "chatgpt-codex-connector") | 
-      {path: .path, line: .line, body: (.body | split("\n") | .[0:5] | join(" "))}'
+      select(.created_at > (now - 600 | todate)) |
+      {created: .created_at, path: .path, line: .line, body: (.body | split("\n") | .[0:5] | join(" "))}'
 else
-  echo "✅ No inline comments - checking for approval comment..."
+  echo "✅ No recent inline comments - checking for approval comment..."
   
   # Step 4: Check for approval in recent main comments
   gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments \

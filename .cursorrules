@@ -179,49 +179,58 @@ GitHub API returns max 30 items per page by default. For PRs with many comments,
 gh api --paginate repos/slashr/homelab/issues/<PR_NUMBER>/comments
 ```
 
-**Robust Two-Part Approval Check**
+**⚠️ Limitation: API Cannot Filter Resolved Comments**
 
-Don't rely solely on text matching (Codex wording can change). Instead:
-1. Check that newest Codex comment is after latest `@codex review` request
-2. Verify zero unresolved P1/P2/P3 inline comments
+GitHub's REST API (`pulls/<PR>/comments`) returns ALL inline comments, including resolved and outdated ones. There's no reliable way to filter them via API.
+
+**Recommended: Use Browser Method**
+
+The browser UI clearly shows which comments are "Outdated" - this is the ONLY reliable way to check approval status.
+
+**API Fallback (with caveats):**
 
 ```bash
-# Part 1: Count unresolved inline comments (should be 0 for approval)
-INLINE_COUNT=$(gh api --paginate repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
-  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length')
+# Get timestamp of latest @codex review request
+REVIEW_REQUEST_TIME=$(gh api --paginate repos/slashr/homelab/issues/<PR_NUMBER>/comments \
+  --jq '[.[] | select(.user.login != "chatgpt-codex-connector[bot]") | select(.body | contains("@codex review"))] | sort_by(.created_at) | reverse | .[0].created_at')
 
-# Part 2: Get most recent Codex main comment
-LATEST_COMMENT=$(gh api --paginate repos/slashr/homelab/issues/<PR_NUMBER>/comments \
+# Get most recent Codex main comment
+LATEST_CODEX=$(gh api --paginate repos/slashr/homelab/issues/<PR_NUMBER>/comments \
   --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | sort_by(.created_at) | reverse | .[0]')
 
-# Extract timestamp and body
-COMMENT_TIME=$(echo "$LATEST_COMMENT" | jq -r '.created_at')
-COMMENT_BODY=$(echo "$LATEST_COMMENT" | jq -r '.body')
+CODEX_TIME=$(echo "$LATEST_CODEX" | jq -r '.created_at')
+CODEX_BODY=$(echo "$LATEST_CODEX" | jq -r '.body')
 
-# Check approval criteria
-if [ "$INLINE_COUNT" -eq 0 ]; then
-  echo "✅ No unresolved inline comments"
-  echo "Latest Codex comment ($COMMENT_TIME):"
-  echo "$COMMENT_BODY" | head -3
+# Compare timestamps (Codex comment must be AFTER review request)
+if [[ "$CODEX_TIME" > "$REVIEW_REQUEST_TIME" ]]; then
+  echo "✅ Codex comment ($CODEX_TIME) is after review request ($REVIEW_REQUEST_TIME)"
+  echo ""
+  echo "Latest Codex comment:"
+  echo "$CODEX_BODY" | head -3
   
-  # Additional safety: check if comment looks like approval (but don't rely on exact wording)
-  if echo "$COMMENT_BODY" | grep -qi "didn't find any major issues\|no major issues\|looks good"; then
-    echo "✅ Codex approved!"
+  # Check if it looks like approval
+  if echo "$CODEX_BODY" | grep -qi "didn't find any major issues\|no major issues"; then
+    echo ""
+    echo "✅ Likely approved - but verify in browser that inline comments are resolved/outdated"
   else
-    echo "⚠️ Review comment content - may not be approval"
+    echo ""
+    echo "❌ Does not appear to be approval - check browser for details"
   fi
 else
-  echo "❌ $INLINE_COUNT unresolved inline comment(s) - not approved"
+  echo "❌ No Codex comment after latest review request"
+  echo "   Review requested: $REVIEW_REQUEST_TIME"
+  echo "   Latest Codex comment: $CODEX_TIME"
 fi
 ```
 
-**Quick Check (less robust):**
-```bash
-# Simple version (may miss edge cases)
-gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
-  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length'
-# Returns 0 if no inline comments (likely approved)
-```
+**Why This Is Still Imperfect:**
+
+- ❌ Cannot detect if inline P1/P2/P3 comments are resolved vs open
+- ❌ May count outdated comments as still active
+- ✅ Does validate timestamp ordering
+- ✅ Checks for approval-like language
+
+**For production use: Always verify in browser UI before merging.**
 
 ### 3. ✅ Address Codex feedback
 

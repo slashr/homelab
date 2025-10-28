@@ -92,6 +92,17 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install pre-commit ansible-core ansible-lint
 
+      - name: Cache Ansible collections
+        uses: actions/cache@v4
+        with:
+          path: ~/.ansible/collections
+          key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-ansible-collections-
+
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r ansible/requirements.yml --force
+
       - name: Cache pre-commit environments
         uses: actions/cache@v4
         with:

@@ -51,7 +51,9 @@ After you fix issues and request re-review, Codex posts a **NEW separate main co
 
 ### 🌐 PRIMARY METHOD: Use Browser to Check Reviews
 
-**This is the EASIEST and MOST RELIABLE way to check Codex reviews:**
+**⚠️ IMPORTANT: AI should ALWAYS check Codex feedback - never ask the user to check!**
+
+**AI Workflow for checking Codex reviews:**
 
 ```bash
 # Step 1: Request Codex review
@@ -60,12 +62,25 @@ gh pr comment <PR_NUMBER> --body "@codex review"
 # Step 2: Wait for Codex (3-5 minutes - inline comments take longer than template)
 echo "Waiting for Codex review..." && sleep 180
 
-# Step 3: Open PR in browser and scroll to bottom to see comments
-gh pr view <PR_NUMBER> --web
-# OR if browser tools available:
-# browser_navigate("https://github.com/slashr/homelab/pull/<PR_NUMBER>")
-# browser_evaluate("() => { window.scrollTo(0, document.body.scrollHeight); }")
-# browser_take_screenshot()
+# Step 3: Open PR in browser (MINIMIZED to not disturb user) and check for feedback
+open -g -a "Google Chrome" "https://github.com/slashr/homelab/pull/<PR_NUMBER>"
+# The -g flag opens Chrome minimized/in background
+
+# Step 4: Use browser automation tools to check for Codex feedback
+# (Use Playwright MCP tools if available: browser_navigate, browser_snapshot, browser_take_screenshot)
+# Then scroll to bottom and take screenshot to analyze comments
+```
+
+**When browser automation is available (preferred):**
+```bash
+# Navigate to PR (browser opens minimized automatically)
+browser_navigate("https://github.com/slashr/homelab/pull/<PR_NUMBER>")
+
+# Take snapshot to check for comments
+browser_snapshot()
+
+# Look for latest Codex comments in the snapshot
+# Report findings to user
 ```
 
 **What to look for in the browser:**
@@ -125,27 +140,38 @@ When Codex posts inline review comments, you MUST reply directly to each inline 
 gh pr comment <PR_NUMBER> --body "Fixed the issue in commit abc123"
 ```
 
-**✅ CORRECT - Reply inline to the specific review comment**
+**✅ CORRECT - AI must reply inline to the specific review comment**
 
-**EASIEST: Use Browser UI**
-1. Open PR in browser: `gh pr view <PR_NUMBER> --web`
-2. Navigate to "Files changed" tab
-3. Find the inline comment with P1/P2/P3 badge
-4. Click "Reply" button directly on that comment
-5. Type your response and submit
+**⚠️ IMPORTANT: AI should handle inline replies - never ask user to check or reply!**
+
+**REQUIRED METHOD: Use Browser Automation**
+```bash
+# Open PR in browser (MINIMIZED to not disturb user)
+open -g -a "Google Chrome" "https://github.com/slashr/homelab/pull/<PR_NUMBER>"
+# The -g flag opens Chrome minimized/in background
+
+# If browser automation tools available (preferred):
+browser_navigate("https://github.com/slashr/homelab/pull/<PR_NUMBER>")
+# Then use browser tools to:
+# 1. Navigate to "Files changed" tab
+# 2. Find the inline comment with P1/P2/P3 badge
+# 3. Click "Reply" button directly on that comment
+# 4. Type response and submit
+```
 
 **Response Template:**
 Each reply should either:
 - **Accept and fix**: "Fixed in commit abc123 by excluding .terraform.lock.hcl from cache paths and keeping it only in cache key for invalidation."
 - **Explain why not fixing**: "Not fixing because [specific technical reason with context]."
 
-**Alternative: Use gh CLI (less reliable)**
+**❌ NEVER use gh CLI for Codex responses:**
 ```bash
-# Use gh pr review to post a general comment (not ideal for inline replies)
-gh pr review <PR_NUMBER> --comment --body "Addressed P1 feedback in commit abc123: [description]"
+# This creates a separate top-level comment - DON'T DO THIS!
+gh pr comment <PR_NUMBER> --body "response"
+gh pr review <PR_NUMBER> --comment --body "response"
 ```
 
-**Note:** Direct inline replies via API are unreliable (often return 404). Browser UI is strongly preferred.
+**Note:** Direct inline replies via API are unreliable (often return 404). Browser automation is the ONLY reliable method.
 
 #### Full Fix and Re-review Workflow
 

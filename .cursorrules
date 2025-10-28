@@ -168,14 +168,16 @@ gh api -H "Accept: application/vnd.github+json" \
   '
 # Returns: 1 if approved, 0 if not approved
 
-# OR use polling loop to check for inline comments
-# (See Step 4 in "Full Fix and Re-review Workflow" section below)
+# RECOMMENDED: Use silent API polling (no browser popups)
+# Poll for up to 15 minutes before notifying user
+# (See "Silent Polling Strategy" section below)
 
-# OR open browser to check manually
+# ONLY open browser if API polling times out or user requests it
 gh pr view <PR_NUMBER> --repo "$REPO" --web
-# Look for: 👍 on PR description, or inline comments in Files changed tab
+# Note: This opens browser in foreground (may disturb user)
 
-# If browser automation available (optional):
+# If browser automation available:
+# Use for final verification ONLY after timeout, not during polling
 # browser_navigate("https://github.com/$REPO/pull/<PR_NUMBER>")
 # browser_snapshot()
 ```
@@ -231,13 +233,75 @@ gh pr view <PR_NUMBER> --repo "$REPO" --web
 - **Initial PR**: No thumbs up reaction
 - Template comment: "💡 Codex Review - Here are some automated review suggestions"
 
-**Why browser is better:**
+**Why browser is better (for manual verification):**
 - ✅ Instantly see all comments visually
 - ✅ Inline code comments visible in context
 - ✅ Approval messages obvious and clear
 - ✅ No complex API/jq parsing needed
 - ✅ Can reply directly to inline comments via UI
 - ✅ More reliable than API timestamp filtering
+
+### 🔕 Silent Polling Strategy (RECOMMENDED)
+
+**⚠️ IMPORTANT: Do NOT disturb the user with browser popups during polling!**
+
+When waiting for Codex review:
+1. ✅ **Use API-only polling** (no browser windows)
+2. ✅ **Poll silently for up to 15 minutes** before notifying user
+3. ✅ **Check every 30 seconds** for thumbs up or inline comments
+4. ❌ **Do NOT open browser** unless timeout or user requests
+5. ✅ **Only report final result** to user (approved/issues/timeout)
+
+**Implementation:**
+```bash
+export REPO="slashr/homelab"
+export CODEX_LOGIN="chatgpt-codex-connector[bot]"
+PR=<PR_NUMBER>
+
+echo "⏳ Silently polling for Codex auto-review on PR #$PR (up to 15 minutes)..."
+echo ""
+
+deadline=$((SECONDS+900))  # 15 minutes
+approved=0
+
+while [ $SECONDS -lt $deadline ]; do
+  # Check for thumbs up (approval signal)
+  THUMBS=$(gh api -H "Accept: application/vnd.github+json" \
+    "/repos/$REPO/issues/$PR/reactions" 2>/dev/null \
+  | jq --arg COD "$CODEX_LOGIN" -r \
+    '[ .[] | select(.user.login == $COD and .content == "+1") ] | length' \
+    2>/dev/null || echo "0")
+
+  if [ "${THUMBS:-0}" -gt 0 ]; then
+    # Get full details for user notification
+    THUMBS_DATA=$(gh api -H "Accept: application/vnd.github+json" \
+      "/repos/$REPO/issues/$PR/reactions" 2>/dev/null \
+    | jq --arg COD "$CODEX_LOGIN" -r \
+      '.[] | select(.user.login == $COD and .content == "+1") |
+       {user: .user.login, reaction: .content, created: .created_at}')
+    
+    echo "✅ Codex approved! (thumbs up reaction found)"
+    echo ""
+    echo "$THUMBS_DATA"
+    approved=1
+    break
+  fi
+  
+  sleep 30  # Check every 30 seconds
+done
+
+if [ $approved -eq 0 ]; then
+  echo "⏱️ Timeout: No Codex review after 15 minutes"
+  echo ""
+  echo "You can check manually: gh pr view $PR --repo \"$REPO\" --web"
+  echo "Or request review: gh pr comment $PR --repo \"$REPO\" --body \"@codex review\""
+fi
+```
+
+**When to use browser instead:**
+- ⚠️ Only if API polling times out (15 minutes with no response)
+- ⚠️ Only if user explicitly asks to check browser
+- ⚠️ Only for replying to inline comments (API can't do threaded replies)
 
 ---
 
@@ -308,8 +372,8 @@ gh pr view <PR_NUMBER> --repo "$REPO" --web  # Reply in browser UI
 PR="<PR_NUMBER>"
 gh pr comment "$PR" --repo "$REPO" --body "@codex review"
 
-# Step 4: Poll for Codex approval (up to 8 minutes, no fixed sleep)
-deadline=$((SECONDS+480))
+# Step 4: Poll for Codex approval (up to 15 minutes, silent API polling)
+deadline=$((SECONDS+900))  # 15 minutes timeout
 
 # Helper: Count unresolved Codex review threads via GraphQL
 # Paginated, checks ANY comment author (not just first)
@@ -383,8 +447,10 @@ while [ $SECONDS -lt $deadline ]; do
 done
 
 if [ $approved -ne 1 ]; then
-  echo "⚠️ Codex still has feedback or hasn't posted approval yet"
-  echo "Open PR to check: gh pr view $PR --repo "$REPO" --web"
+  echo "⏱️ Timeout: No Codex review after 15 minutes"
+  echo ""
+  echo "You can check manually: gh pr view $PR --repo \"$REPO\" --web"
+  echo "Or request review: gh pr comment $PR --repo \"$REPO\" --body \"@codex review\""
 fi
 ```
 

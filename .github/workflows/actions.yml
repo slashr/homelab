@@ -91,13 +91,14 @@ jobs:
         uses: ./.github/actions/setup-precommit
 
       # Cache Terraform plugins and initialization files
+      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
+      # overwriting the tracked lock file with stale provider versions
       - name: Cache Terraform
         uses: actions/cache@v4
         with:
           path: |
             ~/.terraform.d/plugin-cache
             gcp/.terraform
-            gcp/.terraform.lock.hcl
           key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('gcp/**/*.tf', 'terraform-modules/**/*.tf', 'gcp/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-gcp-
@@ -185,13 +186,14 @@ jobs:
         uses: ./.github/actions/setup-precommit
 
       # Cache Terraform plugins and initialization files
+      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
+      # overwriting the tracked lock file with stale provider versions
       - name: Cache Terraform
         uses: actions/cache@v4
         with:
           path: |
             ~/.terraform.d/plugin-cache
             oracle/.terraform
-            oracle/.terraform.lock.hcl
           key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('oracle/**/*.tf', 'terraform-modules/**/*.tf', 'oracle/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-oracle-
@@ -523,13 +525,14 @@ jobs:
         uses: ./.github/actions/setup-precommit
 
       # Cache Terraform plugins and initialization files
+      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
+      # overwriting the tracked lock file with stale provider versions
       - name: Cache Terraform
         uses: actions/cache@v4
         with:
           path: |
             ~/.terraform.d/plugin-cache
             kubernetes/.terraform
-            kubernetes/.terraform.lock.hcl
           key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('kubernetes/**/*.tf', 'terraform-modules/**/*.tf', 'kubernetes/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-k8s-

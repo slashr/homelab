@@ -59,8 +59,79 @@ jobs:
               - 'LICENSE'
               - 'AGENTS.md'
 
-  gcp-setup:
+  # Consolidated lint job - runs pre-commit checks once for all code
+  lint:
     needs: changes
+    name: "Lint & Format Checks"
+    # Skip only for docs-only changes
+    if: needs.changes.outputs.docs-only != 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Full history needed for pre-commit diffs
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: "1.9.6"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+          cache-dependency-path: |
+            .pre-commit-config.yaml
+            ansible/requirements.yml
+
+      - name: Install linting tools
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pre-commit ansible-core ansible-lint
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Cache pre-commit hook repositories
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit/repo*
+          key: ${{ runner.os }}-pre-commit-repos-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Run pre-commit on changed files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
+
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Running pre-commit on changed files:"
+            echo "$CHANGED_FILES"
+            echo "$CHANGED_FILES" | xargs pre-commit run --files
+          else
+            echo "No files changed, skipping pre-commit"
+          fi
+
+      - name: Lint Summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ All lint checks passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Lint checks failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  gcp-setup:
+    needs: [changes, lint]
     name: "Terraform GCP"
     if: |
       github.ref != 'refs/heads/staging' &&
@@ -84,9 +155,6 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
-
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
 
       # Add caching for Terraform plugins
       - name: Cache Terraform plugins
@@ -145,7 +213,7 @@ jobs:
           job_name: 'GCP'
 
   oracle-setup:
-    needs: changes
+    needs: [changes, lint]
     name: "Terraform Oracle"
     if: |
       github.ref != 'refs/heads/staging' &&
@@ -174,9 +242,6 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
-
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4
@@ -480,7 +545,7 @@ jobs:
 
   run-k3s:
     name: "Terraform K8S"
-    needs: [changes, k3s-setup]
+    needs: [changes, lint, k3s-setup]
     if: |
       !cancelled() &&
       (needs.k3s-setup.result == 'success' || needs.k3s-setup.result == 'skipped') &&
@@ -508,9 +573,6 @@ jobs:
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"
-
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
 
       - name: Cache Terraform plugins
         uses: actions/cache@v4

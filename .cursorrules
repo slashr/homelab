@@ -138,8 +138,15 @@ After you fix issues and request re-review with `@codex review`, Codex posts a *
 #   2. Post inline comments with P1/P2/P3 (issues found)
 
 # Check for thumbs up reaction (approval signal)
+# IMPORTANT: Multiple users can react - must verify it's specifically from Codex bot!
 gh api "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
-  --jq '.[] | select(.user.login == env.CODEX_LOGIN) | select(.content == "+1")'
+  --jq '.[] | select(.user.login == env.CODEX_LOGIN) | select(.content == "+1") | 
+       {user: .user.login, reaction: .content, created: .created_at}'
+
+# Quick check: does Codex thumbs up exist?
+gh api "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
+  --jq '[.[] | select(.user.login == env.CODEX_LOGIN) | select(.content == "+1")] | length'
+# Returns: 1 if approved, 0 if not approved
 
 # OR use polling loop to check for inline comments
 # (See Step 4 in "Full Fix and Re-review Workflow" section below)
@@ -164,7 +171,10 @@ gh pr view <PR_NUMBER> --repo "$REPO" --web
 
 1. **👍 Thumbs up on PR description** (new PRs)
    - Check reactions on the PR description box
-   - 👍 from `chatgpt-codex-connector[bot]` = approved, no issues found
+   - ⚠️ **CRITICAL**: Browser may show "👍 (2)" - multiple users can react!
+   - **Must verify specifically from `chatgpt-codex-connector[bot]`**
+   - Hover over thumbs up or use API to see WHO reacted
+   - Only Codex bot thumbs up = approval (user thumbs up ≠ approval)
    - Most common approval signal for new PRs
 
 2. **Inline comments in "Files changed" tab**

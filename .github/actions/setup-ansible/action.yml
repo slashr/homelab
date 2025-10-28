@@ -53,9 +53,6 @@ runs:
       working-directory: ${{ github.workspace }}
       run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
-    - name: Setup and Run Pre-commit
-      uses: ./.github/actions/setup-precommit
-
     - name: Run ansible-lint
       shell: bash
       working-directory: ansible

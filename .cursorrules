@@ -73,11 +73,34 @@ gh run rerun <RUN_ID> --repo "$REPO"
 
 ### 2. ✅ Check for Codex review (CRITICAL - don't skip!)
 
-**⚠️ IMPORTANT: Understanding Codex Review Structure**
+**⚠️ Codex Automatically Reviews New PRs**
 
-Codex posts reviews in TWO separate places:
+- ✅ **Codex starts reviewing automatically when you create a PR**
+- ❌ **Do NOT request `@codex review` on PR creation** - it's redundant
+- ✅ **Only request `@codex review` after pushing fixes** to existing PRs
 
-#### A) Initial Review with Issues (if problems found)
+**⚠️ IMPORTANT: Understanding Codex Review Signals**
+
+Codex provides feedback in THREE ways:
+
+#### A) No Issues Found - Thumbs Up Reaction (INITIAL review only)
+
+When Codex finds no issues on a NEW PR's **FIRST commit**:
+- 👍 **Adds thumbs up emoji reaction to the PR description** (most common)
+- No comment posted
+- This is the cleanest approval signal
+
+**⚠️ CRITICAL: Thumbs up is STATIC - it does NOT update after new commits!**
+- The 👍 reaction stays there even after you push new commits
+- Presence of 👍 does NOT mean Codex reviewed your latest changes
+- **After pushing new commits, you MUST request `@codex review` for re-review**
+- For re-reviews, look for approval COMMENT (section C below), NOT thumbs up
+
+**Check for thumbs up (initial review only):**
+- Look at PR description box for 👍 reaction from `chatgpt-codex-connector[bot]`
+- Or via API: `gh api /repos/$REPO/issues/<PR_NUMBER>/reactions`
+
+#### B) Issues Found - Inline Comments
 
 **1. Template Comment (Main Thread)**
 Codex posts a top-level comment:
@@ -98,13 +121,12 @@ The REAL review feedback appears as **inline comments on specific lines** in you
 
 **CRITICAL**: Always check for inline comments! The main thread comment alone is meaningless.
 
-#### B) Approval Comment (when no issues or after fixes)
+#### C) Approval Comment (after fixes)
 
-After you fix issues and request re-review, Codex posts a **NEW separate main comment** (NOT a reply) saying:
+After you fix issues and request re-review with `@codex review`, Codex posts a **NEW separate main comment** saying:
 - "Codex Review: Didn't find any major issues. Breezy!"
 - "Codex Review: Didn't find any major issues. Bravo."
 - "Codex Review: Didn't find any major issues. Keep them coming!"
-- "Codex Review: Didn't find any major issues. More of your lovely PRs please."
 - Or similar variations with "Didn't find any major issues"
 
 ---
@@ -116,36 +138,84 @@ After you fix issues and request re-review, Codex posts a **NEW separate main co
 **AI Workflow for checking Codex reviews:**
 
 ```bash
-# Request Codex review
-gh pr comment <PR_NUMBER> --repo "$REPO" --body "@codex review"
+# After creating NEW PR: Wait for automatic Codex review (do NOT request @codex review)
+# Codex will either:
+#   1. Add 👍 reaction to PR description (no issues)
+#   2. Post inline comments with P1/P2/P3 (issues found)
 
-# Use polling loop (see Step 4 in "Full Fix and Re-review Workflow" section below)
+# Check for thumbs up reaction (approval signal)
+# IMPORTANT: Multiple users can react - must verify it's specifically from Codex bot!
+gh api "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
+  --jq '.[] | select(.user.login == env.CODEX_LOGIN) | select(.content == "+1") | 
+       {user: .user.login, reaction: .content, created: .created_at}'
+
+# Quick check: does Codex thumbs up exist?
+gh api "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
+  --jq '[.[] | select(.user.login == env.CODEX_LOGIN) | select(.content == "+1")] | length'
+# Returns: 1 if approved, 0 if not approved
+
+# OR use polling loop to check for inline comments
+# (See Step 4 in "Full Fix and Re-review Workflow" section below)
+
 # OR open browser to check manually
 gh pr view <PR_NUMBER> --repo "$REPO" --web
+# Look for: 👍 on PR description, or inline comments in Files changed tab
 
 # If browser automation available (optional):
 # browser_navigate("https://github.com/$REPO/pull/<PR_NUMBER>")
 # browser_snapshot()
-# Look for latest Codex comments
 ```
+
+**When to manually request `@codex review`:**
+- ❌ **NOT on new PR creation** (Codex auto-reviews the first commit automatically)
+- ✅ **After pushing ANY new commits** to the PR (thumbs up is static, won't update!)
+- ✅ **After pushing fixes** to address Codex feedback
+- ✅ **When re-requesting review** after any changes
+
+**Why you must re-review after new commits:**
+- The initial 👍 reaction does NOT disappear or update
+- Codex only auto-reviews the FIRST commit when PR is created
+- All subsequent commits require manual `@codex review` request
 
 **What to look for in the browser:**
 
-**🚨 CRITICAL: Always check the MOST RECENT comment with timestamp!**
-- Scroll to the very bottom to see the latest comment
-- Check the timestamp (e.g., "2 minutes ago")
-- **Don't grep for old "didn't find any major issues" - check the actual latest comment!**
+**🚨 Check in this order:**
 
-✅ **If Codex is happy (MOST RECENT comment):**
-- Look for **LATEST** comment from `chatgpt-codex-connector[bot]` saying: "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
-- Verify timestamp matches AFTER your re-review request
-- No NEW inline code comments with P1/P2/P3 badges
+**For INITIAL PR review (first commit):**
 
-⚠️ **If Codex found issues (check RECENT comments first):**
-- **NEW** template comment: "💡 Codex Review - Here are some automated review suggestions" (check timestamp!)
-- **NEW** inline comments on specific lines with **P1/P2/P3 badges** (scroll through Files changed tab)
-- Each inline comment shows file path, line number, and specific issue
-- Old/resolved comments will have "Outdated" label - ignore these!
+1. **👍 Thumbs up on PR description**
+   - Check reactions on the PR description box
+   - ⚠️ **CRITICAL**: Browser may show "👍 (2)" - multiple users can react!
+   - **Must verify specifically from `chatgpt-codex-connector[bot]`**
+   - Hover over thumbs up or use API to see WHO reacted
+   - Only Codex bot thumbs up = approval (user thumbs up ≠ approval)
+   - Most common approval signal for new PRs
+
+2. **Inline comments in "Files changed" tab**
+   - P1/P2/P3 badges on specific lines = issues found
+   - No inline comments + thumbs up = fully approved
+
+**For RE-REVIEW after new commits (after `@codex review` request):**
+
+1. **Latest main comment** (IGNORE old thumbs up - it's static!)
+   - Scroll to bottom, check timestamp
+   - "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
+   - Verify timestamp is AFTER your `@codex review` request
+   - 👍 thumbs up is still there but irrelevant (it's from initial review)
+
+2. **Inline comments in "Files changed" tab**
+   - NEW P1/P2/P3 badges on specific lines = new issues found
+   - Old/resolved comments will have "Outdated" label - ignore these
+
+✅ **Approved signals:**
+- **Initial PR**: 👍 reaction on PR description + zero unresolved inline comments
+- **After re-review**: Latest main comment says "Didn't find any major issues" + zero unresolved inline comments
+- ⚠️ **Do NOT rely on thumbs up for re-reviews** - it's static and outdated!
+
+⚠️ **Issues found:**
+- **NEW** inline comments with **P1/P2/P3 badges** in Files changed tab
+- **Initial PR**: No thumbs up reaction
+- Template comment: "💡 Codex Review - Here are some automated review suggestions"
 
 **Why browser is better:**
 - ✅ Instantly see all comments visually

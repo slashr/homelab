@@ -79,7 +79,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 1  # Shallow clone for faster checkout
+          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -173,7 +173,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 1  # Shallow clone for faster checkout
+          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -511,7 +511,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 1  # Shallow clone for faster checkout
+          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2

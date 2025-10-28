@@ -61,11 +61,28 @@ gh pr view <PR_NUMBER> --web
 
 When Codex posts review issues:
 
-**Reply to comment threads (important for tracking):**
-- Don't post separate comments - reply directly to Codex's thread
-- Each reply should either:
-  - **Accept and fix**: "Fixed in commit abc123 by [description]"
-  - **Explain why not fixing**: "Not fixing because [specific reason]"
+**CRITICAL: Reply inline to Codex's comment threads**
+
+⚠️ **DO NOT** use `gh pr comment <PR_NUMBER> --body "response"` to respond to Codex feedback!  
+This creates a **separate top-level comment** instead of threading your reply under the Codex issue.
+
+**✅ CORRECT METHOD - Reply inline via browser:**
+
+```bash
+# Open PR in browser to reply inline
+gh pr view <PR_NUMBER> --web
+
+# In the browser:
+# 1. Find the Codex comment thread with the P1/P2/P3 badge
+# 2. Click the "Reply..." button WITHIN that thread
+# 3. Post your response there (not in the main comment box at bottom)
+```
+
+**Each inline reply should either:**
+- **Accept and fix**: "Fixed in commit abc123 by [description]"
+- **Explain why not fixing**: "Not fixing because [specific reason]"
+
+**After posting inline replies and pushing fixes:**
 
 ```bash
 # Push fixes
@@ -73,7 +90,7 @@ git add -A
 git commit -m "fix: address Codex feedback - [description]"
 git push origin <branch>
 
-# Request re-review
+# Request re-review (this can be top-level since it's a new request)
 gh pr comment <PR_NUMBER> --body "@codex review"
 
 # Wait and check again

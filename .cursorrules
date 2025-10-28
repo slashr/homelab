@@ -432,6 +432,48 @@ gh pr ready <PR_NUMBER> --undo
 - ❌ Switching to main while debugging PR checks
 - ❌ Forgetting to pull latest main before branching
 - ❌ Working on main branch directly
+- ❌ **Continuing to push to an existing PR branch for a NEW task** (most critical!)
+
+### ⚠️ CRITICAL: Always Branch from Main for New Tasks
+
+**When you receive a NEW task or feedback (even if related to a previous PR):**
+
+```bash
+# ALWAYS do this:
+git checkout main
+git pull origin main
+git checkout -b <new-task-branch-name>
+
+# DON'T do this:
+git checkout <existing-pr-branch>  # ❌ WRONG! This updates the old PR
+```
+
+**Why this matters:**
+- Pushing to an existing PR branch updates THAT PR, not creating a new one
+- Keeps PR history clean and each PR focused on one task
+- Prevents confusion about which PR contains which changes
+- Makes review and rollback easier
+
+**Example:**
+```bash
+# You're on branch "docs/improve-x" with PR #289 open
+
+# User says: "implement ChatGPT feedback"
+# ❌ WRONG: Continue on same branch
+git add -A && git commit && git push origin docs/improve-x
+# This updates PR #289 instead of creating a new PR!
+
+# ✅ CORRECT: Start fresh from main
+git checkout main
+git pull origin main
+git checkout -b docs/implement-chatgpt-feedback
+git add -A && git commit && git push origin docs/implement-chatgpt-feedback
+gh pr create ...  # This creates PR #290
+```
+
+**When to reuse existing branch:**
+- Only when fixing issues IN THAT SAME PR (e.g., addressing Codex P1 comments)
+- Not when user gives you a new, separate task
 
 ---
 

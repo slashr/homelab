@@ -93,9 +93,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+          key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('gcp/**/*.tf', 'terraform-modules/**/*.tf') }}
           restore-keys: |
-            ${{ runner.os }}-terraform-
+            ${{ runner.os }}-terraform-gcp-
 
       - name: Terraform Format
         id: fmt
@@ -179,9 +179,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+          key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('oracle/**/*.tf', 'terraform-modules/**/*.tf') }}
           restore-keys: |
-            ${{ runner.os }}-terraform-
+            ${{ runner.os }}-terraform-oracle-
 
       - name: Terraform Format
         id: fmt
@@ -510,9 +510,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+          key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('kubernetes/**/*.tf', 'terraform-modules/**/*.tf') }}
           restore-keys: |
-            ${{ runner.os }}-terraform-
+            ${{ runner.os }}-terraform-k8s-
 
       - name: Terraform Format
         id: fmt

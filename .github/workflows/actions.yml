@@ -122,7 +122,14 @@ jobs:
           else
             BASE_SHA="${{ github.event.before }}"
           fi
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
+
+          # Handle workflow_dispatch or initial pushes where BASE_SHA is empty or all zeros
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base SHA available (workflow_dispatch or initial push), using HEAD~1"
+            BASE_SHA="HEAD~1"
+          fi
+
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}" 2>/dev/null || git ls-files)
 
           if [ -n "$CHANGED_FILES" ]; then
             echo "Running pre-commit on changed files:"

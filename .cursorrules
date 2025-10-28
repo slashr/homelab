@@ -91,7 +91,7 @@ browser_snapshot()
 - **Don't grep for old "didn't find any major issues" - check the actual latest comment!**
 
 ✅ **If Codex is happy (MOST RECENT comment):**
-- Look for **LATEST** comment from `chatgpt-codex-connector` saying: "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
+- Look for **LATEST** comment from `chatgpt-codex-connector[bot]` saying: "Codex Review: Didn't find any major issues. [Breezy/Bravo/etc]"
 - Verify timestamp matches AFTER your re-review request
 - No NEW inline code comments with P1/P2/P3 badges
 
@@ -215,7 +215,7 @@ gh pr checks <PR_NUMBER> | grep -E "(pass|fail)" | head -15
 echo ""
 echo "Latest Codex Comment:"
 gh pr view <PR_NUMBER> --json comments \
-  --jq '.comments[] | select(.author.login == "chatgpt-codex-connector") | .body' \
+  --jq '.comments[] | select(.author.login == "chatgpt-codex-connector[bot]") | .body' \
   | tail -1 | head -2
 echo ""
 echo "✅ All checks passing"
@@ -327,18 +327,14 @@ browser_take_screenshot("pr-status.png")
 ```bash
 # Check for recent inline review comments (last 10 minutes)
 # Note: gh api doesn't support --arg, must pipe through external jq
-CUTOFF=$(date -u -v-10M +%s 2>/dev/null || date -u -d '10 minutes ago' +%s)
+# NO time filter to avoid false approvals  
 gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments | \
-  jq --arg cutoff "$CUTOFF" '[.[] | 
-    select(.user.login == "chatgpt-codex-connector") | 
-    select((.created_at | fromdateiso8601) > ($cutoff | tonumber))] | length'
+  jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length'
 
 # Get MOST RECENT comment from Codex (not just any old "didn't find" message!)
 gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments | \
-  jq --arg cutoff "$CUTOFF" '.[] | 
-    select(.user.login == "chatgpt-codex-connector") | 
-    select((.created_at | fromdateiso8601) > ($cutoff | tonumber))' | \
-  jq -s 'sort_by(.created_at) | reverse | .[0] | .body' | \
+  jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | 
+    sort_by(.created_at) | reverse | .[0] | .body' | \
   head -20
   
 # CRITICAL: Don't grep for "didn't find" - READ the actual latest comment!

@@ -1,5 +1,47 @@
 # Homelab Repository Cursor Rules
 
+## Prerequisites
+
+### Required GitHub CLI Setup
+
+Before using these workflows, ensure GitHub CLI is properly configured:
+
+```bash
+# Verify gh is installed and authenticated
+gh auth status
+
+# Required token scopes:
+# - repo (full control of private repositories)
+# - read:org (read organization data)
+# - workflow (update GitHub Action workflows)
+
+# If not authenticated, run:
+gh auth login --scopes "repo,read:org,workflow"
+```
+
+### Repository Context
+
+All commands assume you're in the homelab repository directory:
+```bash
+# Verify you're in the correct repo
+git remote -v | grep "slashr/homelab"
+
+# If not, navigate to repo first
+cd /Users/akash/Code/personal/homelab
+```
+
+### Rate Limiting
+
+GitHub API has rate limits (5,000 requests/hour for authenticated users). If you hit limits:
+```bash
+# Check rate limit status
+gh api rate_limit
+
+# Commands will fail with "API rate limit exceeded" - wait or use pagination carefully
+```
+
+---
+
 ## PR Workflow
 
 For each PR:
@@ -9,6 +51,22 @@ For each PR:
 Run checks and monitor until complete:
 ```bash
 gh pr checks <PR_NUMBER> --watch
+```
+
+**If checks fail or are flaky:**
+```bash
+# View failed check details
+gh pr checks <PR_NUMBER>
+
+# Re-run failed checks (requires write:org scope)
+gh run rerun <RUN_ID> --failed
+
+# Re-run entire workflow
+gh run rerun <RUN_ID>
+
+# Find run ID from checks
+gh pr checks <PR_NUMBER> --json name,workflowName,detailsUrl \
+  | jq '.[] | {name, url: .detailsUrl}'
 ```
 
 ### 2. ✅ Check for Codex review (CRITICAL - don't skip!)
@@ -113,17 +171,56 @@ browser_snapshot()
 
 ### 🔧 FALLBACK: API Method (for automation/scripting)
 
-If browser access is unavailable, use API commands:
+**⚠️ Important: Pagination Handling**
+
+GitHub API returns max 30 items per page by default. For PRs with many comments, add `--paginate`:
 
 ```bash
-# Check for ANY unresolved inline comments (no time limit to avoid false approvals)
+gh api --paginate repos/slashr/homelab/issues/<PR_NUMBER>/comments
+```
+
+**Robust Two-Part Approval Check**
+
+Don't rely solely on text matching (Codex wording can change). Instead:
+1. Check that newest Codex comment is after latest `@codex review` request
+2. Verify zero unresolved P1/P2/P3 inline comments
+
+```bash
+# Part 1: Count unresolved inline comments (should be 0 for approval)
+INLINE_COUNT=$(gh api --paginate repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
+  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length')
+
+# Part 2: Get most recent Codex main comment
+LATEST_COMMENT=$(gh api --paginate repos/slashr/homelab/issues/<PR_NUMBER>/comments \
+  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | sort_by(.created_at) | reverse | .[0]')
+
+# Extract timestamp and body
+COMMENT_TIME=$(echo "$LATEST_COMMENT" | jq -r '.created_at')
+COMMENT_BODY=$(echo "$LATEST_COMMENT" | jq -r '.body')
+
+# Check approval criteria
+if [ "$INLINE_COUNT" -eq 0 ]; then
+  echo "✅ No unresolved inline comments"
+  echo "Latest Codex comment ($COMMENT_TIME):"
+  echo "$COMMENT_BODY" | head -3
+  
+  # Additional safety: check if comment looks like approval (but don't rely on exact wording)
+  if echo "$COMMENT_BODY" | grep -qi "didn't find any major issues\|no major issues\|looks good"; then
+    echo "✅ Codex approved!"
+  else
+    echo "⚠️ Review comment content - may not be approval"
+  fi
+else
+  echo "❌ $INLINE_COUNT unresolved inline comment(s) - not approved"
+fi
+```
+
+**Quick Check (less robust):**
+```bash
+# Simple version (may miss edge cases)
 gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
   --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length'
-
-# Check the MOST RECENT main comment for approval (no time filter)
-gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments \
-  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | sort_by(.created_at) | reverse | .[0].body' \
-  | grep -i "didn't find any major issues"
+# Returns 0 if no inline comments (likely approved)
 ```
 
 ### 3. ✅ Address Codex feedback
@@ -226,6 +323,69 @@ echo "✅ Ready to merge!"
 ### 5. ✅ Merge only after user confirmation
 
 Never auto-merge. Always wait for explicit user approval.
+
+---
+
+## Merge Strategy & Branch Protection
+
+### Merge Method
+
+This repository uses **merge commits** (not squash):
+```bash
+# When merging via gh CLI
+gh pr merge <PR_NUMBER> --merge --delete-branch
+
+# Manual merge
+git checkout main
+git merge --no-ff <feature-branch>
+git push origin main
+git branch -d <feature-branch>
+git push origin --delete <feature-branch>
+```
+
+### Branch Protection Rules
+
+The `main` branch has protection rules:
+- ✅ Pull requests required (cannot push directly to main)
+- ✅ Status checks must pass before merging
+- ✅ No force pushes allowed
+- ⚠️ If you get "push declined due to repository rule violations", create a PR instead
+
+### Ready to Merge Checklist
+
+Before merging, verify:
+- [ ] All required checks passing (lint, security, tests)
+- [ ] Codex approved (zero unresolved P1/P2/P3 comments)
+- [ ] No merge conflicts
+- [ ] PR is marked as "Ready for review" (not Draft)
+- [ ] User explicitly approved merge
+
+---
+
+## Draft PRs
+
+### When to Use Draft PRs
+
+Use draft status for work-in-progress:
+```bash
+# Create draft PR
+gh pr create --draft --title "WIP: feature name" --body "Work in progress"
+
+# Mark existing PR as ready
+gh pr ready <PR_NUMBER>
+
+# Convert back to draft
+gh pr ready <PR_NUMBER> --undo
+```
+
+### Draft PR Behavior
+
+- ❌ Codex reviews not triggered on draft PRs
+- ❌ Required checks may not run
+- ✅ Can push commits without triggering full CI
+- ✅ Useful for early feedback or parking incomplete work
+
+**Important:** Mark PR as "Ready for review" before requesting Codex review!
 
 ---
 

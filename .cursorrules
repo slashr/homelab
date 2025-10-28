@@ -116,15 +116,13 @@ browser_snapshot()
 If browser access is unavailable, use API commands:
 
 ```bash
-# Check for recent inline comments (last 10 minutes)
+# Check for ANY unresolved inline comments (no time limit to avoid false approvals)
 gh api repos/slashr/homelab/pulls/<PR_NUMBER>/comments \
-  --jq '[.[] | select(.user.login == "chatgpt-codex-connector") | 
-    select(.created_at > (now - 600 | todate))] | length'
+  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | length'
 
-# Check for approval in recent main comments
+# Check the MOST RECENT main comment for approval (no time filter)
 gh api repos/slashr/homelab/issues/<PR_NUMBER>/comments \
-  --jq '.[] | select(.user.login == "chatgpt-codex-connector") | 
-    select(.created_at > (now - 600 | todate)) | .body' \
+  --jq '[.[] | select(.user.login == "chatgpt-codex-connector[bot]")] | sort_by(.created_at) | reverse | .[0].body' \
   | grep -i "didn't find any major issues"
 ```
 

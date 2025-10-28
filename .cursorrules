@@ -182,7 +182,7 @@ git push origin <branch>
 # Step 2: Reply to inline comments via browser (preferred) or gh CLI
 gh pr view <PR_NUMBER> --web  # Reply in browser UI
 
-# Step 3: Request re-review
+# Step 3: Request re-review (this can be top-level since it's a new request)
 gh pr comment <PR_NUMBER> --body "@codex review"
 
 # Step 4: Wait and check for approval (3-5 minutes)

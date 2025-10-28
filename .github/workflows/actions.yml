@@ -32,6 +32,8 @@ jobs:
       docs-only: ${{ steps.filter.outputs.docs-only }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1  # Shallow clone sufficient for path filtering
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -166,7 +168,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -174,12 +176,19 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
 
-      # Add caching for Terraform plugins
-      - name: Cache Terraform plugins
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
+
+      # Cache Terraform plugins and initialization files
+      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
+      # overwriting the tracked lock file with stale provider versions
+      - name: Cache Terraform
         uses: actions/cache@v4
         with:
-          path: ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('gcp/**/*.tf', 'terraform-modules/**/*.tf') }}
+          path: |
+            ~/.terraform.d/plugin-cache
+            gcp/.terraform
+          key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('gcp/**/*.tf', 'terraform-modules/**/*.tf', 'gcp/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-gcp-
 
@@ -209,6 +218,7 @@ jobs:
           name: gcp-terraform-plan
           path: ./gcp/terraform.tfplan
           retention-days: 1
+          compression-level: 9  # Maximum compression for faster uploads
 
       - name: Terraform Apply
         id: apply
@@ -253,7 +263,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -261,11 +271,19 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
 
-      - name: Cache Terraform plugins
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
+
+      # Cache Terraform plugins and initialization files
+      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
+      # overwriting the tracked lock file with stale provider versions
+      - name: Cache Terraform
         uses: actions/cache@v4
         with:
-          path: ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('oracle/**/*.tf', 'terraform-modules/**/*.tf') }}
+          path: |
+            ~/.terraform.d/plugin-cache
+            oracle/.terraform
+          key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('oracle/**/*.tf', 'terraform-modules/**/*.tf', 'oracle/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-oracle-
 
@@ -584,7 +602,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -592,11 +610,19 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"
 
-      - name: Cache Terraform plugins
+      - name: Setup and Run Pre-commit
+        uses: ./.github/actions/setup-precommit
+
+      # Cache Terraform plugins and initialization files
+      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
+      # overwriting the tracked lock file with stale provider versions
+      - name: Cache Terraform
         uses: actions/cache@v4
         with:
-          path: ~/.terraform.d/plugin-cache
-          key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('kubernetes/**/*.tf', 'terraform-modules/**/*.tf') }}
+          path: |
+            ~/.terraform.d/plugin-cache
+            kubernetes/.terraform
+          key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('kubernetes/**/*.tf', 'terraform-modules/**/*.tf', 'kubernetes/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-k8s-
 

@@ -4,13 +4,12 @@ description: 'Install pre-commit, cache it, and run checks on changed files'
 runs:
   using: 'composite'
   steps:
-    - name: Cache pip downloads
-      uses: actions/cache@v4
+    - name: Set up Python for pre-commit
+      uses: actions/setup-python@v6
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('.pre-commit-config.yaml', 'ansible/requirements.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        python-version: '3.x'
+        cache: 'pip'
+        cache-dependency-path: '.pre-commit-config.yaml'
 
     - name: Install pre-commit
       shell: bash
@@ -24,6 +23,12 @@ runs:
         path: ~/.cache/pre-commit
         key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
 
+    - name: Cache pre-commit hook repositories
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pre-commit/repo*
+        key: ${{ runner.os }}-pre-commit-repos-${{ hashFiles('.pre-commit-config.yaml') }}
+
     - name: Run pre-commit
       shell: bash
       run: |
@@ -33,17 +38,16 @@ runs:
           BASE_SHA="${{ github.event.before }}"
         fi
         CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
-        
+
         # Skip terraform hooks if terraform is not installed
         SKIP_HOOKS=""
         if ! command -v terraform &> /dev/null && ! command -v tofu &> /dev/null; then
           SKIP_HOOKS="terraform_fmt,terraform_validate"
           echo "Terraform/OpenTofu not found, skipping terraform hooks"
         fi
-        
+
         if [ -n "$CHANGED_FILES" ]; then
           SKIP=$SKIP_HOOKS pre-commit run --files "$CHANGED_FILES" --hook-stage manual
         else
           pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
         fi
-

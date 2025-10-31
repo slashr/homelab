@@ -92,7 +92,7 @@ jobs:
       - name: Install linting tools
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install pre-commit ansible-core ansible-lint
+          pip3 install pre-commit 'ansible-core==2.20.0rc2' ansible-lint
 
       - name: Cache Ansible collections
         uses: actions/cache@v4

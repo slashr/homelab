@@ -36,9 +36,11 @@ runs:
           .pre-commit-config.yaml
           ansible/requirements.yml
 
-    - name: Install ansible-lint
+    - name: Install ansible-core and ansible-lint
       shell: bash
-      run: pip3 install ansible-core ansible-lint
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install 'ansible-core==2.20.0rc2' ansible-lint
 
     - name: Cache Ansible collections
       uses: actions/cache@v4

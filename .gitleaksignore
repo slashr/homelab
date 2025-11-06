@@ -1,0 +1,3 @@
+# Allow detect-secrets baseline entries (hashed secrets only)
+.secrets.baseline:generic-api-key:130
+.secrets.baseline:generic-api-key:139

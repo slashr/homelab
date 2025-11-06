@@ -188,7 +188,7 @@ jobs:
           path: |
             ~/.terraform.d/plugin-cache
             gcp/.terraform
-          key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('gcp/**/*.tf', 'terraform-modules/**/*.tf', 'gcp/.terraform.lock.hcl') }}
+          key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-gcp-
 
@@ -283,7 +283,7 @@ jobs:
           path: |
             ~/.terraform.d/plugin-cache
             oracle/.terraform
-          key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('oracle/**/*.tf', 'terraform-modules/**/*.tf', 'oracle/.terraform.lock.hcl') }}
+          key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-oracle-
 
@@ -364,6 +364,7 @@ jobs:
           # Detect which playbooks have changes
           PIS_CHANGED=false
           VPN_CHANGED=false
+          K3S_CHANGED=false
           SECURITY_CHANGED=false
 
           if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/pis\.yml|roles/(common|network)/|group_vars/pis\.yml)'; then
@@ -376,6 +377,10 @@ jobs:
 
           if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/security\.yml|roles/(fail2ban|firewall)/|group_vars/public_nodes\.yml)'; then
             SECURITY_CHANGED=true
+          fi
+
+          if git diff --name-only origin/main...HEAD | grep -E '^ansible/(k3s\.yml|k3s-master-config\.yaml|roles/k3s[^/]+/|playbooks/k3s\.yml)'; then
+            K3S_CHANGED=true
           fi
 
           # Check pis playbook only if related files changed
@@ -404,6 +409,21 @@ jobs:
           else
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "⏭️ VPN playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check k3s playbook only if related files changed
+          if [ "$K3S_CHANGED" = true ] && [ -f k3s.yml ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### k3s Playbook Check" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
+            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml \
+              --vault-password-file ./vault.pass --check 2>&1 | tee k3s_dry_run.log || true
+            cat k3s_dry_run.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⏭️ k3s playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Check security playbook only if related files changed
@@ -622,7 +642,7 @@ jobs:
           path: |
             ~/.terraform.d/plugin-cache
             kubernetes/.terraform
-          key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('kubernetes/**/*.tf', 'terraform-modules/**/*.tf', 'kubernetes/.terraform.lock.hcl') }}
+          key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-k8s-
 

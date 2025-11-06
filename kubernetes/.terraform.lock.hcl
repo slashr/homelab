@@ -42,6 +42,7 @@ provider "registry.terraform.io/hashicorp/helm" {
   constraints = "~> 3.1.0"
   hashes = [
     "h1:eFHLtE+0XJcXKKi7/roQ592MrnK62NWrrq8XXE7faik=",
+    "h1:kvE7Rkp4q50+y+cPhTxoFL/qlIXLjgwIjo8WrMII5Xo=",
     "zh:07d49de0d21d6a8436c3699eecab9d2eee40f641c26ae2965fedf9136ede7044",
     "zh:09a6afcb343e91f63bbe7dfa802b0b698c8212e76d30f8909e030ffe804d986c",
     "zh:0c77ef01348a0013be580e9cebcfaf31357291d8fa756ea7956fb2d19dd7a55c",

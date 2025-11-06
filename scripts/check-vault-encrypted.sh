@@ -12,7 +12,7 @@ for file in "$@"; do
     continue
   fi
 
-  if head -n 1 "$file" | grep -q '^\$ANSIBLE_VAULT;'; then
+  if head -n 1 "$file" | grep -q "^\$ANSIBLE_VAULT;"; then
     continue
   fi
 

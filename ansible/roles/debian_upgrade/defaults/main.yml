@@ -1,5 +1,0 @@
----
-# Control flags for Debian release upgrades on Raspberry Pis
-debian_upgrade_enabled: false
-debian_upgrade_reboot_timeout: 900
-debian_upgrade_sources_backup: true

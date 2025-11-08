@@ -5,11 +5,6 @@
   pull_request:
     branches: [main]
   workflow_dispatch:  # Allow manual triggering
-    inputs:
-      pi_release_upgrade:
-        description: 'Run only the Raspberry Pi Debian release upgrade tasks'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -472,10 +467,10 @@ jobs:
       (
         needs.changes.outputs.ansible == 'true' ||
         github.event_name == 'push' ||
-        (github.event_name == 'workflow_dispatch' && inputs.pi_release_upgrade == 'true')
+        github.event_name == 'workflow_dispatch'
       ) &&
       (
-        (github.event_name == 'workflow_dispatch' && inputs.pi_release_upgrade == 'true') ||
+        github.event_name == 'workflow_dispatch' ||
         (github.ref == 'refs/heads/main' && github.event_name == 'push')
       )
     runs-on: ubuntu-latest
@@ -502,17 +497,11 @@ jobs:
         id: pis_playbook
         if: |
           (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-          (github.event_name == 'workflow_dispatch' && inputs.pi_release_upgrade == 'true')
+          (github.event_name == 'workflow_dispatch')
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          EXTRA_ARGS=""
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.pi_release_upgrade }}" = "true" ]; then
-            EXTRA_ARGS="--tags debian_upgrade"
-            echo "Running Raspberry Pi Debian upgrade tasks with args: $EXTRA_ARGS"
-          fi
-
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml $EXTRA_ARGS
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml
 
       - name: pis-playbook Summary
         if: always()

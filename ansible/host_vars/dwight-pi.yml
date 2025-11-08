@@ -1,0 +1,5 @@
+---
+# Enable Debian 12 upgrade flow for dwight-pi only
+debian_upgrade_enabled: true
+debian_upgrade_target_release: bookworm
+debian_upgrade_target_version: '12'

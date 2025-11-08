@@ -464,9 +464,15 @@ jobs:
     if: |
       !cancelled() &&
       (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+      (
+        needs.changes.outputs.ansible == 'true' ||
+        github.event_name == 'push' ||
+        github.event_name == 'workflow_dispatch'
+      ) &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (github.ref == 'refs/heads/main' && github.event_name == 'push')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -489,7 +495,9 @@ jobs:
 
       - name: Run pis-playbook
         id: pis_playbook
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: |
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'workflow_dispatch')
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |

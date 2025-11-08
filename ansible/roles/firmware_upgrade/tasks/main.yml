@@ -1,0 +1,82 @@
+---
+# Handles Raspberry Pi bootloader/VL805 firmware updates via rpi-eeprom-update
+
+- name: Firmware upgrade disabled
+  ansible.builtin.debug:
+    msg: "Firmware upgrade skipped (firmware_upgrade_enabled=false)."
+  when: not (firmware_upgrade_enabled | default(false) | bool)
+  tags: [firmware_upgrade]
+
+- block:
+    - name: Ensure firmware management packages are present
+      ansible.builtin.apt:
+        name: "{{ firmware_upgrade_packages | default([]) }}"
+        state: present
+        update_cache: true
+      become: true
+      tags: [firmware_upgrade, packages]
+
+    - name: Capture current bootloader version
+      ansible.builtin.command: vcgencmd bootloader_version
+      register: firmware_bootloader_before
+      changed_when: false
+      failed_when: firmware_bootloader_before.rc != 0
+      tags: [firmware_upgrade]
+
+    - name: Check firmware status
+      ansible.builtin.command: rpi-eeprom-update
+      register: firmware_status
+      changed_when: false
+      failed_when: firmware_status.rc not in [0, 1]
+      tags: [firmware_upgrade]
+
+    - name: Determine if firmware update is required
+      ansible.builtin.set_fact:
+        firmware_update_required: "{{ '*** UPDATE AVAILABLE ***' in firmware_status.stdout }}"
+      tags: [firmware_upgrade]
+
+    - name: Display firmware status
+      ansible.builtin.debug:
+        msg: "{{ firmware_status.stdout }}"
+      tags: [firmware_upgrade]
+
+    - name: Apply firmware update
+      ansible.builtin.command: rpi-eeprom-update -a
+      register: firmware_apply
+      changed_when: "'*** INSTALLING ***' in firmware_apply.stdout or '*** REBOOT REQUIRED ***' in firmware_apply.stdout"
+      when: firmware_update_required
+      tags: [firmware_upgrade]
+
+    - name: Reboot after firmware update
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ firmware_upgrade_reboot_timeout | default(600) }}"
+      when: firmware_update_required
+      tags: [firmware_upgrade]
+
+    - name: Gather facts after firmware upgrade
+      ansible.builtin.setup:
+      when: firmware_update_required
+      tags: [firmware_upgrade]
+
+    - name: Capture bootloader version after upgrade
+      ansible.builtin.command: vcgencmd bootloader_version
+      register: firmware_bootloader_after
+      changed_when: false
+      failed_when: firmware_bootloader_after.rc != 0
+      when: firmware_update_required
+      tags: [firmware_upgrade]
+
+    - name: Report bootloader change
+      ansible.builtin.debug:
+        msg:
+          - "Previous bootloader:\n{{ firmware_bootloader_before.stdout }}"
+          - "Current bootloader:\n{{ firmware_bootloader_after.stdout | default(firmware_bootloader_before.stdout) }}"
+      when: firmware_update_required
+      tags: [firmware_upgrade]
+
+    - name: No firmware update required
+      ansible.builtin.debug:
+        msg: "Firmware already up to date."
+      when: not firmware_update_required
+      tags: [firmware_upgrade]
+  when: firmware_upgrade_enabled | default(false) | bool

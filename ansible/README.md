@@ -30,6 +30,14 @@ Configures all Raspberry Pi nodes with common settings, security hardening, netw
 - To run the upgrade in isolation, trigger the main `actions.yml` workflow manually (`workflow_dispatch`).
   The CI run reuses the same playbook and applies the release-upgrade tasks automatically across all Pis.
 
+## Firmware Upgrades
+
+- The `roles/firmware_upgrade` role wraps `rpi-eeprom-update` so we can update the Pi bootloader/VL805 firmware via GitOps.
+- `group_vars/pis.yml` exposes `firmware_upgrade_enabled`, `firmware_upgrade_reboot_timeout`, and the package
+  list that should be present before running the update. Set the flag to `true` when you want to apply the
+  latest EEPROM image across the fleet, then revert it to `false` after a successful rollout.
+- Firmware upgrades respect the staged dwight → jim → michael rollout defined in `playbooks/pis.yml`.
+
 ## Encrypting and Decrypting files
 
 - Files inside ansible/confs are encrypted with ansible-vault. In order to decrypt it, run `ansible-vault decrypt confs/iptables.conf` and enter the vault password (saved on BitWarden)

@@ -11,6 +11,14 @@ debian_upgrade_target_version: '13'
 debian_upgrade_reboot_timeout: 600
 debian_upgrade_sources_backup: true
 
+# Firmware management (set enabled=true when applying EEPROM/VL805 updates)
+firmware_upgrade_enabled: false
+firmware_upgrade_reboot_timeout: 600
+firmware_upgrade_packages:
+  - rpi-eeprom
+  - raspi-config
+  - libraspberrypi-bin
+
 # DNS configuration (AdGuard on dwight-pi for ad blocking)
 dns_servers:
   - 100.100.1.102  # dwight-pi (AdGuard) via Tailscale

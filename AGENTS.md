@@ -1,8 +1,10 @@
 # Homelab Repository Guide
 
+<!-- markdownlint-disable MD013 -->
+
 ## Project Overview
 
-This repository codifies a hybrid homelab that spans Oracle Cloud, Google Cloud, and Raspberry Pis. Infrastructure is provisioned with Terraform, and post-provisioning configuration is handled with Ansible playbooks. High-level architecture and operational expectations are documented in `README.md`—start there for context on components and roadmap items.
+This repository codifies a hybrid homelab that spans Oracle Cloud, Google Cloud, and Raspberry Pis. Infrastructure is provisioned with Terraform, and post-provisioning configuration is handled with Ansible playbooks. High-level architecture and operational expectations are documented in `README.md`—start there for context on components and task items.
 
 ## Repository Layout
 
@@ -18,6 +20,7 @@ This repository codifies a hybrid homelab that spans Oracle Cloud, Google Cloud,
 ## Git Ignore Patterns
 
 The `.gitignore` prevents sensitive and generated files from being committed:
+
 - `*.tfstate*` — Terraform state files (managed remotely in Terraform Cloud)
 - `*.tfvars` — Variable files that may contain secrets
 - `*.pem` — Private key files
@@ -31,12 +34,14 @@ The `.gitignore` prevents sensitive and generated files from being committed:
 The primary deployment workflow orchestrates infrastructure provisioning and configuration across all environments. It runs on pushes to `main`/`staging`, pull requests, and manual triggers.
 
 **Job Execution Order:**
+
 1. **gcp-setup** & **oracle-setup** (parallel) — Provision cloud infrastructure
 2. **tailscale-setup** — Configure VPN mesh network between all nodes
 3. **k3s-setup** — Deploy and configure Kubernetes cluster (only on `main` push or manual trigger)
 4. **run-k3s** — Deploy cluster add-ons via Terraform
 
 **Key Features:**
+
 - Concurrency control prevents conflicting deployments (`cancel-in-progress: false`)
 - Comprehensive caching for Terraform plugins, pip packages, pre-commit hooks, and Ansible collections
 - Terraform Cloud integration for remote state management (workspace tags: `oracle`, `gcp`, `dev`)
@@ -50,6 +55,7 @@ The primary deployment workflow orchestrates infrastructure provisioning and con
 Automated security scanning runs on merge to `main`, daily at 2 AM UTC, and on manual trigger. Scans skip for documentation-only changes (`**.md`, `LICENSE`, `AGENTS.md`, `archive/**`).
 
 **Security Jobs:**
+
 1. **security-scan** — Trivy vulnerability scanning (filesystem + Terraform config) with SARIF uploads to GitHub Security tab
 2. **secret-scan** — TruffleHog secret detection with full history scan
 3. **security-summary** — Consolidated status report with links to Security tab
@@ -66,12 +72,15 @@ Automated security scanning runs on merge to `main`, daily at 2 AM UTC, and on m
 ## Composite Actions
 
 ### `.github/actions/setup-precommit/`
+
 Reusable action that installs pre-commit, caches environments, and runs checks on changed files. Automatically detects PR vs push context to determine the correct base commit for diff calculation.
 
 ### `.github/actions/setup-ssh/`
+
 Configures SSH authentication with private key and disables strict host checking. Optionally sets up Ansible Vault password file when provided.
 
 **Inputs:**
+
 - `ssh_private_key` (required) — SSH private key for server authentication
 - `ansible_vault_password` (optional) — Vault password for decrypting encrypted Ansible files
 
@@ -80,9 +89,11 @@ Configures SSH authentication with private key and disables strict host checking
 ### GitHub Actions Secrets (Required)
 
 **Terraform Cloud:**
+
 - `TF_API_TOKEN` — Terraform Cloud API token for workspace management
 
 **Oracle Cloud Infrastructure:**
+
 - `TF_USER_OCID` — Oracle user OCID
 - `TF_TENANCY_OCID` — Oracle tenancy OCID
 - `TF_OCI_PRIVATE_KEY` — Oracle API private key (PEM format)
@@ -91,22 +102,27 @@ Configures SSH authentication with private key and disables strict host checking
 - `TF_SSH_AUTHORIZED_KEYS` — Public SSH keys for instance access
 
 **Google Cloud Platform:**
+
 - `GCP_CREDENTIALS` — GCP service account credentials (JSON format)
 
 **Kubernetes:**
+
 - `TF_KUBE_CLIENT_CERT` — Base64-encoded kubeconfig client certificate
 - `TF_KUBE_CLIENT_KEY` — Base64-encoded kubeconfig client key
 - `TF_KUBE_CLUSTER_CA_CERT` — Base64-encoded kubeconfig cluster CA certificate
 
 **Cloudflare:**
+
 - `TF_CLOUDFLARE_API_TOKEN` — API token with DNS permissions for cert-manager and external-dns
 
 **Tailscale VPN:**
+
 - `TAILSCALE_CLIENT_ID` — OAuth client ID for GitHub Actions runner
 - `TAILSCALE_CLIENT_SECRET` — OAuth client secret for GitHub Actions runner
 - `TAILSCALE_JOIN_KEY` — Auth key for node registration (used by Ansible)
 
 **Ansible:**
+
 - `SSH_AUTH_PRIVATE_KEY` — SSH private key for accessing all managed nodes
 - `ANSIBLE_VAULT_PASSWORD` — Password for decrypting vault-encrypted configuration files
 
@@ -124,6 +140,7 @@ Terraform stacks depend on Terraform Cloud workspaces keyed off tags (`oracle`, 
 ### Inventory Structure
 
 The `ansible/hosts.ini` defines host groups:
+
 - `vpn` — Oracle VPN gateway (pam-amd1)
 - `pi_workers` — Raspberry Pi worker nodes (jim-pi, dwight-pi)
 - `oracle_workers` — Oracle worker nodes (pam-amd2, pam-arm1, pam-arm2)
@@ -138,6 +155,7 @@ Variables are managed in `ansible/group_vars/all.yml` and define cluster-wide se
 Files in `ansible/confs/` are encrypted with ansible-vault (password stored in Bitwarden and GitHub Secrets). These contain sensitive firewall rules and network configuration.
 
 **Encryption/Decryption Workflow:**
+
 ```bash
 # Decrypt
 ansible-vault decrypt confs/iptables.conf
@@ -162,7 +180,8 @@ ansible-vault encrypt confs/iptables.conf
 ### Module Dependencies
 
 Terraform modules in `kubernetes/cluster.tf` have explicit dependency ordering:
-```
+
+```text
 cert-manager (first)
     ↓
 external-dns (depends on cert-manager)
@@ -197,12 +216,14 @@ Kubernetes providers connect to the k3s master at `130.61.64.164:6443` (Oracle r
 ### Pre-commit Hooks
 
 Run `pre-commit run --all-files` before committing to lint Terraform, Ansible, and YAML sources. Hooks are configured in `.pre-commit-config.yaml`:
+
 - `terraform_fmt` — Format Terraform files
 - `terraform_validate` — Validate Terraform configuration syntax
 - `ansible-lint` — Lint Ansible playbooks
 - `yamllint` — Lint YAML files (200 char line limit)
 
 **Installation:**
+
 ```bash
 pip install pre-commit
 pre-commit install
@@ -221,6 +242,7 @@ For Ansible updates, validate playbooks with `ansible-lint` and (when possible) 
 ### Renovate Bot
 
 Automated dependency updates are managed by Renovate (config: `renovate.json`). Dependencies are grouped by type:
+
 - Terraform Providers
 - Helm Charts
 - Ansible Collections
@@ -267,6 +289,7 @@ Maintain the orchestrated deployment order: cert-manager → external-dns → Ar
 Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth credentials. The `TAILSCALE_JOIN_KEY` is used by both Ansible playbooks and k3s itself (via `--vpn-auth` flag) to authenticate nodes and enable pod-to-pod networking across cloud providers and on-premises Raspberry Pis.
 
 **Manual Tailscale Tasks (not yet automated):**
+
 - Backup Access Control List including Pod IP auto-approve (`10.42.0.0/16`)
 - Custom node IP range (`100.100.0.0/16`)
 - Groups and tags definitions
@@ -276,40 +299,48 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 ### IP Address Ranges
 
 **Oracle Cloud VCN:**
+
 - CIDR Block: `10.0.0.0/16`
 - Reserved Public IP: `130.61.64.164` (pam-amd1 / VPN gateway)
 
 **Tailscale Mesh Network:**
+
 - Node IP Range: `100.100.0.0/16`
 - Pod IP Range (k3s): `10.42.0.0/16` (auto-approved in ACL)
 
 **Raspberry Pi Local Network:**
+
 - LAN Range: `192.168.1.0/24`
 - Tailscale Range: `172.20.60.0/24`
 
 **MetalLB Load Balancer:**
+
 - IP Pool: `198.168.60.11/30` (for exposing services)
 
 ### Server Inventory
 
 **Raspberry Pis (On-Premises):**
+
 - `michael-pi` — k3s master node (Pi 5 8GB) — `192.168.1.100` / `100.100.1.100` (Tailscale)
 - `jim-pi` — k3s worker (Pi 5 8GB) — `192.168.1.101` / `100.100.1.101` (Tailscale)
 - `dwight-pi` — k3s worker + Pi-hole (Pi 4 8GB) — `192.168.1.102` / `100.100.1.102` (Tailscale)
 
 **Oracle Cloud (Free Tier):**
+
 - `pam-amd1` — VPN gateway (VM.Standard.E2.1.Micro: 1 CPU / 1GB RAM) — `130.61.64.164`
 - `angela-amd2` — k3s worker (VM.Standard.E2.1.Micro) — `130.61.63.188`
 - `stanley-arm1` — k3s worker (VM.Standard.A1.Flex: 1 OCPU / 6GB RAM) — `130.162.225.255`
 - `phyllis-arm2` — k3s worker (VM.Standard.A1.Flex) — `138.2.130.168`
 
 **Oracle Free Tier Limits:**
+
 - 2 AMD Instances (VM.Standard.E2.1.Micro): 1 CPU / 1GB RAM / 50GB boot volume each
 - 4 ARM Instances (VM.Standard.A1.Flex): 1 OCPU / 6GB RAM / 50GB boot volume each
 - ARM instances are flexible shape and **not always free** — deleted after one-month trial
 - Reserved public IP has `prevent_destroy = true` lifecycle rule to avoid accidental deletion
 
 **Google Cloud Platform:**
+
 - `toby-gcp1` — k3s worker — `34.28.187.2`
 
 ### Networking Components
@@ -324,17 +355,20 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 ### Common Issues
 
 **Terraform apply fails:**
+
 - Verify all required secrets are set in Terraform Cloud workspace
 - Check workspace tags match provider configuration
 - Review cloud provider quotas/limits
 
 **Ansible playbook fails:**
+
 - Ensure Tailscale is connected (run `tailscale status` on nodes)
 - Verify SSH keys are correct and have proper permissions
 - Check Ansible Vault password is correct
 - Confirm `TAILSCALE_JOIN_KEY` is set in environment
 
 **k3s nodes not joining:**
+
 - Check Tailscale connectivity between master and workers
 - Verify k3s master is fully initialized before running worker join
 - Review k3s-agent service logs: `journalctl -u k3s-agent -f`

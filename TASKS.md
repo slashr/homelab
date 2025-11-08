@@ -1,7 +1,7 @@
-# Homelab Development Roadmap
+# Homelab Task Tracker
 
-This document tracks all planned work, active projects, and their implementation details.
-Each project is broken down into manageable PRs with clear scope, testing, and verification steps.
+This document tracks all planned work, active tasks, and their implementation details.
+Each task is broken down into manageable PRs with clear scope, testing, and verification steps.
 
 📝 **See [COMPLETED.md](COMPLETED.md) for historical record of finished PRs.**
 
@@ -9,7 +9,7 @@ Each project is broken down into manageable PRs with clear scope, testing, and v
 
 ---
 
-## Active Roadmap
+## Active Tasks
 
 All planned PRs are listed below in logical execution order.
 
@@ -53,33 +53,6 @@ All planned PRs are listed below in logical execution order.
   - Keep group-specific in respective files (e.g., `local_network_cidr` in pis.yml only)
   - Remove duplicate definitions
   - **Test:** Run both playbooks, verify no variable resolution errors
-
-### CI/CD Improvements
-
-- [ ] **PR #23: Add k3s Playbook Dry-Run Validation** ✅
-  - **Priority:** Medium | **Effort:** Low (1 hour)
-  - Add to `.github/workflows/actions.yml` (around line 270):
-    - `ansible-playbook --check` for k3s.yml on PRs
-    - Include `k3s-master-config.yaml` in paths filter
-  - Consistent with existing vpn.yml and pis.yml validation
-  - **Test:** Create PR with k3s syntax error → CI catches it
-
-- [ ] **PR #24: Optimize GitHub Actions Caching Strategy** 🚀
-  - **Priority:** Low | **Effort:** Low (1 hour)
-  - Better Terraform cache key: `${{ hashFiles('**/*.tf') }}` (include all dirs)
-  - Add Ansible collections cache: `~/.ansible/collections`
-  - Cache key: `${{ hashFiles('ansible/requirements.yml') }}`
-  - Expected: 20-30% faster CI runs
-  - **Test:** Compare CI run times before/after
-
-- [ ] **PR #25: Add Pre-commit Hook for Sensitive File Detection** 🔒
-  - **Priority:** Medium | **Effort:** Low (1 hour)
-  - Update `.pre-commit-config.yaml`:
-    - Add `detect-secrets` hook with baseline
-    - Add custom `check-ansible-vault` hook
-  - Create `scripts/check-vault-encrypted.sh` to verify vault files are encrypted
-  - Prevent accidental commit of decrypted vault files
-  - **Test:** Try committing unencrypted file → blocked
 
 ### Monitoring & Observability
 
@@ -139,15 +112,14 @@ ansible-playbook -i ansible/hosts.ini ansible/playbooks/pis.yml --check --diff
 
 ## Summary Statistics
 
-**Active PRs:** 10  
-**Completed PRs:** 16 (see [COMPLETED.md](COMPLETED.md))
+**Active PRs:** 7  
+**Completed PRs:** 19 (see [COMPLETED.md](COMPLETED.md))
 
 **Breakdown by Category:**
 
 - Documentation: 2 PRs
 - Refactoring: 2 PRs
-- CI/CD: 3 PRs
 - Monitoring: 2 PRs
 - Data Protection: 1 PR
 
-**Total Estimated Effort:** 12-16 hours
+**Total Estimated Effort:** 10-14 hours

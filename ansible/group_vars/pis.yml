@@ -4,6 +4,11 @@
 # WiFi stability fix (critical for network reliability)
 wifi_power_save_disabled: true
 
+# Debian release management
+debian_upgrade_enabled: true
+debian_upgrade_target_release: bookworm
+debian_upgrade_target_version: '12'
+
 # DNS configuration (AdGuard on dwight-pi for ad blocking)
 dns_servers:
   - 100.100.1.102  # dwight-pi (AdGuard) via Tailscale

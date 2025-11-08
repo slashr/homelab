@@ -23,10 +23,11 @@ Configures all Raspberry Pi nodes with common settings, security hardening, netw
 ## Debian Release Upgrades
 
 - The `roles/debian_upgrade` role rewrites APT sources, runs a dist-upgrade, cleans up packages, and reboots the node so we can move Pis between Debian releases via Ansible.
-- `host_vars/dwight-pi.yml` enables the upgrade flow for dwight-pi and targets Debian 12 (Bookworm). Other Pis remain opt-in by default.
-- To run the upgrade safely, trigger the main `actions.yml` workflow manually (`workflow_dispatch`)
-  and set the `pi_release_upgrade` input to `true`. The CI run limits the `playbooks/pis.yml`
-  execution to `dwight-pi` with the `debian_upgrade` tag so only the release upgrade role runs.
+- `group_vars/pis.yml` sets `debian_upgrade_target_release`/`debian_upgrade_target_version` for the entire
+  Raspberry Pi fleet. Bump those values (e.g., to Debian 13) and the next playbook run will perform the upgrade automatically.
+- To run the upgrade in isolation, trigger the main `actions.yml` workflow manually (`workflow_dispatch`)
+  and set the `pi_release_upgrade` input to `true`. The CI run reuses the same playbook but restricts
+  execution to the `debian_upgrade` tag so only the release-upgrade tasks run across all Pis.
 
 ## Encrypting and Decrypting files
 

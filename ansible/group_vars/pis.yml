@@ -4,8 +4,8 @@
 # WiFi stability fix (critical for network reliability)
 wifi_power_save_disabled: true
 
-# Debian release management
-debian_upgrade_enabled: true
+# Debian release management (set enabled=true when performing an in-place upgrade)
+debian_upgrade_enabled: false
 debian_upgrade_target_release: bookworm
 debian_upgrade_target_version: '12'
 

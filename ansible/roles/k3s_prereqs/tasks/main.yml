@@ -35,9 +35,12 @@
     reload: true
   become: true
   loop:
-    - { key: 'net.ipv4.ip_forward', value: '1' }
-    - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
-    - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+    - key: net.ipv4.ip_forward
+      value: '1'
+    - key: net.bridge.bridge-nf-call-iptables
+      value: '1'
+    - key: net.bridge.bridge-nf-call-ip6tables
+      value: '1'
   tags: [k3s_prereqs]
 
 - name: Verify kernel modules are loaded
@@ -45,6 +48,7 @@
   register: lsmod_output
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [k3s_prereqs]
 
 - name: Check br_netfilter module
@@ -68,6 +72,7 @@
   register: ip_forward_output
   changed_when: false
   failed_when: ip_forward_output.stdout.find('= 1') == -1
+  check_mode: false
   tags: [k3s_prereqs]
 
 # Configure cgroup boot parameters (requires reboot)

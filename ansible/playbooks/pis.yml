@@ -5,6 +5,7 @@
   become: true
   roles:
     - role: ../roles/debian_upgrade
+    - role: ../roles/firmware_upgrade
     - role: ../roles/common
     - role: ../roles/network
     - role: ../roles/k3s_prereqs
@@ -15,6 +16,7 @@
   become: true
   roles:
     - role: ../roles/debian_upgrade
+    - role: ../roles/firmware_upgrade
     - role: ../roles/common
     - role: ../roles/network
     - role: ../roles/k3s_prereqs
@@ -25,6 +27,7 @@
   become: true
   roles:
     - role: ../roles/debian_upgrade
+    - role: ../roles/firmware_upgrade
     - role: ../roles/common
     - role: ../roles/network
     - role: ../roles/k3s_prereqs

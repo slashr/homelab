@@ -25,9 +25,8 @@ Configures all Raspberry Pi nodes with common settings, security hardening, netw
 - The `roles/debian_upgrade` role rewrites APT sources, runs a dist-upgrade, cleans up packages, and reboots the node so we can move Pis between Debian releases via Ansible.
 - `group_vars/pis.yml` sets `debian_upgrade_target_release`/`debian_upgrade_target_version` for the entire
   Raspberry Pi fleet. Bump those values (e.g., to Debian 13) and the next playbook run will perform the upgrade automatically.
-- To run the upgrade in isolation, trigger the main `actions.yml` workflow manually (`workflow_dispatch`)
-  and set the `pi_release_upgrade` input to `true`. The CI run reuses the same playbook but restricts
-  execution to the `debian_upgrade` tag so only the release-upgrade tasks run across all Pis.
+- To run the upgrade in isolation, trigger the main `actions.yml` workflow manually (`workflow_dispatch`).
+  The CI run reuses the same playbook and applies the release-upgrade tasks automatically across all Pis.
 
 ## Encrypting and Decrypting files
 

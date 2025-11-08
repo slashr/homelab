@@ -7,7 +7,7 @@
   workflow_dispatch:  # Allow manual triggering
     inputs:
       pi_release_upgrade:
-        description: 'Set to true to run the dwight-pi Debian release upgrade path'
+        description: 'Run only the Raspberry Pi Debian release upgrade tasks'
         type: boolean
         default: false
 
@@ -508,8 +508,8 @@ jobs:
         run: |
           EXTRA_ARGS=""
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.pi_release_upgrade }}" = "true" ]; then
-            EXTRA_ARGS="--limit dwight-pi --tags debian_upgrade"
-            echo "Running targeted Debian upgrade for dwight-pi with args: $EXTRA_ARGS"
+            EXTRA_ARGS="--tags debian_upgrade"
+            echo "Running Raspberry Pi Debian upgrade tasks with args: $EXTRA_ARGS"
           fi
 
           ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml $EXTRA_ARGS

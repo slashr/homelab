@@ -5,6 +5,11 @@
   pull_request:
     branches: [main]
   workflow_dispatch:  # Allow manual triggering
+    inputs:
+      pi_release_upgrade:
+        description: 'Set to true to run the dwight-pi Debian release upgrade path'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -464,9 +469,15 @@ jobs:
     if: |
       !cancelled() &&
       (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+      (
+        needs.changes.outputs.ansible == 'true' ||
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.pi_release_upgrade == 'true')
+      ) &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.pi_release_upgrade == 'true') ||
+        (github.ref == 'refs/heads/main' && github.event_name == 'push')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -489,11 +500,19 @@ jobs:
 
       - name: Run pis-playbook
         id: pis_playbook
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: |
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'workflow_dispatch' && inputs.pi_release_upgrade == 'true')
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml
+          EXTRA_ARGS=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.pi_release_upgrade }}" = "true" ]; then
+            EXTRA_ARGS="--limit dwight-pi --tags debian_upgrade"
+            echo "Running targeted Debian upgrade for dwight-pi with args: $EXTRA_ARGS"
+          fi
+
+          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml $EXTRA_ARGS
 
       - name: pis-playbook Summary
         if: always()

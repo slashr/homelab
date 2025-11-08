@@ -7,7 +7,11 @@
 Before using these workflows, ensure GitHub CLI is properly configured:
 
 ```bash
-# Verify gh is installed and authenticated
+# Verify required tools are installed
+command -v gh >/dev/null || { echo "Error: gh CLI not installed"; exit 1; }
+command -v jq >/dev/null || { echo "Error: jq not installed (brew install jq)"; exit 1; }
+
+# Verify gh is authenticated
 gh auth status || gh auth login --scopes "repo,read:org,workflow"
 
 # Required token scopes:
@@ -145,23 +149,35 @@ After you fix issues and request re-review with `@codex review`, Codex posts a *
 
 # Check for thumbs up reaction (approval signal)
 # IMPORTANT: Multiple users can react - must verify it's specifically from Codex bot!
-gh api "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
-  --jq '.[] | select(.user.login == env.CODEX_LOGIN) | select(.content == "+1") | 
-       {user: .user.login, reaction: .content, created: .created_at}'
+# NOTE: gh CLI doesn't interpolate env vars in --jq; pipe to external jq with --arg
+
+# Detailed list (Codex 👍 only)
+gh api -H "Accept: application/vnd.github+json" \
+  "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
+| jq --arg COD "$CODEX_LOGIN" -r '
+    .[]
+    | select(.user.login == $COD and .content == "+1")
+    | {user: .user.login, reaction: .content, created: .created_at}
+  '
 
 # Quick check: does Codex thumbs up exist?
-gh api "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
-  --jq '[.[] | select(.user.login == env.CODEX_LOGIN) | select(.content == "+1")] | length'
+gh api -H "Accept: application/vnd.github+json" \
+  "/repos/$REPO/issues/<PR_NUMBER>/reactions" \
+| jq --arg COD "$CODEX_LOGIN" -r '
+    [ .[] | select(.user.login == $COD and .content == "+1") ] | length
+  '
 # Returns: 1 if approved, 0 if not approved
 
-# OR use polling loop to check for inline comments
-# (See Step 4 in "Full Fix and Re-review Workflow" section below)
+# RECOMMENDED: Use silent API polling (no browser popups)
+# Poll for up to 15 minutes before notifying user
+# (See "Silent Polling Strategy" section below)
 
-# OR open browser to check manually
+# ONLY open browser if API polling times out or user requests it
 gh pr view <PR_NUMBER> --repo "$REPO" --web
-# Look for: 👍 on PR description, or inline comments in Files changed tab
+# Note: This opens browser in foreground (may disturb user)
 
-# If browser automation available (optional):
+# If browser automation available:
+# Use for final verification ONLY after timeout, not during polling
 # browser_navigate("https://github.com/$REPO/pull/<PR_NUMBER>")
 # browser_snapshot()
 ```
@@ -208,8 +224,8 @@ gh pr view <PR_NUMBER> --repo "$REPO" --web
    - Old/resolved comments will have "Outdated" label - ignore these
 
 ✅ **Approved signals:**
-- **Initial PR**: 👍 reaction on PR description + zero unresolved inline comments
-- **After re-review**: Latest main comment says "Didn't find any major issues" + zero unresolved inline comments
+- **Initial PR**: 👍 reaction on PR description + zero unresolved Codex review threads
+- **After re-review**: Latest main comment says "Didn't find any major issues" + zero unresolved Codex review threads
 - ⚠️ **Do NOT rely on thumbs up for re-reviews** - it's static and outdated!
 
 ⚠️ **Issues found:**
@@ -217,7 +233,7 @@ gh pr view <PR_NUMBER> --repo "$REPO" --web
 - **Initial PR**: No thumbs up reaction
 - Template comment: "💡 Codex Review - Here are some automated review suggestions"
 
-**Why browser is better:**
+**Why browser is better (for manual verification):**
 - ✅ Instantly see all comments visually
 - ✅ Inline code comments visible in context
 - ✅ Approval messages obvious and clear
@@ -225,22 +241,69 @@ gh pr view <PR_NUMBER> --repo "$REPO" --web
 - ✅ Can reply directly to inline comments via UI
 - ✅ More reliable than API timestamp filtering
 
----
+### 🔕 Silent Polling Strategy (RECOMMENDED)
 
-### 🔧 DEPRECATED: REST API Method
+**⚠️ IMPORTANT: Do NOT disturb the user with browser popups during polling!**
 
-**⚠️ This method is deprecated. Use the GraphQL polling loop in Step 4 instead.**
+When waiting for Codex review:
+1. ✅ **Use API-only polling** (no browser windows)
+2. ✅ **Poll silently for up to 15 minutes** before notifying user
+3. ✅ **Check every 30 seconds** for thumbs up or inline comments
+4. ❌ **Do NOT open browser** unless timeout or user requests
+5. ✅ **Only report final result** to user (approved/issues/timeout)
 
-The REST API cannot filter resolved vs unresolved comments. Use GraphQL + browser verification for accurate approval detection.
-
-**Simple comment count (unreliable):**
+**Implementation:**
 ```bash
-# This counts ALL comments including resolved ones - NOT RECOMMENDED
-gh api --paginate /repos/"$REPO"/pulls/<PR_NUMBER>/comments \
-  --jq --arg COD "$CODEX_LOGIN" '[.[] | select(.user.login==$COD)] | length'
+export REPO="slashr/homelab"
+export CODEX_LOGIN="chatgpt-codex-connector[bot]"
+PR=<PR_NUMBER>
+
+echo "⏳ Silently polling for Codex auto-review on PR #$PR (up to 15 minutes)..."
+echo ""
+
+deadline=$((SECONDS+900))  # 15 minutes
+approved=0
+
+while [ $SECONDS -lt $deadline ]; do
+  # Check for thumbs up (approval signal)
+  THUMBS=$(gh api -H "Accept: application/vnd.github+json" \
+    "/repos/$REPO/issues/$PR/reactions" 2>/dev/null \
+  | jq --arg COD "$CODEX_LOGIN" -r \
+    '[ .[] | select(.user.login == $COD and .content == "+1") ] | length' \
+    2>/dev/null || echo "0")
+
+  if [ "${THUMBS:-0}" -gt 0 ]; then
+    # Get full details for user notification
+    THUMBS_DATA=$(gh api -H "Accept: application/vnd.github+json" \
+      "/repos/$REPO/issues/$PR/reactions" 2>/dev/null \
+    | jq --arg COD "$CODEX_LOGIN" -r \
+      '.[] | select(.user.login == $COD and .content == "+1") |
+       {user: .user.login, reaction: .content, created: .created_at}')
+    
+    echo "✅ Codex approved! (thumbs up reaction found)"
+    echo ""
+    echo "$THUMBS_DATA"
+    approved=1
+    break
+  fi
+  
+  sleep 30  # Check every 30 seconds
+done
+
+if [ $approved -eq 0 ]; then
+  echo "⏱️ Timeout: No Codex review after 15 minutes"
+  echo ""
+  echo "You can check manually: gh pr view $PR --repo \"$REPO\" --web"
+  echo "Or request review: gh pr comment $PR --repo \"$REPO\" --body \"@codex review\""
+fi
 ```
 
-**For production: Use GraphQL polling loop (see Step 4 below) or browser verification.**
+**When to use browser instead:**
+- ⚠️ Only if API polling times out (15 minutes with no response)
+- ⚠️ Only if user explicitly asks to check browser
+- ⚠️ Only for replying to inline comments (API can't do threaded replies)
+
+---
 
 ### 3. ✅ Address Codex feedback
 
@@ -309,39 +372,60 @@ gh pr view <PR_NUMBER> --repo "$REPO" --web  # Reply in browser UI
 PR="<PR_NUMBER>"
 gh pr comment "$PR" --repo "$REPO" --body "@codex review"
 
-# Step 4: Poll for Codex approval (up to 8 minutes, no fixed sleep)
-deadline=$((SECONDS+480))
+# Step 4: Poll for Codex approval (up to 15 minutes, silent API polling)
+deadline=$((SECONDS+900))  # 15 minutes timeout
 
 # Helper: Count unresolved Codex review threads via GraphQL
+# Paginated, checks ANY comment author (not just first)
 unresolved_codex_threads() {
-  gh api graphql \
-    -f owner="${REPO%/*}" -f name="${REPO#*/}" -F number="$PR" \
-    -f query='
-      query($owner:String!, $name:String!, $number:Int!) {
-        repository(owner:$owner, name:$name) {
-          pullRequest(number:$number) {
-            reviewThreads(first:100) {
-              nodes {
-                isResolved
-                comments(first:1) { nodes { author { login } } }
+  OWNER="${REPO%/*}"; NAME="${REPO#*/}"
+  CURSOR=""
+  COUNT=0
+  while : ; do
+    PAGE=$(gh api graphql \
+      -f owner="$OWNER" -f name="$NAME" -F number="$PR" ${CURSOR:+-F cursor="$CURSOR"} \
+      -f query='
+        query($owner:String!, $name:String!, $number:Int!, $cursor:String) {
+          repository(owner:$owner, name:$name) {
+            pullRequest(number:$number) {
+              reviewThreads(first:100, after:$cursor) {
+                pageInfo { hasNextPage endCursor }
+                nodes {
+                  isResolved
+                  comments(first:100) { nodes { author { login } } }
+                }
               }
             }
           }
-        }
-      }' \
-  | jq --arg COD "$CODEX_LOGIN" \
-      '[.data.repository.pullRequest.reviewThreads.nodes[]
-        | select(.isResolved==false)
-        | select(.comments.nodes[0].author.login==$COD)
-       ] | length'
+        }' )
+
+    PAGE_COUNT=$(echo "$PAGE" | jq --arg COD "$CODEX_LOGIN" '
+      .data.repository.pullRequest.reviewThreads.nodes
+      | [ .[]
+          | select(.isResolved == false)
+          | select(.comments.nodes | any(.author.login == $COD))
+        ] | length
+    ')
+    COUNT=$((COUNT + PAGE_COUNT))
+
+    HAS_NEXT=$(echo "$PAGE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
+    if [ "$HAS_NEXT" = "true" ]; then
+      CURSOR=$(echo "$PAGE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor')
+    else
+      break
+    fi
+  done
+  echo "$COUNT"
 }
 
 # Helper: Get newest top-level Codex comment (approval signal)
+# Uses --paginate to handle >100 comments
 latest_codex_main() {
-  gh api /repos/"$REPO"/issues/"$PR"/comments?per_page=100 \
-  | jq --arg COD "$CODEX_LOGIN" \
-      '[.[] | select(.user.login==$COD)]
-       | sort_by(.created_at) | last'
+  gh api --paginate "/repos/$REPO/issues/$PR/comments" \
+  | jq --arg COD "$CODEX_LOGIN" '
+      [ .[] | select(.user.login == $COD) ]
+      | sort_by(.created_at) | last
+    '
 }
 
 approved=0
@@ -363,8 +447,10 @@ while [ $SECONDS -lt $deadline ]; do
 done
 
 if [ $approved -ne 1 ]; then
-  echo "⚠️ Codex still has feedback or hasn't posted approval yet"
-  echo "Open PR to check: gh pr view $PR --repo "$REPO" --web"
+  echo "⏱️ Timeout: No Codex review after 15 minutes"
+  echo ""
+  echo "You can check manually: gh pr view $PR --repo \"$REPO\" --web"
+  echo "Or request review: gh pr comment $PR --repo \"$REPO\" --body \"@codex review\""
 fi
 ```
 
@@ -387,8 +473,12 @@ gh pr checks "$PR" --repo "$REPO" | grep -E "(pass|fail)" | head -15
 echo ""
 echo "Latest Codex Comment:"
 gh pr view "$PR" --repo "$REPO" --json comments \
-  --jq --arg COD "$CODEX_LOGIN" '.comments[] | select(.author.login == $COD) | .body' \
-  | tail -1 | head -2
+| jq --arg COD "$CODEX_LOGIN" -r '
+    .comments
+    | map(select(.author.login == $COD))
+    | sort_by(.createdAt) | last
+    | try (.createdAt + "\n" + .body) // "No Codex main comment"
+  ' | tail -1
 echo ""
 echo "✅ All checks passing"
 echo "✅ Codex approved (zero unresolved threads)"
@@ -430,7 +520,7 @@ The `main` branch has protection rules:
 
 Before merging, verify:
 - [ ] All required checks passing (lint, security, tests)
-- [ ] Codex approved (zero unresolved P1/P2/P3 comments)
+- [ ] Codex approved (zero unresolved Codex review threads)
 - [ ] No merge conflicts
 - [ ] PR is marked as "Ready for review" (not Draft)
 - [ ] User explicitly approved merge

@@ -1,0 +1,111 @@
+---
+# Handles in-place Debian release upgrades (e.g. Bullseye → Bookworm)
+
+- name: Debian release upgrade disabled
+  ansible.builtin.debug:
+    msg: "Debian release upgrade skipped (debian_upgrade_enabled=false)."
+  when: not (debian_upgrade_enabled | bool)
+  tags: [debian_upgrade]
+
+- block:
+    - name: Ensure host is running Debian
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == 'Debian'
+        fail_msg: "Debian upgrade role only supports Debian targets (found {{ ansible_distribution }})"
+      tags: [debian_upgrade]
+
+    - name: Determine if Debian upgrade is required
+      ansible.builtin.set_fact:
+        debian_upgrade_required: "{{ (ansible_distribution_major_version | int) < (debian_upgrade_target_version | int) }}"
+      tags: [debian_upgrade]
+
+    - name: Current Debian release
+      ansible.builtin.debug:
+        msg: "Release {{ ansible_distribution_release }} ({{ ansible_distribution_major_version }}) detected on {{ inventory_hostname }}"
+      tags: [debian_upgrade]
+
+    - name: No upgrade needed
+      ansible.builtin.debug:
+        msg: "Host already meets target Debian {{ debian_upgrade_target_release }} ({{ debian_upgrade_target_version }})"
+      when: not debian_upgrade_required
+      tags: [debian_upgrade]
+
+    - block:
+        - name: Announce Debian upgrade
+          ansible.builtin.debug:
+            msg: "Upgrading Debian {{ ansible_distribution_release }} → {{ debian_upgrade_target_release }}"
+          tags: [debian_upgrade]
+
+        - name: Gather APT source files
+          ansible.builtin.find:
+            paths:
+              - /etc/apt
+            patterns:
+              - '*.list'
+            recurse: true
+            file_type: file
+          register: debian_upgrade_source_files
+          tags: [debian_upgrade]
+
+        - name: Point APT sources to {{ debian_upgrade_target_release }}
+          ansible.builtin.replace:
+            path: "{{ item.path }}"
+            regexp: "{{ ansible_distribution_release | regex_escape }}"
+            replace: "{{ debian_upgrade_target_release }}"
+            backup: "{{ debian_upgrade_sources_backup | bool }}"
+          loop: "{{ debian_upgrade_source_files.files | default([]) }}"
+          loop_control:
+            label: "{{ item.path }}"
+          tags: [debian_upgrade]
+
+        - name: Refresh APT metadata
+          ansible.builtin.apt:
+            update_cache: true
+            cache_valid_time: 0
+            force_apt_get: true
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+          tags: [debian_upgrade]
+
+        - name: Run dist-upgrade to Debian {{ debian_upgrade_target_version }}
+          ansible.builtin.apt:
+            upgrade: dist
+            update_cache: true
+            force_apt_get: true
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+          register: debian_upgrade_dist
+          tags: [debian_upgrade]
+
+        - name: Autoremove obsolete packages
+          ansible.builtin.apt:
+            autoremove: true
+            purge: true
+            force_apt_get: true
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+          register: debian_upgrade_autoremove
+          tags: [debian_upgrade]
+
+        - name: Reboot to load the new kernel
+          ansible.builtin.reboot:
+            reboot_timeout: "{{ debian_upgrade_reboot_timeout }}"
+          when: debian_upgrade_dist.changed or debian_upgrade_autoremove.changed
+          register: debian_upgrade_reboot
+          tags: [debian_upgrade]
+
+        - name: Gather fresh facts post-upgrade
+          ansible.builtin.setup:
+          tags: [debian_upgrade]
+
+        - name: Verify Debian upgrade result
+          ansible.builtin.assert:
+            that:
+              - (ansible_distribution_major_version | int) >= (debian_upgrade_target_version | int)
+              - debian_upgrade_target_release in ansible_distribution_release
+            success_msg: "Host now on Debian {{ ansible_distribution_release }} ({{ ansible_distribution_major_version }})"
+            fail_msg: "Debian upgrade incomplete; still seeing {{ ansible_distribution_release }} ({{ ansible_distribution_major_version }})"
+          tags: [debian_upgrade]
+      when: debian_upgrade_required
+  when: debian_upgrade_enabled | bool

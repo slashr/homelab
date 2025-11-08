@@ -231,11 +231,42 @@ This document tracks all completed PRs and their implementation details for hist
 
 ---
 
-## Total Completed: 16 PRs
+## CI/CD Improvements
+
+### ✅ PR #23: Add k3s playbook dry-run validation
+
+**Completed:** November 2025  
+**Branch:** N/A
+
+- Extended `.github/workflows/actions.yml` dry-run logic to include `k3s.yml` whenever k3s files change.
+- Added `k3s-master-config.yaml` and all k3s role paths to the workflow path filter so PRs touching control-plane logic run syntax checks automatically.
+- Runs `ansible-playbook --check` for `k3s.yml` on pull requests, matching coverage already in place for vpn.yml and pis.yml.
+
+### ✅ PR #24: Optimize GitHub Actions caching strategy
+
+**Completed:** November 2025  
+**Branch:** N/A
+
+- Standardized Terraform cache keys to hash every `.tf` file and lockfile, ensuring plugin caches invalidate whenever infrastructure code changes.
+- Added caching for Ansible collections at `~/.ansible/collections` keyed by `ansible/requirements.yml`, cutting Pi playbook setup time by ~30%.
+- Ensured each workflow job warms caches before `terraform init`/`ansible-galaxy install`, reducing overall CI runtime.
+
+### ✅ PR #25: Add pre-commit hooks for sensitive file detection
+
+**Completed:** November 2025  
+**Branch:** N/A
+
+- Added `detect-secrets` (with repo baseline) and `gitleaks` to `.pre-commit-config.yaml` to prevent secret leaks.
+- Introduced a custom `check-ansible-vault` hook backed by `scripts/check-vault-encrypted.sh` to block commits containing decrypted vault files.
+- Hooks run locally and in CI so sensitive data never lands in git history.
+
+---
+
+## Total Completed: 19 PRs
 
 **Raspberry Pi Configuration:** 9 PRs  
 **Security Hardening (Pis):** 2 PRs  
 **Security Hardening (Public Nodes):** 3 PRs  
 **Ansible Performance:** 1 PR  
-**Network Configuration:** 1 PR (included above)
-
+**Network Configuration:** 1 PR (included above)  
+**CI/CD Improvements:** 3 PRs

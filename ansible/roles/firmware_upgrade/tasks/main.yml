@@ -22,16 +22,15 @@
       register: firmware_vcgencmd_stat
       tags: [firmware_upgrade]
 
-    - name: Record vcgencmd availability
+    - name: Set vcgencmd command path
       ansible.builtin.set_fact:
-        firmware_vcgencmd_available: "{{ firmware_vcgencmd_stat.stat.exists | bool }}"
         firmware_vcgencmd_command: "{{ firmware_vcgencmd_path | default('/usr/bin/vcgencmd') }}"
       tags: [firmware_upgrade]
 
     - name: Note missing vcgencmd binary
       ansible.builtin.debug:
         msg: "vcgencmd not found; skipping bootloader version capture."
-      when: not firmware_vcgencmd_available
+      when: not (firmware_vcgencmd_stat.stat.exists | default(false))
       tags: [firmware_upgrade]
 
     - name: Capture current bootloader version
@@ -39,7 +38,7 @@
       register: firmware_bootloader_before
       changed_when: false
       failed_when: firmware_bootloader_before.rc != 0
-      when: firmware_vcgencmd_available
+      when: firmware_vcgencmd_stat.stat.exists | default(false)
       tags: [firmware_upgrade]
 
     - name: Check firmware status
@@ -84,7 +83,7 @@
       failed_when: firmware_bootloader_after.rc != 0
       when:
         - firmware_update_required
-        - firmware_vcgencmd_available
+        - (firmware_vcgencmd_stat.stat.exists | default(false))
       tags: [firmware_upgrade]
 
     - name: Report bootloader change
@@ -94,7 +93,7 @@
           - "Current bootloader:\n{{ firmware_bootloader_after.stdout | default(firmware_bootloader_before.stdout) }}"
       when:
         - firmware_update_required
-        - firmware_vcgencmd_available
+        - (firmware_vcgencmd_stat.stat.exists | default(false))
       tags: [firmware_upgrade]
 
     - name: Report firmware result without vcgencmd
@@ -103,7 +102,7 @@
           - "vcgencmd unavailable on this host; inspect rpi-eeprom-update output for bootloader details."
       when:
         - firmware_update_required
-        - not firmware_vcgencmd_available
+        - not (firmware_vcgencmd_stat.stat.exists | default(false))
       tags: [firmware_upgrade]
 
     - name: No firmware update required

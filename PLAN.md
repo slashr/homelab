@@ -1,28 +1,20 @@
-# PLAN: Update Raspberry Pi Firmware (Nov 2025)
+# PLAN: Document Codex Review Expectations (Nov 2025)
 
 ## Objective
 
-Bring michael-pi, jim-pi, and dwight-pi bootloader firmware up to the latest releases using the existing `firmware_upgrade` Ansible role.
-
-## Status
-
-- 2025-11-14 11:06 UTC: Main-branch Actions run `19362491035` failed in the `Ansible Pis`
-  job because APT could not find `libraspberrypi-bin` while executing
-  `ansible/roles/firmware_upgrade/tasks/main.yml`. Debian 13 on the Raspberry Pis does
-  not ship this package, so enabling the role exposed the missing dependency.
+Add a “Codex Review Protocol” section to `AGENTS.md` so every agent knows how automated Codex reviews behave (👀/👍
+signals, inline replies, re-review triggers, and CLI verification commands).
 
 ## Steps
 
-1. Adjust `ansible/group_vars/pis.yml` to drop `libraspberrypi-bin` (and document why) so the firmware role only installs packages that exist in Debian’s repos (`rpi-eeprom` and `raspi-config`).
-2. Teach the firmware role to detect whether `vcgencmd` exists and skip the bootloader-version
-   capture tasks (with a helpful debug message) when it does not, so dropping `libraspberrypi-bin`
-   no longer causes later failures.
-3. Leave `firmware_upgrade_enabled: true` so the next GitHub Actions run re-attempts the staged firmware rollout across dwight → jim → michael.
-4. Update `TASKS.md` to reflect the follow-up task/PR for fixing the package set so bookkeeping stays accurate under AXP.
-5. Once GitHub Actions completes successfully, verify `rpi-eeprom-update` output (captured in CI logs) shows “BOOTLOADER: up to date” for all Pis, then move the task entry to `COMPLETED.md`.
-6. Before merging any PR, double-check that all Codex review comments have been answered inline and that Codex has issued the 👍 reaction on the PR description.
+1. Summarize the Codex workflow (auto reviews, emoji status, thumbs-up merge gate) to set the context.
+2. Capture the operational guardrails learned from the last four PRs: always reply inline, only request re-review
+   after addressing every thread, resolve each thread, and validate Codex suggestions before implementation.
+3. Document the exact `gh` CLI/GraphQL commands required to monitor reviewer state (`gh pr view … --comments`, `--json reviews`, reviewThreads query, timeline comments).
+4. Re-read the new section to ensure it references all four failure modes (unresolved P0/P1, duplicate review
+   requests, contradictory guidance, missing resolution checks) and that instructions are explicit.
 
 ## Validation
 
-- `ansible-playbook --private-key … -i ansible/hosts.ini playbooks/pis.yml --tags firmware_upgrade --limit pis --check` (run by Actions) succeeds without missing-package errors.
-- Post-run `rpi-eeprom-update` output in workflow logs shows the latest bootloader versions for michael, jim, and dwight.
+- `rg "Codex Review Protocol" AGENTS.md` returns the new heading.
+- `gh api graphql … reviewThreads` commands described in the doc match working examples tested during this change.

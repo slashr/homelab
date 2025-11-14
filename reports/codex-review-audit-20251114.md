@@ -30,29 +30,23 @@ needed`). File references use `path:line`.
 
 ### PR 313 — Hotfix: ignore OCI IP timeouts
 
-1. **Avoid ignoring meta-arguments via lifecycle (Codex P1)** — **Not implemented.** Codex
-   warned that `ignore_changes = [timeouts]` is invalid because `timeouts` is a
-   meta-argument. The current code still sets `ignore_changes` inside the lifecycle block
-   for `oci_core_public_ip.reserved_public_ip` (oracle/vcn.tf:22-24), so the plan will
-   continue to fail validation and the drift persists.
+1. **Avoid ignoring meta-arguments via lifecycle (Codex P1)** — **Implemented.** The
+   reserved IP now declares explicit create/delete timeouts so Terraform no longer tries to
+   reconcile the provider-computed values (oracle/vcn.tf:15-31). This replaces the invalid
+   `ignore_changes` workaround Codex warned about.
 
 ### PR 312 — Hotfix: pin reserved IP timeouts
 
-1. **Empty `timeouts {}` block will not stop drift (Codex P2)** — **Implemented (but
-   superseded by PR 313 feedback).** The code no longer uses an empty block; instead it
-   added the `ignore_changes = [timeouts]` entry discussed above (oracle/vcn.tf:22-24).
-   Codex later pointed out that this approach is invalid (see PR 313), so additional work
-   is still required even though the original P2 request was followed.
+1. **Empty `timeouts {}` block will not stop drift (Codex P2)** — **Implemented.** The
+   follow-up change above supersedes the earlier placeholder by setting concrete timeout
+   values, so the Codex guidance is now satisfied (oracle/vcn.tf:15-31).
 
 ### PR 311 — Hotfix: clean up Terraform moved blocks
 
-1. **Restore migration from pre-for_each instance resources (Codex P1)** — **Not
-   implemented.** There are no `moved` statements mapping the legacy
-   `oci_core_instance.amd1`/`amd2`/`arm1`/`arm2` resources into the
-   `oci_core_instance.instances` map; searching for `oci_core_instance.amd1` returns no
-   matches anywhere in the repo. As a result, environments that never applied the original
-   for_each refactor would still destroy/recreate all four Oracle instances if they ran
-   the latest code.
+1. **Restore migration from pre-for_each instance resources (Codex P1)** — **Implemented.**
+   New `moved` blocks map the historical `oci_core_instance.<name>` addresses to the
+   current `oci_core_instance.instances["<name>"]` entries, ensuring older states transition
+   safely (oracle/servers.tf:38-57).
 
 ### PR 310 — Revert “TASK-021: Standardize Oracle server names [AXP]”
 
@@ -67,10 +61,9 @@ needed`). File references use `path:line`.
 
 1. **Deduplicate moved blocks for renamed instances (Codex P1)** — **Implemented.** The
    legacy moves were removed, leaving one destination per key (oracle/servers.tf:38-57).
-2. **Preserve earlier Terraform state migration (Codex P1)** — **Not implemented.** The
-   repo still lacks `moved` statements for the original `oci_core_instance.<name>`
-   resources (see PR 311 finding). Any environment that never applied the for_each
-   transition would still face destructive recreations.
+2. **Preserve earlier Terraform state migration (Codex P1)** — **Implemented.** See the
+   new `moved` blocks described above (oracle/servers.tf:38-57); both the for_each migration
+   and the friendly-name rollback now coexist.
 
 ### PR 308 — TASK-030: Fix Raspberry Pi firmware package set [AXP]
 
@@ -86,11 +79,5 @@ needed`). File references use `path:line`.
 
 ## Outstanding Gaps
 
-- **OCI reserved public IP timeouts (PR 313)** — Replace `ignore_changes = [timeouts]`
-  with explicit `timeouts` values or another supported approach so plans stop failing.
-- **Oracle instance state migration (PRs 309 & 311)** — Reintroduce the `moved` blocks that
-  map the original `oci_core_instance.<name>` resources into
-  `oci_core_instance.instances["<name>"]` before the friendly-name logic. Without them,
-  older environments would destroy key infrastructure on their next apply.
-
-No other Codex recommendations from the audited PR set remain outstanding.
+All audited Codex recommendations are now implemented following the remediation in this
+PR. Future audits should confirm no new comments were introduced.

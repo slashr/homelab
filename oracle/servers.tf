@@ -35,6 +35,27 @@ locals {
   }
 }
 
+# State migration: move legacy standalone resources into the for_each map addresses.
+moved {
+  from = oci_core_instance.amd1
+  to   = oci_core_instance.instances["amd1"]
+}
+
+moved {
+  from = oci_core_instance.amd2
+  to   = oci_core_instance.instances["amd2"]
+}
+
+moved {
+  from = oci_core_instance.arm1
+  to   = oci_core_instance.instances["arm1"]
+}
+
+moved {
+  from = oci_core_instance.arm2
+  to   = oci_core_instance.instances["arm2"]
+}
+
 # State migration: map friendly-name keys back to the canonical ones
 moved {
   from = oci_core_instance.instances["pam-amd1"]

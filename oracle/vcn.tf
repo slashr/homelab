@@ -21,7 +21,12 @@ resource "oci_core_public_ip" "reserved_public_ip" {
   private_ip_id = data.oci_core_private_ips.wireguard_private_ip.private_ips[0]["id"]
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [timeouts]
+  }
+
+  # Set explicit timeouts so Terraform stops detecting drift on the provider-computed values.
+  timeouts {
+    create = "10m"
+    delete = "10m"
   }
 }
 

@@ -12,7 +12,7 @@ debian_upgrade_reboot_timeout: 600
 debian_upgrade_sources_backup: true
 
 # Firmware management (set enabled=true when applying EEPROM/VL805 updates)
-firmware_upgrade_enabled: false
+firmware_upgrade_enabled: true
 firmware_upgrade_reboot_timeout: 600
 firmware_upgrade_packages:
   - rpi-eeprom

@@ -43,10 +43,12 @@ needed`). File references use `path:line`.
 
 ### PR 311 — Hotfix: clean up Terraform moved blocks
 
-1. **Restore migration from pre-for_each instance resources (Codex P1)** — **Implemented.**
-   New `moved` blocks map the historical `oci_core_instance.<name>` addresses to the
-   current `oci_core_instance.instances["<name>"]` entries, ensuring older states transition
-   safely (oracle/servers.tf:38-57).
+1. **Restore migration from pre-for_each instance resources (Codex P1)** — **Partially
+   addressed.** Terraform does not allow multiple `moved` statements to target the same
+   destination, so we preserved the automatic move for the more recent friendly-name
+   rollback and documented manual `terraform state mv …` commands for anyone still on the
+   pre-for_each resources (`docs/ORACLE_STATE_MIGRATION.md`). This avoids destructive plans
+   without breaking Terraform validation.
 
 ### PR 310 — Revert “TASK-021: Standardize Oracle server names [AXP]”
 
@@ -61,9 +63,10 @@ needed`). File references use `path:line`.
 
 1. **Deduplicate moved blocks for renamed instances (Codex P1)** — **Implemented.** The
    legacy moves were removed, leaving one destination per key (oracle/servers.tf:38-57).
-2. **Preserve earlier Terraform state migration (Codex P1)** — **Implemented.** See the
-   new `moved` blocks described above (oracle/servers.tf:38-57); both the for_each migration
-   and the friendly-name rollback now coexist.
+2. **Preserve earlier Terraform state migration (Codex P1)** — **Partially addressed.** See
+   the manual migration steps documented in `docs/ORACLE_STATE_MIGRATION.md`; Terraform can’t
+   model both historical addresses at once without failing validation, so operators must run
+   the state-move commands once on extremely old deployments.
 
 ### PR 308 — TASK-030: Fix Raspberry Pi firmware package set [AXP]
 
@@ -79,5 +82,7 @@ needed`). File references use `path:line`.
 
 ## Outstanding Gaps
 
-All audited Codex recommendations are now implemented following the remediation in this
-PR. Future audits should confirm no new comments were introduced.
+- All audited Codex recommendations related to code/configuration are implemented.
+- Pre-for_each Oracle states require a one-time manual migration detailed in
+  `docs/ORACLE_STATE_MIGRATION.md` because Terraform forbids automatically mapping multiple
+  historical addresses to the same destination.

@@ -1,28 +1,27 @@
-# PLAN: Standardize Oracle Server Naming (PR #21)
+# PLAN: Update Raspberry Pi Firmware (Nov 2025)
 
 ## Objective
 
-Align the Oracle Terraform stack with the hostnames already used by Ansible/k3s
-(`pam-amd1`, `angela-amd2`, `stanley-arm1`, `phyllis-arm2`) so every tool refers to
-the same names and Terraform keeps existing instances without reprovisioning.
+Bring michael-pi, jim-pi, and dwight-pi bootloader firmware up to the latest releases using the existing `firmware_upgrade` Ansible role.
+
+## Status
+
+- 2025-11-14 11:06 UTC: Main-branch Actions run `19362491035` failed in the `Ansible Pis`
+  job because APT could not find `libraspberrypi-bin` while executing
+  `ansible/roles/firmware_upgrade/tasks/main.yml`. Debian 13 on the Raspberry Pis does
+  not ship this package, so enabling the role exposed the missing dependency.
 
 ## Steps
 
-1. Update `oracle/servers.tf`:
-   - Rename each `local.instances` key from `amd1/amd2/arm1/arm2` to the friendly names.
-   - Update the existing `moved` blocks so any lingering single-resource state maps to
-     the new keys, and add new `moved` blocks to remap current `instances["amd1"]`
-     addresses to their renamed counterparts.
-   - Ensure comments and any helper locals reference the new identifiers.
-2. Adjust downstream references:
-   - Update `oracle/vcn.tf` (and any other Terraform files) to read the renamed keys.
-   - Refresh README or docs that still describe the old names so the narrative matches
-     the infrastructure.
-3. Run `terraform fmt oracle/servers.tf oracle/vcn.tf` to keep formatting tidy.
+1. Adjust `ansible/group_vars/pis.yml` to drop `libraspberrypi-bin` (and document why) so the firmware role only installs packages that exist in Debian’s repos (`rpi-eeprom` and `raspi-config`).
+2. Teach the firmware role to detect whether `vcgencmd` exists and skip the bootloader-version
+   capture tasks (with a helpful debug message) when it does not, so dropping `libraspberrypi-bin`
+   no longer causes later failures.
+3. Leave `firmware_upgrade_enabled: true` so the next GitHub Actions run re-attempts the staged firmware rollout across dwight → jim → michael.
+4. Update `TASKS.md` to reflect the follow-up task/PR for fixing the package set so bookkeeping stays accurate under AXP.
+5. Once GitHub Actions completes successfully, verify `rpi-eeprom-update` output (captured in CI logs) shows “BOOTLOADER: up to date” for all Pis, then move the task entry to `COMPLETED.md`.
 
 ## Validation
 
-- `terraform fmt` reports no diffs.
-- (Best-effort) `terraform plan` would show only name updates with zero destroys; we
-  cannot run it locally without OCI credentials, so note this limitation in the PR and
-  rely on CI/Terraform Cloud for confirmation.
+- `ansible-playbook --private-key … -i ansible/hosts.ini playbooks/pis.yml --tags firmware_upgrade --limit pis --check` (run by Actions) succeeds without missing-package errors.
+- Post-run `rpi-eeprom-update` output in workflow logs shows the latest bootloader versions for michael, jim, and dwight.

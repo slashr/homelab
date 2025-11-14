@@ -91,6 +91,7 @@ All planned PRs are listed below in logical execution order.
 - [ ] **PR #30: Fix Raspberry Pi firmware package set** 🛠️ _(IN PROGRESS)_
   - **Priority:** High | **Effort:** Low (15 minutes)
   - Remove `libraspberrypi-bin` from `firmware_upgrade_packages` because Debian 13 repositories do not provide it (Actions run `19362491035` failed on dwight-pi).
+  - Guard the `vcgencmd bootloader_version` steps so the firmware role keeps working even when that binary is absent (log fallback guidance for operators).
   - Keep `firmware_upgrade_enabled: true` so the next GitHub Actions run re-attempts the staged firmware rollout without manual intervention.
   - **Test:** GitHub Actions
     `ansible-playbook --check ansible/playbooks/pis.yml --limit pis --tags firmware_upgrade`

@@ -16,11 +16,30 @@
       become: true
       tags: [firmware_upgrade, packages]
 
+    - name: Locate vcgencmd binary
+      ansible.builtin.stat:
+        path: "{{ firmware_vcgencmd_path | default('/usr/bin/vcgencmd') }}"
+      register: firmware_vcgencmd_stat
+      tags: [firmware_upgrade]
+
+    - name: Record vcgencmd availability
+      ansible.builtin.set_fact:
+        firmware_vcgencmd_available: "{{ firmware_vcgencmd_stat.stat.exists | bool }}"
+        firmware_vcgencmd_command: "{{ firmware_vcgencmd_path | default('/usr/bin/vcgencmd') }}"
+      tags: [firmware_upgrade]
+
+    - name: Note missing vcgencmd binary
+      ansible.builtin.debug:
+        msg: "vcgencmd not found; skipping bootloader version capture."
+      when: not firmware_vcgencmd_available
+      tags: [firmware_upgrade]
+
     - name: Capture current bootloader version
-      ansible.builtin.command: vcgencmd bootloader_version
+      ansible.builtin.command: "{{ firmware_vcgencmd_command }} bootloader_version"
       register: firmware_bootloader_before
       changed_when: false
       failed_when: firmware_bootloader_before.rc != 0
+      when: firmware_vcgencmd_available
       tags: [firmware_upgrade]
 
     - name: Check firmware status
@@ -59,11 +78,13 @@
       tags: [firmware_upgrade]
 
     - name: Capture bootloader version after upgrade
-      ansible.builtin.command: vcgencmd bootloader_version
+      ansible.builtin.command: "{{ firmware_vcgencmd_command }} bootloader_version"
       register: firmware_bootloader_after
       changed_when: false
       failed_when: firmware_bootloader_after.rc != 0
-      when: firmware_update_required
+      when:
+        - firmware_update_required
+        - firmware_vcgencmd_available
       tags: [firmware_upgrade]
 
     - name: Report bootloader change
@@ -71,7 +92,18 @@
         msg:
           - "Previous bootloader:\n{{ firmware_bootloader_before.stdout }}"
           - "Current bootloader:\n{{ firmware_bootloader_after.stdout | default(firmware_bootloader_before.stdout) }}"
-      when: firmware_update_required
+      when:
+        - firmware_update_required
+        - firmware_vcgencmd_available
+      tags: [firmware_upgrade]
+
+    - name: Report firmware result without vcgencmd
+      ansible.builtin.debug:
+        msg:
+          - "vcgencmd unavailable on this host; inspect rpi-eeprom-update output for bootloader details."
+      when:
+        - firmware_update_required
+        - not firmware_vcgencmd_available
       tags: [firmware_upgrade]
 
     - name: No firmware update required

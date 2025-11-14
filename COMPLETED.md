@@ -125,6 +125,15 @@ This document tracks all completed PRs and their implementation details for hist
   - michael-pi: ✅ cgroup parameters active (Pi 5, uses `/boot/firmware/cmdline.txt`)
 - cgroup2 filesystem properly mounted on all nodes
 
+### ✅ PR #29: Enable Raspberry Pi firmware upgrade via Ansible
+
+**Completed:** November 2025  
+**Branch:** `task-030-pi-firmware-upgrade`
+
+- Turned on the `firmware_upgrade` role by setting `firmware_upgrade_enabled: true` in `ansible/group_vars/pis.yml` so CI/CD can manage EEPROM/VL805 updates.
+- Documented the rollout intent and validation steps in `PLAN.md` (Nov 2025 firmware refresh).
+- Added a Raspberry Pi Maintenance section to `TASKS.md` to track future firmware or hardware upkeep under AXP.
+
 ---
 
 ## Security Hardening - Raspberry Pis

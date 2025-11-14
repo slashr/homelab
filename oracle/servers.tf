@@ -35,27 +35,6 @@ locals {
   }
 }
 
-# State migration: map old individual resources to new for_each structure
-moved {
-  from = oci_core_instance.amd1
-  to   = oci_core_instance.instances["pam-amd1"]
-}
-
-moved {
-  from = oci_core_instance.amd2
-  to   = oci_core_instance.instances["angela-amd2"]
-}
-
-moved {
-  from = oci_core_instance.arm1
-  to   = oci_core_instance.instances["stanley-arm1"]
-}
-
-moved {
-  from = oci_core_instance.arm2
-  to   = oci_core_instance.instances["phyllis-arm2"]
-}
-
 # State migration: map previous for_each keys to the new friendly names
 moved {
   from = oci_core_instance.instances["amd1"]

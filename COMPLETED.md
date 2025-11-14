@@ -234,19 +234,6 @@ This document tracks all completed PRs and their implementation details for hist
 
 ---
 
-## Oracle Infrastructure
-
-### ✅ PR #21: Standardize Oracle server naming convention
-
-**Completed:** November 2025  
-**Branch:** `task-032-standardize-oracle-names`
-
-- Renamed the Terraform `local.instances` keys to `pam-amd1`, `angela-amd2`, `stanley-arm1`, and `phyllis-arm2` so resource display names and hostnames match the Ansible inventory/k3s labels.
-- Added `moved` blocks that map the previous `instances["amd*"/"arm*"]` addresses to the new ones, ensuring Terraform keeps the existing OCI instances instead of recreating them.
-- Updated `oracle/vcn.tf` and the README to reference the friendly hostnames everywhere.
-
----
-
 ## Ansible Performance Optimization
 
 ### ✅ PR #18: Skip VPN playbook execution on pull requests

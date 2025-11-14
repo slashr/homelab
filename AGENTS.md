@@ -1,4 +1,5 @@
 # AXP - Autonomous Execution Protocol
+<!-- markdownlint-disable MD013 MD025 -->
 
 When AXP is mentioned in the task, either by the user or in TASKS.md, you should work end‑to‑end without needing user input. At a high level the flow should be: pick task → plan → implement → PR → green checks → codex reviewer approval → merge → verify release → next task.
 
@@ -20,11 +21,13 @@ When AXP is mentioned in the task, either by the user or in TASKS.md, you should
 2. **Plan & branch:** Write a brief `PLAN.md`.
 3. **Implement:** Commit small, logical changes.
 4. **Open PR:**
+
    ```bash
    gh pr create --fill \
      --title "TASK-###: <short title> [AXP]" \
      --label axp
    ```
+
 5. **Watch checks (poll ~30s):**
 
    ```bash
@@ -33,26 +36,31 @@ When AXP is mentioned in the task, either by the user or in TASKS.md, you should
 
    * If a check fails, **fix → push → watch again**.
    If you pushed fixes after PR creation and after Codex reviewer had already given a thumbs up, then request a re-review from codex reviewer by commenting "@codex review again"
-   
+
 6. **Codex review:**
-   Codex starts a review automatically on PR creation. You will see that it adds eyes emoji to the PR description when it is revewing. 
-   The eyes emoji changes to a thumbs up emoji if review passes. If you see this then you are safe to merge. 
+   Codex starts a review automatically on PR creation. You will see that it adds eyes emoji to the PR description when it is revewing.
+   The eyes emoji changes to a thumbs up emoji if review passes. If you see this then you are safe to merge.
 
-   Otherwise, codex reviewer leaves a review comment as a reply to one of it's main comments. 
+   Otherwise, codex reviewer leaves a review comment as a reply to one of it's main comments.
 
-   You should address this review and leave a reply to that comment inline (not as a independent comment) mentioning whether you accept the review and fixed it or whether you think the review doesn't need to be fixed and skipped it. Reply directly on each individual review thread—never consolidate answers on a single thread—so the resolution for every comment is tracked exactly where it originated. 
+   You should address this review and leave a reply to that comment inline (not as a independent comment) mentioning whether you accept the review and fixed it or whether you think the review doesn't need to be fixed and skipped it. Reply directly on each individual review thread—never consolidate answers on a single thread—so the resolution for every comment is tracked exactly where it originated.
 
-   If you pushed a fix for the review, then add "@codex review again" at the end of the reply to make codex reviewer review the fresh commits again. 
-   
+   Do not request "@codex review" again while a review is still pending; only ask after you have addressed every thread and pushed the fixes. Always wait for the 👍 reaction on the PR description before merging.
+
+   If you pushed a fix for the review, then add "@codex review again" at the end of the reply to make codex reviewer review the fresh commits again.
+
    Once the checks are green and Codex has given you the 👍, move the corresponding entry out of `TASKS.md` and into `COMPLETED.md` before merging. This bookkeeping push is exempt from the usual “rerun checks/re-request review” requirement—push it right before merging without waiting for another cycle, but do not include any other changes in that commit.
-   
+
 7. **Merge:**
    If PR checks are green and codex has given a approval and all review comments (if any) are addressed, it can be merged
+
    ```bash
    gh pr merge --merge --delete-branch
    ```
+
 8. **Post‑merge release:**
    After merging the PR, watch the Release workflow until it passes. Capture the latest run ID and follow it with a relaxed interval to avoid busy-waiting:
+
    ```bash
    gh run list --workflow "Release" --limit 1 --json databaseId,status
    gh run watch <run-id> --interval 30 --exit-status
@@ -85,6 +93,7 @@ If blocking: open an issue `AXP: Escalation — TASK-###` with a short summary a
 1. grab a task → 2) analyze/plan → 3) `gh pr create` → 4) watch checks → 5) watch Codex → 6) merge → 7) next task.
 
 ---
+
 ### Command Safety Rules
 
 Never execute commands that can cause irreversible or destructive changes to systems, repositories, or infrastructure.
@@ -93,6 +102,7 @@ Before running any shell command, you should scan the command string and compare
 Banned Commands (Hard Stop)
 
 If any of these exact commands or dangerous variants appear (even with flags or parameters), immediately abort execution and log an entry in .axp/TRACE.md.
+
 | Category                 | Command / Pattern                                                                                                        | Reason                                              |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
 | **System Destruction**   | `rm -rf /`, `sudo rm -rf /`, `rm -rf *`, `rm -rf .*`, `rm --no-preserve-root`                                            | Irrecoverable file deletion                         |
@@ -113,24 +123,24 @@ This repository codifies a hybrid homelab that spans Oracle Cloud, Google Cloud,
 
 ## Repository Layout
 
-- `ansible/` — Playbooks for VPN and k3s lifecycle management, inventory files, and encrypted configuration snippets. Vault-managed files under `ansible/confs/` must be decrypted before editing and re-encrypted afterward.
-- `oracle/` — Terraform stack that stands up Oracle Cloud networking and compute. Relies on sensitive tenancy credentials and provisions both the network (VCN, security lists, reserved IP) and worker nodes.
-- `gcp/` — Terraform configuration for a small GCP worker VM with customizable SSH metadata.
-- `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, external-dns, Argo CD) via the shared Helm modules in `terraform-modules/`. Requires base64-encoded kubeconfig material and Cloudflare secrets.
-- `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, external-dns, Argo CD, ingress-nginx, MetalLB). Each module manages its own namespace and supporting secrets.
-- `.github/workflows/` — CI/CD workflows for infrastructure deployment (`actions.yml`) and security scanning (`security.yml`).
-- `.github/actions/` — Reusable composite actions for common workflow tasks (SSH setup, pre-commit).
-- `archive/` — Legacy assets kept for reference; do not assume they are current.
+* `ansible/` — Playbooks for VPN and k3s lifecycle management, inventory files, and encrypted configuration snippets. Vault-managed files under `ansible/confs/` must be decrypted before editing and re-encrypted afterward.
+* `oracle/` — Terraform stack that stands up Oracle Cloud networking and compute. Relies on sensitive tenancy credentials and provisions both the network (VCN, security lists, reserved IP) and worker nodes.
+* `gcp/` — Terraform configuration for a small GCP worker VM with customizable SSH metadata.
+* `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, external-dns, Argo CD) via the shared Helm modules in `terraform-modules/`. Requires base64-encoded kubeconfig material and Cloudflare secrets.
+* `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, external-dns, Argo CD, ingress-nginx, MetalLB). Each module manages its own namespace and supporting secrets.
+* `.github/workflows/` — CI/CD workflows for infrastructure deployment (`actions.yml`) and security scanning (`security.yml`).
+* `.github/actions/` — Reusable composite actions for common workflow tasks (SSH setup, pre-commit).
+* `archive/` — Legacy assets kept for reference; do not assume they are current.
 
 ## Git Ignore Patterns
 
 The `.gitignore` prevents sensitive and generated files from being committed:
 
-- `*.tfstate*` — Terraform state files (managed remotely in Terraform Cloud)
-- `*.tfvars` — Variable files that may contain secrets
-- `*.pem` — Private key files
-- `.terraform/` — Terraform provider caches
-- `.terraformrc` / `terraform.rc` — Local Terraform configuration
+* `*.tfstate*` — Terraform state files (managed remotely in Terraform Cloud)
+* `*.tfvars` — Variable files that may contain secrets
+* `*.pem` — Private key files
+* `.terraform/` — Terraform provider caches
+* `.terraformrc` / `terraform.rc` — Local Terraform configuration
 
 ## GitHub Actions Workflows
 
@@ -147,13 +157,13 @@ The primary deployment workflow orchestrates infrastructure provisioning and con
 
 **Key Features:**
 
-- Concurrency control prevents conflicting deployments (`cancel-in-progress: false`)
-- Comprehensive caching for Terraform plugins, pip packages, pre-commit hooks, and Ansible collections
-- Terraform Cloud integration for remote state management (workspace tags: `oracle`, `gcp`, `dev`)
-- Pre-commit hooks run only on changed files in PRs for efficiency
-- 30-45 minute timeouts prevent hanging jobs
-- Drift detection on `main` branch post-apply
-- Step summaries provide deployment status visibility
+* Concurrency control prevents conflicting deployments (`cancel-in-progress: false`)
+* Comprehensive caching for Terraform plugins, pip packages, pre-commit hooks, and Ansible collections
+* Terraform Cloud integration for remote state management (workspace tags: `oracle`, `gcp`, `dev`)
+* Pre-commit hooks run only on changed files in PRs for efficiency
+* 30-45 minute timeouts prevent hanging jobs
+* Drift detection on `main` branch post-apply
+* Step summaries provide deployment status visibility
 
 ### Security Scanning Workflow (`security.yml`)
 
@@ -167,12 +177,12 @@ Automated security scanning runs on merge to `main`, daily at 2 AM UTC, and on m
 
 **Scanning Strategy:**
 
-- **Main only:** Scans run after merge to main, not on PRs (faster PR feedback, reduced costs)
-- **Comprehensive:** Full history scans with complete vulnerability and secret detection
-- **Scheduled:** Daily scans at 2 AM UTC catch new vulnerabilities in dependencies
-- **Manual:** Workflow dispatch available for ad-hoc security checks
-- **Verified only:** TruffleHog reports only verified secrets to reduce noise
-- **SARIF uploads:** Results visible in GitHub Security tab for tracking
+* **Main only:** Scans run after merge to main, not on PRs (faster PR feedback, reduced costs)
+* **Comprehensive:** Full history scans with complete vulnerability and secret detection
+* **Scheduled:** Daily scans at 2 AM UTC catch new vulnerabilities in dependencies
+* **Manual:** Workflow dispatch available for ad-hoc security checks
+* **Verified only:** TruffleHog reports only verified secrets to reduce noise
+* **SARIF uploads:** Results visible in GitHub Security tab for tracking
 
 ## Composite Actions
 
@@ -186,8 +196,8 @@ Configures SSH authentication with private key and disables strict host checking
 
 **Inputs:**
 
-- `ssh_private_key` (required) — SSH private key for server authentication
-- `ansible_vault_password` (optional) — Vault password for decrypting encrypted Ansible files
+* `ssh_private_key` (required) — SSH private key for server authentication
+* `ansible_vault_password` (optional) — Vault password for decrypting encrypted Ansible files
 
 ## Secrets and Environment Requirements
 
@@ -195,41 +205,41 @@ Configures SSH authentication with private key and disables strict host checking
 
 **Terraform Cloud:**
 
-- `TF_API_TOKEN` — Terraform Cloud API token for workspace management
+* `TF_API_TOKEN` — Terraform Cloud API token for workspace management
 
 **Oracle Cloud Infrastructure:**
 
-- `TF_USER_OCID` — Oracle user OCID
-- `TF_TENANCY_OCID` — Oracle tenancy OCID
-- `TF_OCI_PRIVATE_KEY` — Oracle API private key (PEM format)
-- `TF_FINGERPRINT` — Oracle API key fingerprint
-- `TF_COMPARTMENT_ID` — Oracle compartment ID
-- `TF_SSH_AUTHORIZED_KEYS` — Public SSH keys for instance access
+* `TF_USER_OCID` — Oracle user OCID
+* `TF_TENANCY_OCID` — Oracle tenancy OCID
+* `TF_OCI_PRIVATE_KEY` — Oracle API private key (PEM format)
+* `TF_FINGERPRINT` — Oracle API key fingerprint
+* `TF_COMPARTMENT_ID` — Oracle compartment ID
+* `TF_SSH_AUTHORIZED_KEYS` — Public SSH keys for instance access
 
 **Google Cloud Platform:**
 
-- `GCP_CREDENTIALS` — GCP service account credentials (JSON format)
+* `GCP_CREDENTIALS` — GCP service account credentials (JSON format)
 
 **Kubernetes:**
 
-- `TF_KUBE_CLIENT_CERT` — Base64-encoded kubeconfig client certificate
-- `TF_KUBE_CLIENT_KEY` — Base64-encoded kubeconfig client key
-- `TF_KUBE_CLUSTER_CA_CERT` — Base64-encoded kubeconfig cluster CA certificate
+* `TF_KUBE_CLIENT_CERT` — Base64-encoded kubeconfig client certificate
+* `TF_KUBE_CLIENT_KEY` — Base64-encoded kubeconfig client key
+* `TF_KUBE_CLUSTER_CA_CERT` — Base64-encoded kubeconfig cluster CA certificate
 
 **Cloudflare:**
 
-- `TF_CLOUDFLARE_API_TOKEN` — API token with DNS permissions for cert-manager and external-dns
+* `TF_CLOUDFLARE_API_TOKEN` — API token with DNS permissions for cert-manager and external-dns
 
 **Tailscale VPN:**
 
-- `TAILSCALE_CLIENT_ID` — OAuth client ID for GitHub Actions runner
-- `TAILSCALE_CLIENT_SECRET` — OAuth client secret for GitHub Actions runner
-- `TAILSCALE_JOIN_KEY` — Auth key for node registration (used by Ansible)
+* `TAILSCALE_CLIENT_ID` — OAuth client ID for GitHub Actions runner
+* `TAILSCALE_CLIENT_SECRET` — OAuth client secret for GitHub Actions runner
+* `TAILSCALE_JOIN_KEY` — Auth key for node registration (used by Ansible)
 
 **Ansible:**
 
-- `SSH_AUTH_PRIVATE_KEY` — SSH private key for accessing all managed nodes
-- `ANSIBLE_VAULT_PASSWORD` — Password for decrypting vault-encrypted configuration files
+* `SSH_AUTH_PRIVATE_KEY` — SSH private key for accessing all managed nodes
+* `ANSIBLE_VAULT_PASSWORD` — Password for decrypting vault-encrypted configuration files
 
 ### Terraform Cloud Workspaces
 
@@ -237,8 +247,8 @@ Terraform stacks depend on Terraform Cloud workspaces keyed off tags (`oracle`, 
 
 ### Environment Variables
 
-- `TAILSCALE_JOIN_KEY` — Required by Ansible playbooks for k3s VPN integration
-- `GOOGLE_CREDENTIALS` — Set in workflow environment for GCP provider authentication
+* `TAILSCALE_JOIN_KEY` — Required by Ansible playbooks for k3s VPN integration
+* `GOOGLE_CREDENTIALS` — Set in workflow environment for GCP provider authentication
 
 ## Ansible Configuration
 
@@ -246,12 +256,12 @@ Terraform stacks depend on Terraform Cloud workspaces keyed off tags (`oracle`, 
 
 The `ansible/hosts.ini` defines host groups:
 
-- `vpn` — Oracle VPN gateway (pam-amd1)
-- `pi_workers` — Raspberry Pi worker nodes (jim-pi, dwight-pi)
-- `oracle_workers` — Oracle worker nodes (pam-amd2, pam-arm1, pam-arm2)
-- `gcp_workers` — GCP worker nodes
-- `pihole_worker` — Pi-hole DNS server (dwight-pi)
-- `michael-pi` — k3s master node
+* `vpn` — Oracle VPN gateway (pam-amd1)
+* `pi_workers` — Raspberry Pi worker nodes (jim-pi, dwight-pi)
+* `oracle_workers` — Oracle worker nodes (pam-amd2, pam-arm1, pam-arm2)
+* `gcp_workers` — GCP worker nodes
+* `pihole_worker` — Pi-hole DNS server (dwight-pi)
+* `michael-pi` — k3s master node
 
 Variables are managed in `ansible/group_vars/all.yml` and define cluster-wide settings like k3s version and master node details.
 
@@ -302,19 +312,19 @@ Kubernetes providers connect to the k3s master at `130.61.64.164:6443` (Oracle r
 
 ### Add-on Modules
 
-- **cert-manager** — Automates TLS certificate provisioning with Let's Encrypt
-- **external-dns** — Syncs Kubernetes services/ingresses to Cloudflare DNS
-- **argo-cd** — GitOps continuous delivery with app-of-apps pattern
-- **ingress-nginx** — HTTP(S) ingress controller (optional, Traefik used by default)
-- **metallb** — Bare-metal load balancer (optional)
+* **cert-manager** — Automates TLS certificate provisioning with Let's Encrypt
+* **external-dns** — Syncs Kubernetes services/ingresses to Cloudflare DNS
+* **argo-cd** — GitOps continuous delivery with app-of-apps pattern
+* **ingress-nginx** — HTTP(S) ingress controller (optional, Traefik used by default)
+* **metallb** — Bare-metal load balancer (optional)
 
 ## Coding & Style Guidelines
 
-- Follow the prevailing formatting: two-space indentation for YAML and Terraform HCL, and keep resources declarative.
-- When adding Kubernetes manifests through Terraform, prefer `templatefile`/`yamldecode` patterns already in use.
-- Keep inventory and variable files organized by host groups; reuse the existing group vars model when adding new inventory data.
-- Modules should be reusable: expose knobs via `variables.tf` and avoid hard-coded credentials or environment-specific values unless explicitly part of the architecture.
-- Use descriptive resource names and add comments for complex logic.
+* Follow the prevailing formatting: two-space indentation for YAML and Terraform HCL, and keep resources declarative.
+* When adding Kubernetes manifests through Terraform, prefer `templatefile`/`yamldecode` patterns already in use.
+* Keep inventory and variable files organized by host groups; reuse the existing group vars model when adding new inventory data.
+* Modules should be reusable: expose knobs via `variables.tf` and avoid hard-coded credentials or environment-specific values unless explicitly part of the architecture.
+* Use descriptive resource names and add comments for complex logic.
 
 ## Testing & Validation
 
@@ -322,10 +332,10 @@ Kubernetes providers connect to the k3s master at `130.61.64.164:6443` (Oracle r
 
 Run `pre-commit run --all-files` before committing to lint Terraform, Ansible, and YAML sources. Hooks are configured in `.pre-commit-config.yaml`:
 
-- `terraform_fmt` — Format Terraform files
-- `terraform_validate` — Validate Terraform configuration syntax
-- `ansible-lint` — Lint Ansible playbooks
-- `yamllint` — Lint YAML files (200 char line limit)
+* `terraform_fmt` — Format Terraform files
+* `terraform_validate` — Validate Terraform configuration syntax
+* `ansible-lint` — Lint Ansible playbooks
+* `yamllint` — Lint YAML files (200 char line limit)
 
 **Installation:**
 
@@ -348,12 +358,12 @@ For Ansible updates, validate playbooks with `ansible-lint` and (when possible) 
 
 Automated dependency updates are managed by Renovate (config: `renovate.json`). Dependencies are grouped by type:
 
-- Terraform Providers
-- Helm Charts
-- Ansible Collections
-- GitHub Actions
-- Python Dependencies
-- Pre-commit Hooks
+* Terraform Providers
+* Helm Charts
+* Ansible Collections
+* GitHub Actions
+* Python Dependencies
+* Pre-commit Hooks
 
 **Schedule:** Weekly on Mondays before 6 AM UTC  
 **Rate Limits:** 5 concurrent PRs, 2 PRs per hour  
@@ -377,17 +387,17 @@ Maintain the orchestrated deployment order: cert-manager → external-dns → Ar
 
 ### Workflow Debugging
 
-- Check job summaries in GitHub Actions for high-level status
-- Review step logs for detailed error messages
-- For Terraform issues, inspect plan files uploaded as artifacts (available for 5 days on PRs)
-- For drift detection, check the drift summary step on `main` branch runs
-- Security findings are visible in the GitHub Security tab (SARIF uploads)
+* Check job summaries in GitHub Actions for high-level status
+* Review step logs for detailed error messages
+* For Terraform issues, inspect plan files uploaded as artifacts (available for 5 days on PRs)
+* For drift detection, check the drift summary step on `main` branch runs
+* Security findings are visible in the GitHub Security tab (SARIF uploads)
 
 ### Branch Strategy
 
-- `main` — Production deployments (auto-applies Terraform)
-- `staging` — Test branch (skips most jobs to save resources)
-- Feature branches → PRs to `main` (plan-only, no apply)
+* `main` — Production deployments (auto-applies Terraform)
+* `staging` — Test branch (skips most jobs to save resources)
+* Feature branches → PRs to `main` (plan-only, no apply)
 
 ### Tailscale Integration
 
@@ -395,9 +405,9 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 
 **Manual Tailscale Tasks (not yet automated):**
 
-- Backup Access Control List including Pod IP auto-approve (`10.42.0.0/16`)
-- Custom node IP range (`100.100.0.0/16`)
-- Groups and tags definitions
+* Backup Access Control List including Pod IP auto-approve (`10.42.0.0/16`)
+* Custom node IP range (`100.100.0.0/16`)
+* Groups and tags definitions
 
 ## Network Architecture
 
@@ -405,55 +415,55 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 
 **Oracle Cloud VCN:**
 
-- CIDR Block: `10.0.0.0/16`
-- Reserved Public IP: `130.61.64.164` (pam-amd1 / VPN gateway)
+* CIDR Block: `10.0.0.0/16`
+* Reserved Public IP: `130.61.64.164` (pam-amd1 / VPN gateway)
 
 **Tailscale Mesh Network:**
 
-- Node IP Range: `100.100.0.0/16`
-- Pod IP Range (k3s): `10.42.0.0/16` (auto-approved in ACL)
+* Node IP Range: `100.100.0.0/16`
+* Pod IP Range (k3s): `10.42.0.0/16` (auto-approved in ACL)
 
 **Raspberry Pi Local Network:**
 
-- LAN Range: `192.168.1.0/24`
-- Tailscale Range: `172.20.60.0/24`
+* LAN Range: `192.168.1.0/24`
+* Tailscale Range: `172.20.60.0/24`
 
 **MetalLB Load Balancer:**
 
-- IP Pool: `198.168.60.11/30` (for exposing services)
+* IP Pool: `198.168.60.11/30` (for exposing services)
 
 ### Server Inventory
 
 **Raspberry Pis (On-Premises):**
 
-- `michael-pi` — k3s master node (Pi 5 8GB) — `192.168.1.100` / `100.100.1.100` (Tailscale)
-- `jim-pi` — k3s worker (Pi 5 8GB) — `192.168.1.101` / `100.100.1.101` (Tailscale)
-- `dwight-pi` — k3s worker + Pi-hole (Pi 4 8GB) — `192.168.1.102` / `100.100.1.102` (Tailscale)
+* `michael-pi` — k3s master node (Pi 5 8GB) — `192.168.1.100` / `100.100.1.100` (Tailscale)
+* `jim-pi` — k3s worker (Pi 5 8GB) — `192.168.1.101` / `100.100.1.101` (Tailscale)
+* `dwight-pi` — k3s worker + Pi-hole (Pi 4 8GB) — `192.168.1.102` / `100.100.1.102` (Tailscale)
 
 **Oracle Cloud (Free Tier):**
 
-- `pam-amd1` — VPN gateway (VM.Standard.E2.1.Micro: 1 CPU / 1GB RAM) — `130.61.64.164`
-- `angela-amd2` — k3s worker (VM.Standard.E2.1.Micro) — `130.61.63.188`
-- `stanley-arm1` — k3s worker (VM.Standard.A1.Flex: 1 OCPU / 6GB RAM) — `130.162.225.255`
-- `phyllis-arm2` — k3s worker (VM.Standard.A1.Flex) — `138.2.130.168`
+* `pam-amd1` — VPN gateway (VM.Standard.E2.1.Micro: 1 CPU / 1GB RAM) — `130.61.64.164`
+* `angela-amd2` — k3s worker (VM.Standard.E2.1.Micro) — `130.61.63.188`
+* `stanley-arm1` — k3s worker (VM.Standard.A1.Flex: 1 OCPU / 6GB RAM) — `130.162.225.255`
+* `phyllis-arm2` — k3s worker (VM.Standard.A1.Flex) — `138.2.130.168`
 
 **Oracle Free Tier Limits:**
 
-- 2 AMD Instances (VM.Standard.E2.1.Micro): 1 CPU / 1GB RAM / 50GB boot volume each
-- 4 ARM Instances (VM.Standard.A1.Flex): 1 OCPU / 6GB RAM / 50GB boot volume each
-- ARM instances are flexible shape and **not always free** — deleted after one-month trial
-- Reserved public IP has `prevent_destroy = true` lifecycle rule to avoid accidental deletion
+* 2 AMD Instances (VM.Standard.E2.1.Micro): 1 CPU / 1GB RAM / 50GB boot volume each
+* 4 ARM Instances (VM.Standard.A1.Flex): 1 OCPU / 6GB RAM / 50GB boot volume each
+* ARM instances are flexible shape and **not always free** — deleted after one-month trial
+* Reserved public IP has `prevent_destroy = true` lifecycle rule to avoid accidental deletion
 
 **Google Cloud Platform:**
 
-- `toby-gcp1` — k3s worker — `34.28.187.2`
+* `toby-gcp1` — k3s worker — `34.28.187.2`
 
 ### Networking Components
 
-- **Traefik** — Default k3s ingress controller and load balancer (replaces ingress-nginx + MetalLB for simplicity)
-- **Tailscale** — Mesh VPN for secure node-to-node and pod-to-pod communication across clouds
-- **WireGuard** — Legacy VPN (port 51820 exposed on Oracle VPN gateway, see archive)
-- **iptables** — NAT and forwarding rules on VPN gateway (managed by Ansible)
+* **Traefik** — Default k3s ingress controller and load balancer (replaces ingress-nginx + MetalLB for simplicity)
+* **Tailscale** — Mesh VPN for secure node-to-node and pod-to-pod communication across clouds
+* **WireGuard** — Legacy VPN (port 51820 exposed on Oracle VPN gateway, see archive)
+* **iptables** — NAT and forwarding rules on VPN gateway (managed by Ansible)
 
 ## Troubleshooting
 
@@ -461,44 +471,44 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 
 **Terraform apply fails:**
 
-- Verify all required secrets are set in Terraform Cloud workspace
-- Check workspace tags match provider configuration
-- Review cloud provider quotas/limits
+* Verify all required secrets are set in Terraform Cloud workspace
+* Check workspace tags match provider configuration
+* Review cloud provider quotas/limits
 
 **Ansible playbook fails:**
 
-- Ensure Tailscale is connected (run `tailscale status` on nodes)
-- Verify SSH keys are correct and have proper permissions
-- Check Ansible Vault password is correct
-- Confirm `TAILSCALE_JOIN_KEY` is set in environment
+* Ensure Tailscale is connected (run `tailscale status` on nodes)
+* Verify SSH keys are correct and have proper permissions
+* Check Ansible Vault password is correct
+* Confirm `TAILSCALE_JOIN_KEY` is set in environment
 
 **k3s nodes not joining:**
 
-- Check Tailscale connectivity between master and workers
-- Verify k3s master is fully initialized before running worker join
-- Review k3s-agent service logs: `journalctl -u k3s-agent -f`
+* Check Tailscale connectivity between master and workers
+* Verify k3s master is fully initialized before running worker join
+* Review k3s-agent service logs: `journalctl -u k3s-agent -f`
 
 **Security scans failing:**
 
-- Ensure full history is fetched (`fetch-depth: 0`)
-- TruffleHog errors: check `--only-verified` and `--debug` flags compatibility
-- Trivy cache issues: re-run workflow to fetch fresh data
-- SARIF upload failures: verify `security-events: write` permission is set
+* Ensure full history is fetched (`fetch-depth: 0`)
+* TruffleHog errors: check `--only-verified` and `--debug` flags compatibility
+* Trivy cache issues: re-run workflow to fetch fresh data
+* SARIF upload failures: verify `security-events: write` permission is set
 
 ### Support Resources
 
-- GitHub Actions logs and summaries
-- Terraform Cloud run history
-- Oracle/GCP/Cloudflare console for infrastructure state
-- Tailscale admin panel for VPN status
-- Bitwarden for secret recovery
+* GitHub Actions logs and summaries
+* Terraform Cloud run history
+* Oracle/GCP/Cloudflare console for infrastructure state
+* Tailscale admin panel for VPN status
+* Bitwarden for secret recovery
 
 ## Security Best Practices
 
-- **Never commit secrets** — Use GitHub Secrets and Terraform Cloud variables
-- **Rotate credentials regularly** — Update secrets in GitHub and Terraform Cloud
-- **Monitor security scan results** — Review SARIF uploads in GitHub Security tab
-- **Encrypt sensitive configs** — Always use Ansible Vault for firewall rules and keys
-- **Verify TLS certificates** — Let's Encrypt certs auto-renew via cert-manager
-- **Audit access logs** — Review who accessed infrastructure via Tailscale and cloud provider logs
-- **Keep dependencies updated** — Review and merge Renovate PRs weekly
+* **Never commit secrets** — Use GitHub Secrets and Terraform Cloud variables
+* **Rotate credentials regularly** — Update secrets in GitHub and Terraform Cloud
+* **Monitor security scan results** — Review SARIF uploads in GitHub Security tab
+* **Encrypt sensitive configs** — Always use Ansible Vault for firewall rules and keys
+* **Verify TLS certificates** — Let's Encrypt certs auto-renew via cert-manager
+* **Audit access logs** — Review who accessed infrastructure via Tailscale and cloud provider logs
+* **Keep dependencies updated** — Review and merge Renovate PRs weekly

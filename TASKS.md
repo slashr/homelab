@@ -38,6 +38,13 @@ All planned PRs are listed below in logical execution order.
 
 ### Infrastructure Refactoring
 
+- [ ] **PR #21: Standardize Oracle Server Naming Convention** 🏷️
+  - **Priority:** Medium | **Effort:** Low (1 hour)
+  - Update `oracle/servers.tf`: Rename `amd1/amd2/arm1/arm2` → `pam-amd1/angela-amd2/stanley-arm1/phyllis-arm2`
+  - Update `moved` blocks to preserve Terraform state
+  - Align with Ansible inventory and k3s labels (consistency across all tools)
+  - **Test:** `terraform plan` shows only renaming (no destroy/recreate)
+
 - [ ] **PR #22: Standardize UFW Variable Names Across Groups** 🔧
   - **Priority:** Low | **Effort:** Low (30 minutes)
   - Move common variables to `ansible/group_vars/all.yml`:

@@ -6,9 +6,9 @@ resource "oci_core_vcn" "vcn" {
   dns_label    = "vcn"
 }
 
-# Fetches the private IP of the VPN gateway OCI instance (pam-amd1)
+# Fetches the private IP of the VPN gateway OCI instance (amd1)
 data "oci_core_private_ips" "wireguard_private_ip" {
-  ip_address = oci_core_instance.instances["pam-amd1"].private_ip
+  ip_address = oci_core_instance.instances["amd1"].private_ip
   subnet_id  = oci_core_subnet.public_subnet.id
 }
 
@@ -91,3 +91,4 @@ resource "oci_core_subnet" "public_subnet" {
   dns_label         = "subnet"
   security_list_ids = [oci_core_vcn.vcn.default_security_list_id]
 }
+

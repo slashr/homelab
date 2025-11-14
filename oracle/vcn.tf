@@ -22,6 +22,9 @@ resource "oci_core_public_ip" "reserved_public_ip" {
   lifecycle {
     prevent_destroy = true
   }
+
+  # Explicit block to keep provider from toggling the computed timeouts attribute
+  timeouts {}
 }
 
 resource "oci_core_default_security_list" "default_security_list" {
@@ -91,4 +94,3 @@ resource "oci_core_subnet" "public_subnet" {
   dns_label         = "subnet"
   security_list_ids = [oci_core_vcn.vcn.default_security_list_id]
 }
-

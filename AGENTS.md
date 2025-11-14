@@ -101,10 +101,10 @@ Codex reviews start automatically as soon as a PR is opened. It reacts on the PR
 **Handling feedback without confusion:**
 
 1. Reply inline to the exact Codex comment (GitHub “Reply” or `gh pr review-comment`). Never use a new top-level comment to answer feedback.
-2. In that reply, summarize the fix and end with `@codex review again`. This documents the change and triggers the re-review once code is pushed.
+2. In that reply, summarize the fix. Hold the `@codex review again` mention until every thread is answered (see Step 5) so Codex isn’t spammed repeatedly.
 3. Before pinging Codex, check the PR description reaction (via the command above or the web UI); if 👀 is still present it means Codex is already reviewing—wait instead of posting another `@codex review`.
 4. Only ask for another review after *all* existing Codex threads have replies and the related commits are in the branch. Multiple `@codex review` pings while comments remain unresolved create duplicate boilerplate reviews.
-5. After replying, mark the thread resolved in the UI (or confirm via the GraphQL command). Do not merge while any thread reports `isResolved: false`, even if Codex later posts a generic “no issues” comment elsewhere.
+5. Once all threads have replies and the relevant commits are pushed, leave a final inline note on the last thread (or a short summary comment) that ends with `@codex review again`, then mark each thread resolved. Do not merge while any thread reports `isResolved: false`, even if Codex later posts a generic “no issues” comment elsewhere.
 
 **Validate Codex suggestions:**
 

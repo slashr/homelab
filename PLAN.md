@@ -28,6 +28,9 @@ quickly.
       ran `terraform init -backend=false` + `terraform validate` under `oracle/`.
 - [x] (2025-11-14 18:09Z) Updated the audit report to mark the previously outstanding
       Codex comments as implemented.
+- [x] (2025-11-14 18:45Z) Verified CI run `19373617018` failed in the Terraform Oracle job
+      because Terraform does not allow multiple `moved` statements targeting the same
+      destination; need to submit a follow-up fix.
 
 ## Surprises & Discoveries
 
@@ -56,7 +59,9 @@ quickly.
 - Decision: Restore the original `moved` blocks for `oci_core_instance.<name>` resources
   alongside the friendly-name rollback moves.
   Rationale: This lets any state—from standalone resources through friendly names—migrate
-  safely to the canonical for_each addresses without manual intervention.
+  safely to the canonical for_each addresses without manual intervention. (Failed in CI
+  because Terraform forbids multiple `moved` statements pointing at the same destination;
+  need to convert into chained moves.)
   Date/Author: 2025-11-14 / slashr
 
 ## Outcomes & Retrospective

@@ -8,10 +8,10 @@ environment still uses the pre-for_each resources (`oci_core_instance.amd1`, etc
 run the following `terraform state mv` commands once before applying the latest code:
 
 ```bash
-terraform state mv 'oci_core_instance.amd1'   'oci_core_instance.instances["amd1"]'
-terraform state mv 'oci_core_instance.amd2'   'oci_core_instance.instances["amd2"]'
-terraform state mv 'oci_core_instance.arm1'   'oci_core_instance.instances["arm1"]'
-terraform state mv 'oci_core_instance.arm2'   'oci_core_instance.instances["arm2"]'
+terraform state mv oci_core_instance.amd1   'oci_core_instance.instances["amd1"]'
+terraform state mv oci_core_instance.amd2   'oci_core_instance.instances["amd2"]'
+terraform state mv oci_core_instance.arm1   'oci_core_instance.instances["arm1"]'
+terraform state mv oci_core_instance.arm2   'oci_core_instance.instances["arm2"]'
 ```
 
 After migrating the state, run `terraform plan` to verify that Terraform no longer proposes

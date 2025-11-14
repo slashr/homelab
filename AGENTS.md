@@ -86,6 +86,38 @@ If blocking: open an issue `AXP: Escalation — TASK-###` with a short summary a
 * Maintain a single‑line audit in `.axp/TRACE.md` (time, action, PR/run URL).
 * Copy the task’s **Acceptance** checklist into the PR body and tick as you verify.
 
+### Codex Review Protocol
+
+Codex reviews start automatically as soon as a PR is opened. It reacts on the PR description with 👀 while processing and swaps that reaction for 👍 once everything passes. Treat the 👍 as the only merge gate signal—do not merge while 👀 is present.
+
+**Monitor the reviewer (CLI-ready):**
+
+* `gh pr view <number> --comments` – quick way to read Codex’s latest inline feedback.
+* `gh pr view <number> --json reviews --jq '.reviews[] | {author: .author.login, state: .state, submittedAt: .submittedAt}'` – shows who has reviewed and current states.
+* `gh api graphql -f query='query($n:Int!){repository(owner:"slashr",name:"homelab"){pullRequest(number:$n){reviewThreads(first:50){nodes{isResolved comments(first:20){nodes{author{login}body}}}}}}}' -F n=<number>` – verify every review thread is resolved before merging.
+* `gh api repos/slashr/homelab/issues/<number>/comments` – audit timeline comments to spot redundant `@codex review` requests or missed replies.
+
+**Handling feedback without confusion:**
+
+1. Reply inline to the exact Codex comment (GitHub “Reply” or `gh pr review-comment`). Never use a new top-level comment to answer feedback.
+2. In that reply, summarize the fix and end with `@codex review again`. This documents the change and triggers the re-review once code is pushed.
+3. Only ask for another review after *all* existing Codex threads have replies and the related commits are in the branch. Multiple `@codex review` pings while comments remain unresolved create duplicate boilerplate reviews.
+4. After replying, mark the thread resolved in the UI (or confirm via the GraphQL command). Do not merge while any thread reports `isResolved: false`, even if Codex later posts a generic “no issues” comment elsewhere.
+
+**Validate Codex suggestions:**
+
+* Double-check reviewer guidance before applying it. Example: Terraform meta-arguments like `timeouts` cannot appear in `ignore_changes`; push back (with doc or error references) when a suggestion would fail validation.
+* Re-run the relevant formatters/validators (`terraform fmt`, `terraform validate`, `pre-commit run --all-files`, etc.) after implementing Codex feedback so the next review cycle focuses on substantive issues.
+
+**Merge only when all conditions are met:**
+
+1. Checks are green (`gh pr checks <number>`).
+2. Codex’s 👀 reaction has flipped to 👍 on the PR description.
+3. The review-thread GraphQL query shows no unresolved threads.
+4. Every Codex comment has an inline reply (including “skipped” rationales when you intentionally diverge).
+
+Following this protocol avoids the previous failures: unresolved P0/P1 threads being merged, conflicting Codex instructions between sequential PRs, and opaque review state caused by redundant `@codex review` pings.
+
 ---
 
 ### Mapping to your basic flow

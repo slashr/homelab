@@ -34,6 +34,9 @@ quickly.
       branch per the user's request.
 - [x] (2025-11-14 19:05Z) Removed the conflicting `moved` blocks, added manual migration
       docs, refreshed the audit report, and reran targeted format/validate checks locally.
+- [x] (2025-11-14 19:45Z) Ran `terraform state list` in the Oracle workspace with Terraform
+      1.9.8 (after auth) to confirm no legacy `oci_core_instance.<name>` addresses remain;
+      the documented `state mv` commands were not needed.
 
 ## Surprises & Discoveries
 
@@ -75,7 +78,8 @@ quickly.
 - Delivered `reports/codex-review-audit-20251114.md`, which documents each Codex comment,
   the implemented fixes (OCI timeouts + friendly-name migrations), and the new manual
   runbook for the much older `oci_core_instance.<name>` states (`docs/ORACLE_STATE_MIGRATION.md`).
-  Future audits should confirm no new gaps have appeared.
+  Verified (2025-11-14 19:45Z) that the production Oracle state already uses the for_each
+  addresses, so no manual `terraform state mv` steps were required this time.
 
 ## Context and Orientation
 

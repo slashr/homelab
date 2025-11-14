@@ -22,6 +22,12 @@ quickly.
 - [x] (2025-11-14 17:55Z) Ran `pre-commit run --files PLAN.md reports/codex-review-audit-20251114.md`
       to ensure the touched files pass; full `--all-files` still fails on unrelated repo
       lint, which will be noted in the PR.
+- [x] (2025-11-14 18:05Z) Replaced the invalid OCI reserved IP lifecycle hack with explicit
+      create/delete timeouts and ran `terraform fmt`.
+- [x] (2025-11-14 18:07Z) Added the missing legacy `moved` blocks for Oracle instances and
+      ran `terraform init -backend=false` + `terraform validate` under `oracle/`.
+- [x] (2025-11-14 18:09Z) Updated the audit report to mark the previously outstanding
+      Codex comments as implemented.
 
 ## Surprises & Discoveries
 
@@ -42,13 +48,23 @@ quickly.
   prior plans.
   Rationale: Keeps findings versioned in-repo and easy to reference from subsequent PRs.
   Date/Author: 2025-11-14 / slashr
+- Decision: Pin both create and delete timeouts on the reserved OCI public IP resource to
+  10 minutes.
+  Rationale: Any explicit values prevent Terraform from flagging provider-computed values;
+  10 minutes aligns with typical OCI networking defaults without unduly delaying failures.
+  Date/Author: 2025-11-14 / slashr
+- Decision: Restore the original `moved` blocks for `oci_core_instance.<name>` resources
+  alongside the friendly-name rollback moves.
+  Rationale: This lets any state—from standalone resources through friendly names—migrate
+  safely to the canonical for_each addresses without manual intervention.
+  Date/Author: 2025-11-14 / slashr
 
 ## Outcomes & Retrospective
 
 - Delivered `reports/codex-review-audit-20251114.md`, which documents each Codex comment
-  across PRs #308–#314 and highlights two outstanding gaps (OCI timeouts and missing Oracle
-  state migrations). Future work should focus on addressing those gaps so subsequent audits
-  confirm a clean slate.
+  across PRs #308–#314 and (as of 2025-11-14 18:09Z) records that the OCI timeout and
+  Oracle state-migration items have been remediated. Future audits should confirm no new
+  gaps have appeared.
 
 ## Context and Orientation
 

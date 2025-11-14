@@ -38,7 +38,7 @@ All planned PRs are listed below in logical execution order.
 
 ### Infrastructure Refactoring
 
-- [ ] **PR #21: Standardize Oracle Server Naming Convention** 🏷️
+- [ ] **PR #21: Standardize Oracle Server Naming Convention** 🏷️ _(IN PROGRESS)_
   - **Priority:** Medium | **Effort:** Low (1 hour)
   - Update `oracle/servers.tf`: Rename `amd1/amd2/arm1/arm2` → `pam-amd1/angela-amd2/stanley-arm1/phyllis-arm2`
   - Update `moved` blocks to preserve Terraform state

@@ -86,6 +86,14 @@ All planned PRs are listed below in logical execution order.
   - Create `docs/TERRAFORM_STATE_RECOVERY.md` with restore procedure
   - **Test:** Manual trigger → verify encrypted state files created
 
+### Raspberry Pi Maintenance
+
+- [ ] **PR #29: Enable Raspberry Pi firmware upgrade via Ansible** 🔄 _(IN PROGRESS)_
+  - **Priority:** High | **Effort:** Low (30 minutes)
+  - Set `firmware_upgrade_enabled: true` in `ansible/group_vars/pis.yml` so the next CI run applies the EEPROM/VL805 updates on dwight, jim, and michael via the staged playbook.
+  - Document in the PR that firmware should be applied via GitHub Actions (no local execution).
+  - **Test:** GitHub Actions `ansible-playbook --check` reports success; post-run `rpi-eeprom-update` output shows all Pis up to date.
+
 ---
 
 ## Quick Reference

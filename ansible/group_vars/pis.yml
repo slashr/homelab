@@ -17,7 +17,8 @@ firmware_upgrade_reboot_timeout: 600
 firmware_upgrade_packages:
   - rpi-eeprom
   - raspi-config
-  - libraspberrypi-bin
+  # Debian 13 does not ship libraspberrypi-bin (see GH Actions run 19362491035),
+  # so we leave it out to keep the firmware role installable on stock Debian.
 
 # DNS configuration (AdGuard on dwight-pi for ad blocking)
 dns_servers:

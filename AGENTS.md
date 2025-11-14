@@ -47,7 +47,7 @@ When AXP is mentioned in the task, either by the user or in TASKS.md, you should
 
    Do not request "@codex review" again while a review is still pending; only ask after you have addressed every thread and pushed the fixes. Always wait for the 👍 reaction on the PR description before merging.
 
-   If you pushed a fix for the review, then add "@codex review again" at the end of the reply to make codex reviewer review the fresh commits again.
+   After every Codex thread has a reply and the fixes are pushed, leave one final inline note (or short summary comment) that ends with "@codex review again" to trigger the re-review—avoid tagging Codex on each individual comment.
 
    Once the checks are green and Codex has given you the 👍, move the corresponding entry out of `TASKS.md` and into `COMPLETED.md` before merging. This bookkeeping push is exempt from the usual “rerun checks/re-request review” requirement—push it right before merging without waiting for another cycle, but do not include any other changes in that commit.
 

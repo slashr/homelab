@@ -20,6 +20,7 @@ Bring michael-pi, jim-pi, and dwight-pi bootloader firmware up to the latest rel
 3. Leave `firmware_upgrade_enabled: true` so the next GitHub Actions run re-attempts the staged firmware rollout across dwight → jim → michael.
 4. Update `TASKS.md` to reflect the follow-up task/PR for fixing the package set so bookkeeping stays accurate under AXP.
 5. Once GitHub Actions completes successfully, verify `rpi-eeprom-update` output (captured in CI logs) shows “BOOTLOADER: up to date” for all Pis, then move the task entry to `COMPLETED.md`.
+6. Before merging any PR, double-check that all Codex review comments have been answered inline and that Codex has issued the 👍 reaction on the PR description.
 
 ## Validation
 

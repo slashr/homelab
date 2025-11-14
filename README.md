@@ -15,13 +15,13 @@ This Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a G
 ## Terraform Oracle Job
 
 - Creates 4 Free Tier servers
-- amd1 is used for Tailscale VPN setup between Pi and Oracle
-- amd2, arm1, arm2 are created in order to be added as worker K8S Nodes
+- pam-amd1 is used for Tailscale VPN setup between Pi and Oracle
+- angela-amd2, stanley-arm1, and phyllis-arm2 are created in order to be added as worker K8S Nodes
 
 ## Ansible Job
 
-- Sets up a Tailscale tunnel between Pi and amd1
-- Setup up K3S Agent on amd2, arm1 and arm2 and adds them to the K8S cluster
+- Sets up a Tailscale tunnel between Pi and pam-amd1
+- Sets up the K3S agent on angela-amd2, stanley-arm1, and phyllis-arm2 and adds them to the K8S cluster
 
 ## Terraform Kubernetes Job
 

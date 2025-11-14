@@ -1,6 +1,6 @@
 locals {
   instances = {
-    amd1 = {
+    "pam-amd1" = {
       shape            = "VM.Standard.E2.1.Micro"
       memory_in_gbs    = 1
       ocpus            = 1
@@ -8,7 +8,7 @@ locals {
       assign_public_ip = false
       source_image_id  = var.amd_source_image_id
     }
-    amd2 = {
+    "angela-amd2" = {
       shape            = "VM.Standard.E2.1.Micro"
       memory_in_gbs    = 1
       ocpus            = 1
@@ -16,7 +16,7 @@ locals {
       assign_public_ip = true
       source_image_id  = var.amd_source_image_id
     }
-    arm1 = {
+    "stanley-arm1" = {
       shape            = "VM.Standard.A1.Flex"
       memory_in_gbs    = 12
       ocpus            = 2
@@ -24,7 +24,7 @@ locals {
       assign_public_ip = true
       source_image_id  = var.ampere_source_image_id
     }
-    arm2 = {
+    "phyllis-arm2" = {
       shape            = "VM.Standard.A1.Flex"
       memory_in_gbs    = 12
       ocpus            = 2
@@ -35,25 +35,25 @@ locals {
   }
 }
 
-# State migration: map old individual resources to new for_each structure
+# State migration: map previous for_each keys to the new friendly names
 moved {
-  from = oci_core_instance.amd1
-  to   = oci_core_instance.instances["amd1"]
+  from = oci_core_instance.instances["amd1"]
+  to   = oci_core_instance.instances["pam-amd1"]
 }
 
 moved {
-  from = oci_core_instance.amd2
-  to   = oci_core_instance.instances["amd2"]
+  from = oci_core_instance.instances["amd2"]
+  to   = oci_core_instance.instances["angela-amd2"]
 }
 
 moved {
-  from = oci_core_instance.arm1
-  to   = oci_core_instance.instances["arm1"]
+  from = oci_core_instance.instances["arm1"]
+  to   = oci_core_instance.instances["stanley-arm1"]
 }
 
 moved {
-  from = oci_core_instance.arm2
-  to   = oci_core_instance.instances["arm2"]
+  from = oci_core_instance.instances["arm2"]
+  to   = oci_core_instance.instances["phyllis-arm2"]
 }
 
 resource "oci_core_instance" "instances" {

@@ -28,6 +28,12 @@ quickly.
       ran `terraform init -backend=false` + `terraform validate` under `oracle/`.
 - [x] (2025-11-14 18:09Z) Updated the audit report to mark the previously outstanding
       Codex comments as implemented.
+- [x] (2025-11-14 18:45Z) Observed CI run `19373617018` failing in Terraform Oracle because
+      Terraform forbids multiple `moved` blocks targeting the same destination.
+- [x] (2025-11-14 18:55Z) Closed the temporary doc-only PR (#317) and spun up a fresh fix
+      branch per the user's request.
+- [x] (2025-11-14 19:05Z) Removed the conflicting `moved` blocks, added manual migration
+      docs, refreshed the audit report, and reran targeted format/validate checks locally.
 
 ## Surprises & Discoveries
 
@@ -40,6 +46,9 @@ quickly.
 - Observation: Repository-wide `pre-commit run --all-files` currently fails due to existing
   yamllint/markdownlint issues (outside this change); only the touched markdown files were
   linted successfully.
+- Observation: Terraform 1.9 rejects configurations where two `moved` statements point to
+  the same `oci_core_instance.instances["<name>"]` destination, so we must document manual
+  `terraform state mv` commands for the oldest Oracle states instead of encoding both moves.
 
 ## Decision Log
 
@@ -53,18 +62,20 @@ quickly.
   Rationale: Any explicit values prevent Terraform from flagging provider-computed values;
   10 minutes aligns with typical OCI networking defaults without unduly delaying failures.
   Date/Author: 2025-11-14 / slashr
-- Decision: Restore the original `moved` blocks for `oci_core_instance.<name>` resources
-  alongside the friendly-name rollback moves.
-  Rationale: This lets any state—from standalone resources through friendly names—migrate
-  safely to the canonical for_each addresses without manual intervention.
+- Decision: Document manual `terraform state mv` commands for the pre-for_each Oracle
+  resource addresses instead of encoding duplicate `moved` blocks that Terraform would
+  reject.
+  Rationale: Terraform enforces one source per destination in `moved` statements, so we can
+  only automate the friendly-name rollback; the much older state format now has clear
+  runbook instructions (`docs/ORACLE_STATE_MIGRATION.md`).
   Date/Author: 2025-11-14 / slashr
 
 ## Outcomes & Retrospective
 
-- Delivered `reports/codex-review-audit-20251114.md`, which documents each Codex comment
-  across PRs #308–#314 and (as of 2025-11-14 18:09Z) records that the OCI timeout and
-  Oracle state-migration items have been remediated. Future audits should confirm no new
-  gaps have appeared.
+- Delivered `reports/codex-review-audit-20251114.md`, which documents each Codex comment,
+  the implemented fixes (OCI timeouts + friendly-name migrations), and the new manual
+  runbook for the much older `oci_core_instance.<name>` states (`docs/ORACLE_STATE_MIGRATION.md`).
+  Future audits should confirm no new gaps have appeared.
 
 ## Context and Orientation
 

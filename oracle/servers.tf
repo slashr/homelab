@@ -56,6 +56,27 @@ moved {
   to   = oci_core_instance.instances["arm2"]
 }
 
+# State migration: map friendly-name keys back to the canonical ones
+moved {
+  from = oci_core_instance.instances["pam-amd1"]
+  to   = oci_core_instance.instances["amd1"]
+}
+
+moved {
+  from = oci_core_instance.instances["angela-amd2"]
+  to   = oci_core_instance.instances["amd2"]
+}
+
+moved {
+  from = oci_core_instance.instances["stanley-arm1"]
+  to   = oci_core_instance.instances["arm1"]
+}
+
+moved {
+  from = oci_core_instance.instances["phyllis-arm2"]
+  to   = oci_core_instance.instances["arm2"]
+}
+
 resource "oci_core_instance" "instances" {
   for_each = local.instances
 

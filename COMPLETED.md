@@ -134,6 +134,15 @@ This document tracks all completed PRs and their implementation details for hist
 - Documented the rollout intent and validation steps in `PLAN.md` (Nov 2025 firmware refresh).
 - Added a Raspberry Pi Maintenance section to `TASKS.md` to track future firmware or hardware upkeep under AXP.
 
+### ✅ PR #30: Fix Raspberry Pi firmware package set
+
+**Completed:** November 2025  
+**Branch:** `task-031-firmware-package`
+
+- Removed `libraspberrypi-bin` from `firmware_upgrade_packages` so Debian 13 hosts stop failing the firmware playbook on APT.
+- Added runtime detection/guarding around `vcgencmd` in `ansible/roles/firmware_upgrade/tasks/main.yml`, including helpful debug output when the binary is missing.
+- Updated `PLAN.md`/`TASKS.md` to capture the follow-up plan and close out the Raspberry Pi maintenance work under AXP.
+
 ---
 
 ## Security Hardening - Raspberry Pis

@@ -92,7 +92,7 @@ Codex reviews start automatically as soon as a PR is opened. It reacts on the PR
 
 **Monitor the reviewer (CLI-ready):**
 
-* `gh pr view <number> --json reactionGroups --jq '.reactionGroups[] | select(.content==\"EYES\" or .content==\"THUMBS_UP\")'` – confirm whether 👀 is still present or 👍 has appeared before pinging Codex manually.
+* `gh pr view <number> --json reactionGroups --jq '.reactionGroups[] | select(.content=="EYES" or .content=="THUMBS_UP")'` – confirm whether 👀 is still present or 👍 has appeared before pinging Codex manually.
 * `gh pr view <number> --comments` – quick way to read Codex’s latest inline feedback.
 * `gh pr view <number> --json reviews --jq '.reviews[] | {author: .author.login, state: .state, submittedAt: .submittedAt}'` – shows who has reviewed and current states.
 * `gh api graphql -f query='query($n:Int!){repository(owner:"slashr",name:"homelab"){pullRequest(number:$n){reviewThreads(first:50){nodes{isResolved comments(first:20){nodes{author{login}body}}}}}}}' -F n=<number>` – verify every review thread is resolved before merging.

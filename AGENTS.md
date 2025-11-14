@@ -92,6 +92,7 @@ Codex reviews start automatically as soon as a PR is opened. It reacts on the PR
 
 **Monitor the reviewer (CLI-ready):**
 
+* `gh pr view <number> --json reactionGroups --jq '.reactionGroups[] | select(.content==\"EYES\" or .content==\"THUMBS_UP\")'` – confirm whether 👀 is still present or 👍 has appeared before pinging Codex manually.
 * `gh pr view <number> --comments` – quick way to read Codex’s latest inline feedback.
 * `gh pr view <number> --json reviews --jq '.reviews[] | {author: .author.login, state: .state, submittedAt: .submittedAt}'` – shows who has reviewed and current states.
 * `gh api graphql -f query='query($n:Int!){repository(owner:"slashr",name:"homelab"){pullRequest(number:$n){reviewThreads(first:50){nodes{isResolved comments(first:20){nodes{author{login}body}}}}}}}' -F n=<number>` – verify every review thread is resolved before merging.
@@ -101,8 +102,9 @@ Codex reviews start automatically as soon as a PR is opened. It reacts on the PR
 
 1. Reply inline to the exact Codex comment (GitHub “Reply” or `gh pr review-comment`). Never use a new top-level comment to answer feedback.
 2. In that reply, summarize the fix and end with `@codex review again`. This documents the change and triggers the re-review once code is pushed.
-3. Only ask for another review after *all* existing Codex threads have replies and the related commits are in the branch. Multiple `@codex review` pings while comments remain unresolved create duplicate boilerplate reviews.
-4. After replying, mark the thread resolved in the UI (or confirm via the GraphQL command). Do not merge while any thread reports `isResolved: false`, even if Codex later posts a generic “no issues” comment elsewhere.
+3. Before pinging Codex, check the PR description reaction (via the command above or the web UI); if 👀 is still present it means Codex is already reviewing—wait instead of posting another `@codex review`.
+4. Only ask for another review after *all* existing Codex threads have replies and the related commits are in the branch. Multiple `@codex review` pings while comments remain unresolved create duplicate boilerplate reviews.
+5. After replying, mark the thread resolved in the UI (or confirm via the GraphQL command). Do not merge while any thread reports `isResolved: false`, even if Codex later posts a generic “no issues” comment elsewhere.
 
 **Validate Codex suggestions:**
 

@@ -813,6 +813,14 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Import existing ACL into state
+        run: |
+          if ! terraform state list 2>/dev/null | grep -q '^tailscale_acl.this$'; then
+            terraform import tailscale_acl.this acl
+          else
+            echo "tailscale_acl.this already in state"
+          fi
+
       - name: Terraform Plan
         run: |
           terraform plan -out=plan-tailscale.tfplan \

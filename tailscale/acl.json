@@ -1,0 +1,35 @@
+{
+  "groups": {},
+  "hosts": {},
+  "tagOwners": {
+    "tag:k3s": ["autogroup:admin"],
+    "tag:pi": ["autogroup:admin"],
+    "tag:cloud": ["autogroup:admin"],
+    "tag:ci": ["autogroup:admin"]
+  },
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["autogroup:members"],
+      "dst": [
+        "tag:k3s:22",
+        "tag:k3s:80",
+        "tag:k3s:443",
+        "tag:pi:22",
+        "tag:pi:80",
+        "tag:pi:443",
+        "tag:cloud:22",
+        "tag:cloud:80",
+        "tag:cloud:443"
+      ]
+    }
+  ],
+  "ssh": [
+    {
+      "action": "accept",
+      "src": ["autogroup:members"],
+      "dst": ["tag:k3s", "tag:pi", "tag:cloud"],
+      "users": ["autogroup:admin"]
+    }
+  ]
+}

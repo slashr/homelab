@@ -29,6 +29,7 @@ jobs:
       oracle: ${{ steps.filter.outputs.oracle }}
       kubernetes: ${{ steps.filter.outputs.kubernetes }}
       ansible: ${{ steps.filter.outputs.ansible }}
+      tailscale: ${{ steps.filter.outputs.tailscale }}
       docs-only: ${{ steps.filter.outputs.docs-only }}
     steps:
       - uses: actions/checkout@v5
@@ -55,6 +56,10 @@ jobs:
               - 'ansible/group_vars/**'
               - 'ansible/hosts.ini'
               - 'ansible/confs/**'
+              - '.github/workflows/**'
+            tailscale:
+              - 'terraform/tailscale/**'
+              - 'tailscale/**'
               - '.github/workflows/**'
             docs-only:
               - '**/*.md'
@@ -775,6 +780,53 @@ jobs:
             echo "Drift detection: configuration drift detected." >> $GITHUB_STEP_SUMMARY
           else
             echo "Drift detection completed with unexpected exit code: $exitcode" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  tailscale-apply:
+    name: "Terraform Tailscale ACL"
+    needs: [changes, lint]
+    if: |
+      !cancelled() &&
+      (needs.changes.outputs.tailscale == 'true' || github.event_name == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ./terraform/tailscale
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: "1.9.6"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}" \
+            -var="tailscale_tailnet=${{ secrets.TS_TAILNET }}"
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          terraform apply -auto-approve \
+            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}" \
+            -var="tailscale_tailnet=${{ secrets.TS_TAILNET }}"
+
+      - name: Tailscale ACL Summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Tailscale ACL apply succeeded." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Tailscale ACL apply failed." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Terraform Plan Summary

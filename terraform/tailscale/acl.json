@@ -15,6 +15,12 @@
   ],
   "ssh": [
     {
+      "action": "accept",
+      "src": ["autogroup:admin"],
+      "dst": ["tag:k3s", "tag:pi", "tag:cloud"],
+      "users": ["autogroup:nonroot", "root"]
+    },
+    {
       "action": "check",
       "src": ["autogroup:member"],
       "dst": ["autogroup:self"],

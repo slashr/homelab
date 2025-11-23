@@ -61,6 +61,68 @@ jobs:
               - 'LICENSE'
               - 'AGENTS.md'
 
+  docs-lint:
+    needs: changes
+    name: "Docs Lint"
+    if: needs.changes.outputs.docs-only == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+          cache-dependency-path: .pre-commit-config.yaml
+
+      - name: Install pre-commit
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pre-commit
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Run markdownlint on changed markdown files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base SHA available (workflow_dispatch or initial push), using HEAD~1"
+            BASE_SHA="HEAD~1"
+          fi
+
+          CHANGED_MD=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}" -- '*.md' 2>/dev/null || true)
+
+          if [ -n "$CHANGED_MD" ]; then
+            echo "Running markdownlint on changed markdown files:"
+            echo "$CHANGED_MD"
+            echo "$CHANGED_MD" | xargs pre-commit run markdownlint --files
+          else
+            echo "No markdown files changed, skipping markdownlint"
+          fi
+
+      - name: Docs lint summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Docs lint passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Docs lint failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
   # Consolidated lint job - runs pre-commit checks once for all code
   lint:
     needs: changes

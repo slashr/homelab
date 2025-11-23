@@ -782,6 +782,12 @@ jobs:
             echo "Drift detection completed with unexpected exit code: $exitcode" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Terraform Plan Summary
+        uses: ./.github/actions/terraform-plan-summary
+        with:
+          plan_file: 'plan.tfplan'
+          job_name: 'Kubernetes'
+
   tailscale-apply:
     name: "Terraform Tailscale ACL"
     needs: [changes, lint]
@@ -831,9 +837,3 @@ jobs:
           else
             echo "❌ Tailscale ACL apply failed." >> $GITHUB_STEP_SUMMARY
           fi
-
-      - name: Terraform Plan Summary
-        uses: ./.github/actions/terraform-plan-summary
-        with:
-          plan_file: 'plan.tfplan'
-          job_name: 'Kubernetes'

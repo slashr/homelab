@@ -8,3 +8,7 @@ variable "tailscale_tailnet" {
   type        = string
   description = "Tailnet identifier (ID)"
 }
+
+locals {
+  tailscale_tailnet_id = var.tailscale_tailnet
+}

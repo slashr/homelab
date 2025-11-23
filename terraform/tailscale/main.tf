@@ -20,5 +20,5 @@ provider "tailscale" {
 }
 
 resource "tailscale_acl" "this" {
-  acl = file("${path.module}/../../tailscale/acl.json")
+  acl = file("${path.module}/acl.json")
 }

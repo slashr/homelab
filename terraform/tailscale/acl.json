@@ -4,7 +4,9 @@
   },
   "hosts": {},
   "tagOwners": {
-    "tag:k3s": ["group:slashr"]
+    "tag:k3s": ["group:slashr"],
+    "tag:pi": ["group:slashr"],
+    "tag:cloud": ["group:slashr"]
   },
   "acls": [
     {

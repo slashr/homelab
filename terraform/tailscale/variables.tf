@@ -4,11 +4,6 @@ variable "tailscale_api_key" {
   sensitive   = true
 }
 
-variable "tailscale_tailnet" {
-  type        = string
-  description = "Tailnet identifier (ID)"
-}
-
 locals {
-  tailscale_tailnet_id = var.tailscale_tailnet
+  tailscale_tailnet_id = "TwTN7rPx4921CNTRL"
 }

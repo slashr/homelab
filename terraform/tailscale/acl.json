@@ -4,7 +4,9 @@
   },
   "hosts": {},
   "tagOwners": {
-    "tag:k3s": ["group:slashr"]
+    "tag:k3s": ["group:slashr"],
+    "tag:pi": ["group:slashr"],
+    "tag:cloud": ["group:slashr"]
   },
   "acls": [
     {
@@ -14,6 +16,12 @@
     }
   ],
   "ssh": [
+    {
+      "action": "accept",
+      "src": ["autogroup:admin"],
+      "dst": ["tag:k3s", "tag:pi", "tag:cloud"],
+      "users": ["autogroup:nonroot", "root"]
+    },
     {
       "action": "check",
       "src": ["autogroup:member"],

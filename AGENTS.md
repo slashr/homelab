@@ -412,7 +412,7 @@ You have access to these local tools:
 * `ansible-*` (`ansible-playbook`, `ansible-lint`, `ansible-vault`, and similar)
 * `tailscale`
 * `cloudflare` related CLIs
-* `gh`
+* `gh` - Please run `export GH_CONFIG_DIR=$HOME/.config/gh-personal` to select the correct Github Account.
 
 Rules for using them:
 

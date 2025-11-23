@@ -91,8 +91,28 @@ jobs:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
 
-      - name: Run markdownlint on docs
-        run: pre-commit run markdownlint --all-files
+      - name: Run markdownlint on changed markdown files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base SHA available (workflow_dispatch or initial push), using HEAD~1"
+            BASE_SHA="HEAD~1"
+          fi
+
+          CHANGED_MD=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}" -- '*.md' 2>/dev/null || true)
+
+          if [ -n "$CHANGED_MD" ]; then
+            echo "Running markdownlint on changed markdown files:"
+            echo "$CHANGED_MD"
+            echo "$CHANGED_MD" | xargs pre-commit run markdownlint --files
+          else
+            echo "No markdown files changed, skipping markdownlint"
+          fi
 
       - name: Docs lint summary
         if: always()

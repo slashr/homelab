@@ -1,154 +1,3 @@
-# AXP - Autonomous Execution Protocol
-<!-- markdownlint-disable MD013 MD025 -->
-
-When AXP is mentioned in the task, either by the user or in TASKS.md, you should work end‑to‑end without needing user input. At a high level the flow should be: pick task → plan → implement → PR → green checks → codex reviewer approval → merge → verify release → next task.
-
----
-
-## Minimal Rules
-
-1. **Don’t stop early.** Keep going until a **Stop Condition** (below) is met.
-2. **Merge gate:** Only merge when **all required checks are green** **and** Codex has given a **👍** (review approval, approving comment, or 👍 on PR description).
-3. **Act, don’t wait.** Use local CLIs (`git`, `gh`, `kubectl`, `aws`, `terraform`, `ansible-playbook`) and **poll** proactively; no user nudges.
-4. **Finish the loop before switching tasks.** Do not start another task or PR until the current one has (a) passing checks, (b) Codex 👍, (c) been merged, and (d) its post-merge Release workflow (or equivalent automation) has completed successfully.
-5. **Read workflow annotations immediately.** When a GitHub Actions run fails before any job starts (e.g., “workflow file issue”), open the run’s “Annotations” tab (or run `gh run view <run-id> --summary`) to grab the exact YAML/config error before making changes—those details exist even when no logs/jobs were produced.
-
----
-
-## The Loop (simple checklist)
-
-1. **Pick task:** Either perform the task user has requested, or pick one from TASKS.md. If picked from TASKS.md, mark it as IN PROGRESS
-2. **Plan & branch:** Write a brief `PLAN.md`.
-3. **Implement:** Commit small, logical changes.
-4. **Open PR:**
-
-   ```bash
-   gh pr create --fill \
-     --title "TASK-###: <short title> [AXP]" \
-     --label axp
-   ```
-
-5. **Watch checks (poll ~30s):**
-
-   ```bash
-   gh pr checks --watch --interval 30
-   ```
-
-   * If a check fails, **fix → push → watch again**.
-   If you pushed fixes after PR creation and after Codex reviewer had already given a thumbs up, then request a re-review from codex reviewer by commenting "@codex review again"
-
-6. **Codex review:**
-   Codex starts a review automatically on PR creation. You will see that it adds eyes emoji to the PR description when it is revewing.
-   The eyes emoji changes to a thumbs up emoji if review passes. If you see this then you are safe to merge.
-
-   Otherwise, codex reviewer leaves a review comment as a reply to one of it's main comments.
-
-   You should address this review and leave a reply to that comment inline (not as a independent comment) mentioning whether you accept the review and fixed it or whether you think the review doesn't need to be fixed and skipped it. Reply directly on each individual review thread—never consolidate answers on a single thread—so the resolution for every comment is tracked exactly where it originated.
-
-   Do not request "@codex review" again while a review is still pending; only ask after you have addressed every thread and pushed the fixes. Always wait for the 👍 reaction on the PR description before merging.
-
-   After every Codex thread has a reply and the fixes are pushed, leave one final inline note (or short summary comment) that ends with "@codex review again" to trigger the re-review—avoid tagging Codex on each individual comment.
-
-   Once the checks are green and Codex has given you the 👍, move the corresponding entry out of `TASKS.md` and into `COMPLETED.md` before merging. This bookkeeping push is exempt from the usual “rerun checks/re-request review” requirement—push it right before merging without waiting for another cycle, but do not include any other changes in that commit.
-
-7. **Merge:**
-   If PR checks are green and codex has given a approval and all review comments (if any) are addressed, it can be merged
-
-   ```bash
-   gh pr merge --merge --delete-branch
-   ```
-
-8. **Post‑merge release:**
-   After merging the PR, watch the Release workflow until it passes. Capture the latest run ID and follow it with a relaxed interval to avoid busy-waiting:
-
-   ```bash
-   gh run list --workflow "Release" --limit 1 --json databaseId,status
-   gh run watch <run-id> --interval 30 --exit-status
-   ```
-
-   * If it **fails**, open a minimal **Recovery PR** and repeat the loop. Try up to **3** times. If still failing, **escalate** (see Stop Conditions).
-9. **Close the loop:** Ensure the finished task now lives in `COMPLETED.md` (and is removed from `TASKS.md`), then **pick the next AXP task**.
-
----
-
-## Stop Conditions
-
-* **No AXP TODO** tasks remain.
-* **Blocking error:** cannot auth, missing permissions/secrets, CI/infra down > 60m, or recovery attempts exhausted (3 PRs).
-* User explicitly says **stop AXP**.
-
-If blocking: open an issue `AXP: Escalation — TASK-###` with a short summary and links, then stop.
-
----
-
-## Optional Niceties
-
-* Maintain a single‑line audit in `.axp/TRACE.md` (time, action, PR/run URL).
-* Copy the task’s **Acceptance** checklist into the PR body and tick as you verify.
-
-### Codex Review Protocol
-
-Codex reviews start automatically as soon as a PR is opened. It reacts on the PR description with 👀 while processing and swaps that reaction for 👍 once everything passes. Treat the 👍 as the only merge gate signal—do not merge while 👀 is present.
-
-**Monitor the reviewer (CLI-ready):**
-
-* `gh pr view <number> --json reactionGroups --jq '.reactionGroups[] | select(.content=="EYES" or .content=="THUMBS_UP")'` – confirm whether 👀 is still present or 👍 has appeared before pinging Codex manually.
-* `gh pr view <number> --comments` – quick way to read Codex’s latest inline feedback.
-* `gh pr view <number> --json reviews --jq '.reviews[] | {author: .author.login, state: .state, submittedAt: .submittedAt}'` – shows who has reviewed and current states.
-* `gh api graphql -f query='query($n:Int!){repository(owner:"slashr",name:"homelab"){pullRequest(number:$n){reviewThreads(first:50){nodes{isResolved comments(first:20){nodes{author{login}body}}}}}}}' -F n=<number>` – GitHub’s REST/CLI still cannot report review-thread resolution, so use this GraphQL query to ensure every Codex thread is closed before merging.
-* `gh api repos/slashr/homelab/issues/<number>/comments` – audit timeline comments to spot redundant `@codex review` requests or missed replies.
-
-If you need to respond to or resolve a Codex inline thread from the CLI, continue using `gh api graphql` mutations (`addPullRequestReviewThreadReply`, `resolveReviewThread`). The latest `gh pr` subcommands still do not expose those actions.
-
-**Handling feedback without confusion:**
-
-1. Reply inline to the exact Codex comment (GitHub “Reply” or `gh pr review-comment`). Never use a new top-level comment to answer feedback.
-2. In that reply, summarize the fix. Hold the `@codex review again` mention until every thread is answered (see Step 5) so Codex isn’t spammed repeatedly.
-3. Before pinging Codex, check the PR description reaction (via the command above or the web UI); if 👀 is still present it means Codex is already reviewing—wait instead of posting another `@codex review`.
-4. Only ask for another review after *all* existing Codex threads have replies and the related commits are in the branch. Multiple `@codex review` pings while comments remain unresolved create duplicate boilerplate reviews.
-5. Once all threads have replies and the relevant commits are pushed, leave a final inline note on the last thread (or a short summary comment) that ends with `@codex review again`, then mark each thread resolved. Do not merge while any thread reports `isResolved: false`, even if Codex later posts a generic “no issues” comment elsewhere.
-
-**Validate Codex suggestions:**
-
-* Double-check reviewer guidance before applying it. Example: Terraform meta-arguments like `timeouts` cannot appear in `ignore_changes`; push back (with doc or error references) when a suggestion would fail validation.
-* Re-run the relevant formatters/validators (`terraform fmt`, `terraform validate`, `pre-commit run --all-files`, etc.) after implementing Codex feedback so the next review cycle focuses on substantive issues.
-
-**Merge only when all conditions are met:**
-
-1. Checks are green (`gh pr checks <number>`).
-2. Codex’s 👀 reaction has flipped to 👍 on the PR description.
-3. The review-thread GraphQL query shows no unresolved threads.
-4. Every Codex comment has an inline reply (including “skipped” rationales when you intentionally diverge).
-
-Following this protocol avoids the previous failures: unresolved P0/P1 threads being merged, conflicting Codex instructions between sequential PRs, and opaque review state caused by redundant `@codex review` pings.
-
----
-
-### Mapping to your basic flow
-
-1. grab a task → 2) analyze/plan → 3) `gh pr create` → 4) watch checks → 5) watch Codex → 6) merge → 7) next task.
-
----
-
-### Command Safety Rules
-
-Never execute commands that can cause irreversible or destructive changes to systems, repositories, or infrastructure.
-Before running any shell command, you should scan the command string and compare it against this banned/restricted list.
-
-Banned Commands (Hard Stop)
-
-If any of these exact commands or dangerous variants appear (even with flags or parameters), immediately abort execution and log an entry in .axp/TRACE.md.
-
-| Category                 | Command / Pattern                                                                                                        | Reason                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| **System Destruction**   | `rm -rf /`, `sudo rm -rf /`, `rm -rf *`, `rm -rf .*`, `rm --no-preserve-root`                                            | Irrecoverable file deletion                         |
-| **Privilege Escalation** | `sudo` (unless in a safe script explicitly whitelisted)                                                                  | Prevent privilege escalation                        |
-| **Terraform**            | `terraform destroy`, `terraform apply -target=*`, `terraform apply -replace=*`                                           | Avoid unintended deletions or partial applies       |
-| **Kubernetes**           | `kubectl delete namespace`, `kubectl delete node`, `kubectl delete pvc --all`, `kubectl delete --force --grace-period=0` | Cluster/data destruction risk                       |
-| **AWS / Cloud**          | `aws iam delete-*`, `aws ec2 terminate-instances --all`, `aws s3 rm --recursive s3://*`                                  | Cloud resource deletion risk                        |
-| **Git / Repo**           | `git rebase -i origin/main`, `git reset --hard origin/main`                                          | Avoid losing commit history or overwriting branches |
-| **Shell / System**       | `shutdown`, `reboot`, `halt`, `kill -9 1`                                                                                | System stability risk                               |
-
 # Homelab Repository Guide
 
 <!-- markdownlint-disable MD013 -->
@@ -548,3 +397,217 @@ Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth c
 * **Verify TLS certificates** — Let's Encrypt certs auto-renew via cert-manager
 * **Audit access logs** — Review who accessed infrastructure via Tailscale and cloud provider logs
 * **Keep dependencies updated** — Review and merge Renovate PRs weekly
+
+---
+
+## Autonomous Execution Protocol (AXP)
+
+### Local tools and CLIs
+
+You have access to these local tools:
+
+* `kubectl`
+* `aws`
+* `terraform`
+* `ansible-*` (`ansible-playbook`, `ansible-lint`, `ansible-vault`, and similar)
+* `tailscale`
+* `cloudflare` related CLIs
+* `gh`
+
+Rules for using them:
+
+* Prefer read only commands:
+  * `kubectl get`, `kubectl describe`, `kubectl logs`
+  * `aws` list, describe, get style commands
+  * `terraform plan`
+  * `ansible-lint` and `ansible-playbook --check`
+* Treat any command that creates, updates, deletes, or scales resources as write capable. Use extra caution and clear justification before running those.
+* Use dry run or check modes whenever possible before real changes:
+  * `kubectl apply --server-dry-run`
+  * `terraform plan` before `terraform apply`
+  * `ansible-playbook --check` before a real run
+* Avoid write or delete operations that have a risk of irreversible damage, potential downtime, or data loss, unless:
+  * The repository documentation explicitly expects that action, and  
+  * You are operating inside an AXP task that clearly requires it.
+* When in doubt about the impact of a CLI command, treat it as unsafe and choose a read only alternative.
+
+---
+
+### When to use AXP
+
+AXP is an autonomous workflow for completing tasks without user intervention.
+
+Follow AXP when:
+
+1. The user explicitly mentions AXP in the prompt. For example:  
+   * "Please add a day/night mode to the website using AXP."  
+   * "Add network monitoring metrics. Follow AXP."
+2. The task in `TASKS.md` is tagged with AXP.
+
+If the user explicitly instructs you not to use AXP, do not follow AXP even if the task is tagged in `TASKS.md`.
+
+When following AXP, your goal is to keep working on the task until it is fully done, and only stop when a STOP condition is met.
+
+---
+
+### AXP basic workflow
+
+For each AXP task:
+
+1. **Select the task**
+   * Receive the task from the user prompt or select an AXP tagged task from `TASKS.md`.
+   * Do not start another AXP task while one is in progress.
+
+2. **Create a plan**
+   * Create a temporary planning file named `<task-slug>-plan.md`.
+   * Use it to sketch the steps, affected files, and tests you plan to run.
+   * Do not commit this planning file unless the repository explicitly expects planning documents.
+
+3. **Sync and branch**
+   * Pull the latest changes from `main` (or the primary branch defined by the repo).
+   * Create a new branch for this task, using a predictable naming convention such as:
+     * `axp/<short-task-id>` or
+     * `feature/<short-task-id>`
+   * Work exclusively in this branch for the current task.
+
+4. **Implement changes**
+   * Make the necessary code or configuration changes as described in the plan.
+   * Keep commits small and focused.
+   * Ensure any pre commit hooks or checks pass locally.
+
+5. **Run local checks**
+   * Run available local checks such as:
+     * Linting (pre-commit run --all-files)
+     * Unit tests
+     * Formatting
+   * If no tests exist, you may add simple, reusable tests when appropriate.
+
+6. **Create a PR**
+   * Push the branch.
+   * Use `gh` CLI to create a pull request.
+   * Make sure the PR description clearly references the task from `TASKS.md` and briefly describes the change.
+
+---
+
+### Codex Reviewer Bot interaction
+
+Once the PR is open, Codex Reviewer Bot will automatically start reviewing it.
+
+Its behavior:
+
+* It first adds an "eyes" emoji to the PR description as a reaction to indicate it is reviewing.
+* When done, it either:
+  * Removes the "eyes" emoji and adds a "thumbs up" emoji to indicate that the PR is OK to merge, or
+  * Leaves a main template comment and then replies inline with specific review comments.
+
+Your responsibilities:
+
+1. **Monitor for Codex signals**
+   * Poll the PR for:
+     * Reactions on the PR description (eyes, thumbs up), and
+     * New comments or review threads from Codex Reviewer Bot.
+   * Use a reasonable polling interval and back off if needed.
+   * If no Codex reaction or comment appears after a predefined number of polling attempts, treat the task as blocked on Codex Reviewer Bot and trigger a STOP condition for this task.
+
+2. **Handle review comments**
+   * If Codex leaves review comments:
+     * Address each comment by either:
+       * Making the required code or config changes, or
+       * Replying inline to explain why a change is not needed.
+   * Do not reply as a new top level comment. Always reply inline to the specific Codex comment thread to keep context tidy.
+
+3. **Re request review**
+   * After you have addressed all review threads and pushed fixes, re request a Codex review by adding an inline comment containing:
+     * `@codex review again`
+   * Do not request `@codex review` again while a previous review is still in progress or when you have not yet addressed all existing threads.
+
+4. **Determine approval**
+   * Consider the PR approved by Codex Reviewer Bot when one of the following is true:
+     * Codex removes the "eyes" emoji and adds a "thumbs up" emoji to the PR description, or
+     * Codex leaves a main comment that clearly indicates approval, such as "Did not see any major issues".
+
+---
+
+### Merge gate and release workflow
+
+You must only merge when all of the following are true:
+
+1. All required checks and GitHub Actions workflows for the PR are passing.
+2. Codex Reviewer Bot has indicated approval as defined above.
+3. The PR has no unresolved review threads that require action.
+
+Once these conditions are met:
+
+1. Commit an update that moves the corresponding task entry from `TASKS.md` to `COMPLETED.md`.
+2. Merge the PR using the `gh` CLI.
+3. Monitor the post merge Actions or Release workflow:
+   * Use `gh run` commands to watch the status.
+   * If the run fails, inspect the logs and annotations.
+
+If a post merge Actions run fails:
+
+* Inspect the run immediately. If no job logs are present, open the run's Annotations or use `gh run view <run-id> --summary` to capture the exact workflow or YAML error.
+* Create a new branch and PR to fix the issue, then follow the same AXP steps (planning, changes, tests, PR, Codex review, merge).
+
+---
+
+### Things to remember during AXP
+
+* **Do not stop early**  
+  Keep going on the current task until a STOP condition is met.
+
+* **Merge gate**  
+  Only merge when:
+  * All required checks are passing, and
+  * Codex Reviewer Bot has explicitly approved the PR.
+
+* **Act, do not wait for user nudges**  
+  Use local CLIs, read only queries, plans, and tests proactively. Do not wait for the user to prompt the next step.
+
+* **Finish the loop before switching tasks**  
+  Do not start any new task or PR until the current task:
+  * Has passing checks,
+  * Has Codex approval,
+  * Has been merged, and
+  * Its post merge Actions or Release workflow has completed successfully.
+
+* **Read workflow annotations immediately**  
+  When a GitHub Actions run fails before any job starts, open the run's Annotations or use `gh run view <run-id> --summary` to capture the root cause before editing workflows.
+
+* **Be conservative with dangerous changes**  
+  For infrastructure or workflow files that you do not fully understand, prefer stopping with a clear blocked reason rather than speculative edits that might break environments.
+
+---
+
+### STOP conditions for AXP
+
+Stop AXP for the current task, and do not proceed to a new AXP task, when any of the following is true:
+
+1. There are no remaining AXP tagged tasks in `TASKS.md`.
+2. A post merge Actions or Release workflow fails three times across three separate PRs for this task or related fixes, and further automated attempts are unlikely to help.
+3. A hard blocking error occurs, such as:
+   * Authentication repeatedly fails, or
+   * Required permissions or secrets are missing and cannot be fixed locally.
+4. Codex Reviewer Bot does not react or respond to the PR after repeated polling attempts within a reasonable time window.
+5. The repository or CI configuration is in a state that appears unsafe to modify automatically, for example repeated merge conflicts in core workflow files that you cannot safely resolve.
+
+When a STOP condition is hit, leave a clear note in the relevant place (for example `TASKS.md`, a status file, or a log file) describing why AXP stopped for this task.
+
+### Command Safety Rules
+
+Never execute commands that can cause irreversible or destructive changes to systems, repositories, or infrastructure.
+Before running any shell command, you should scan the command string and compare it against this banned/restricted list.
+
+Banned Commands (Hard Stop)
+
+If any of these exact commands or dangerous variants appear (even with flags or parameters), immediately abort execution and log an entry in .axp/TRACE.md.
+
+| Category                 | Command / Pattern                                                                                                        | Reason                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| **System Destruction**   | `rm -rf /`, `sudo rm -rf /`, `rm -rf *`, `rm -rf .*`, `rm --no-preserve-root`                                            | Irrecoverable file deletion                         |
+| **Privilege Escalation** | `sudo` (unless in a safe script explicitly whitelisted)                                                                  | Prevent privilege escalation                        |
+| **Terraform**            | `terraform destroy`, `terraform apply -target=*`, `terraform apply -replace=*`                                           | Avoid unintended deletions or partial applies       |
+| **Kubernetes**           | `kubectl delete namespace`, `kubectl delete node`, `kubectl delete pvc --all`, `kubectl delete --force --grace-period=0` | Cluster/data destruction risk                       |
+| **AWS / Cloud**          | `aws iam delete-*`, `aws ec2 terminate-instances --all`, `aws s3 rm --recursive s3://*`                                  | Cloud resource deletion risk                        |
+| **Git / Repo**           | `git rebase -i origin/main`, `git reset --hard origin/main`                                          | Avoid losing commit history or overwriting branches |
+| **Shell / System**       | `shutdown`, `reboot`, `halt`, `kill -9 1`                                                                                | System stability risk                               |

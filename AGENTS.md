@@ -477,7 +477,7 @@ For each AXP task:
 
 5. **Run local checks**
    * Run available local checks such as:
-     * Linting
+     * Linting (pre-commit run --all-files)
      * Unit tests
      * Formatting
    * If no tests exist, you may add simple, reusable tests when appropriate.

@@ -593,7 +593,6 @@ Stop AXP for the current task, and do not proceed to a new AXP task, when any of
 
 When a STOP condition is hit, leave a clear note in the relevant place (for example `TASKS.md`, a status file, or a log file) describing why AXP stopped for this task.
 
-
 ### Command Safety Rules
 
 Never execute commands that can cause irreversible or destructive changes to systems, repositories, or infrastructure.

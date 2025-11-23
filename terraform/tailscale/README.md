@@ -1,6 +1,6 @@
 # Tailscale ACL via Terraform
 
-This module applies the Tailscale ACL policy defined in `tailscale/acl.json` using the Tailscale Terraform provider.
+This module applies the Tailscale ACL policy defined in `terraform/tailscale/acl.json` using the Tailscale Terraform provider.
 
 ## Inputs
 
@@ -8,7 +8,7 @@ This module applies the Tailscale ACL policy defined in `tailscale/acl.json` usi
 
 ## Files
 
-* `tailscale/acl.json`: Source ACL policy applied to the tailnet.
+* `terraform/tailscale/acl.json`: Source ACL policy applied to the tailnet.
 
 ## Usage
 

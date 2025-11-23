@@ -1,4 +1,4 @@
-## Autonomous Execution Protocol (AXP)
+# Autonomous Execution Protocol (AXP)
 
 ### Local tools and CLIs
 

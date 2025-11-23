@@ -1,18 +1,23 @@
 # Homelab Repository Guide
 
-<!-- markdownlint-disable MD013 -->
-
 ## Project Overview
 
-This repository codifies a hybrid homelab that spans Oracle Cloud, Google Cloud, and Raspberry Pis. Infrastructure is provisioned with Terraform, and post-provisioning configuration is handled with Ansible playbooks. High-level architecture and operational expectations are documented in `README.md`—start there for context on components and task items.
+This repository codifies a hybrid homelab that spans Oracle Cloud, Google Cloud, and Raspberry Pis. Infrastructure is
+provisioned with Terraform, and post-provisioning configuration is handled with Ansible playbooks. High-level
+architecture and operational expectations are documented in `README.md`—start there for context on components and
+task items.
 
 ## Repository Layout
 
-* `ansible/` — Playbooks for VPN and k3s lifecycle management, inventory files, and encrypted configuration snippets. Vault-managed files under `ansible/confs/` must be decrypted before editing and re-encrypted afterward.
-* `oracle/` — Terraform stack that stands up Oracle Cloud networking and compute. Relies on sensitive tenancy credentials and provisions both the network (VCN, security lists, reserved IP) and worker nodes.
+* `ansible/` — Playbooks for VPN and k3s lifecycle management, inventory files, and encrypted configuration
+  snippets. Vault-managed files under `ansible/confs/` must be decrypted before editing and re-encrypted afterward.
+* `oracle/` — Terraform stack that stands up Oracle Cloud networking and compute. Relies on sensitive tenancy
+  credentials and provisions both the network (VCN, security lists, reserved IP) and worker nodes.
 * `gcp/` — Terraform configuration for a small GCP worker VM with customizable SSH metadata.
-* `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, external-dns, Argo CD) via the shared Helm modules in `terraform-modules/`. Requires base64-encoded kubeconfig material and Cloudflare secrets.
-* `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, external-dns, Argo CD, ingress-nginx, MetalLB). Each module manages its own namespace and supporting secrets.
+* `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, external-dns, Argo CD) via
+  the shared Helm modules in `terraform-modules/`. Requires base64-encoded kubeconfig material and Cloudflare secrets.
+* `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, external-dns, Argo CD, ingress-nginx, MetalLB).
+  Each module manages its own namespace and supporting secrets.
 * `.github/workflows/` — CI/CD workflows for infrastructure deployment (`actions.yml`) and security scanning (`security.yml`).
 * `.github/actions/` — Reusable composite actions for common workflow tasks (SSH setup, pre-commit).
 * `archive/` — Legacy assets kept for reference; do not assume they are current.
@@ -167,13 +172,17 @@ vim confs/iptables.conf
 ansible-vault encrypt confs/iptables.conf
 ```
 
-**Important:** Always re-encrypt files before committing. Update `ANSIBLE_VAULT_PASSWORD` secret if changing the vault password.
+**Important:** Always re-encrypt files before committing. Update `ANSIBLE_VAULT_PASSWORD` secret if changing the vault
+password.
 
 ### Playbook Execution
 
-**vpn.yml** — Configures Tailscale mesh VPN across all nodes and sets up iptables forwarding on VPN gateway. Runs on every push after infrastructure provisioning.
+**vpn.yml** — Configures Tailscale mesh VPN across all nodes and sets up iptables forwarding on VPN gateway. Runs on
+every push after infrastructure provisioning.
 
-**k3s.yml** — Deploys k3s master on `michael-pi` and joins worker nodes from Oracle, GCP, and remaining Raspberry Pis. Only runs on `main` push or manual workflow dispatch. Integrates Tailscale for pod-to-pod networking using the `--vpn-auth` flag.
+**k3s.yml** — Deploys k3s master on `michael-pi` and joins worker nodes from Oracle, GCP, and remaining Raspberry Pis.
+Only runs on `main` push or manual workflow dispatch. Integrates Tailscale for pod-to-pod networking using the
+`--vpn-auth` flag.
 
 ## Kubernetes Deployment
 
@@ -193,7 +202,9 @@ This ensures certificate management is ready before DNS automation and GitOps to
 
 ### Provider Configuration
 
-Kubernetes providers connect to the k3s master at `130.61.64.164:6443` (Oracle reserved public IP) rather than Tailscale IPs because Terraform Cloud runners cannot access the mesh network. Authentication uses base64-decoded client certificates.
+Kubernetes providers connect to the k3s master at `130.61.64.164:6443` (Oracle reserved public IP) rather than
+Tailscale IPs because Terraform Cloud runners cannot access the mesh network. Authentication uses base64-decoded
+client certificates.
 
 ### Add-on Modules
 
@@ -231,11 +242,13 @@ pre-commit install
 
 ### Terraform Validation
 
-For Terraform-heavy changes, execute `terraform init`/`terraform plan` against the relevant stack when feasible; otherwise, document any cloud-side blockers. Respect Terraform Cloud as the authoritative execution environment.
+For Terraform-heavy changes, execute `terraform init`/`terraform plan` against the relevant stack when feasible;
+otherwise, document any cloud-side blockers. Respect Terraform Cloud as the authoritative execution environment.
 
 ### Ansible Validation
 
-For Ansible updates, validate playbooks with `ansible-lint` and (when possible) `ansible-playbook --check` against a controlled inventory to avoid disruptive changes.
+For Ansible updates, validate playbooks with `ansible-lint` and (when possible) `ansible-playbook --check` against a
+controlled inventory to avoid disruptive changes.
 
 ## Dependency Management
 
@@ -258,17 +271,20 @@ Automated dependency updates are managed by Renovate (config: `renovate.json`). 
 
 ### Manual Updates
 
-When bumping versions manually, mirror the semantic commit conventions used by Renovate (`chore(deps): update X to vY.Z`).
+When bumping versions manually, mirror the semantic commit conventions used by Renovate (`chore(deps): update X to
+vY.Z`).
 
 ## Operational Tips
 
 ### VPN Firewall Rules
 
-When modifying VPN firewall rules, decrypt `ansible/confs/iptables.conf`, edit, and re-encrypt to keep Git history clean. Double-check handlers that reload iptables to ensure they align with any new files.
+When modifying VPN firewall rules, decrypt `ansible/confs/iptables.conf`, edit, and re-encrypt to keep Git history
+clean. Double-check handlers that reload iptables to ensure they align with any new files.
 
 ### Module Deployment Order
 
-Maintain the orchestrated deployment order: cert-manager → external-dns → Argo CD, matching the dependency chain encoded in Terraform modules and root stack. Update dependencies if module relationships change.
+Maintain the orchestrated deployment order: cert-manager → external-dns → Argo CD, matching the dependency chain
+encoded in Terraform modules and root stack. Update dependencies if module relationships change.
 
 ### Workflow Debugging
 
@@ -286,7 +302,9 @@ Maintain the orchestrated deployment order: cert-manager → external-dns → Ar
 
 ### Tailscale Integration
 
-Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth credentials. The `TAILSCALE_JOIN_KEY` is used by both Ansible playbooks and k3s itself (via `--vpn-auth` flag) to authenticate nodes and enable pod-to-pod networking across cloud providers and on-premises Raspberry Pis.
+Tailscale creates a mesh VPN across all nodes using tags (`tag:k3s`) and OAuth credentials. The `TAILSCALE_JOIN_KEY`
+is used by both Ansible playbooks and k3s itself (via `--vpn-auth` flag) to authenticate nodes and enable
+pod-to-pod networking across cloud providers and on-premises Raspberry Pis.
 
 **Manual Tailscale Tasks (not yet automated):**
 
@@ -592,9 +610,11 @@ Stop AXP for the current task, and do not proceed to a new AXP task, when any of
    * Authentication repeatedly fails, or
    * Required permissions or secrets are missing and cannot be fixed locally.
 4. Codex Reviewer Bot does not react or respond to the PR after repeated polling attempts within a reasonable time window.
-5. The repository or CI configuration is in a state that appears unsafe to modify automatically, for example repeated merge conflicts in core workflow files that you cannot safely resolve.
+5. The repository or CI configuration is in a state that appears unsafe to modify automatically, for example repeated
+   merge conflicts in core workflow files that you cannot safely resolve.
 
-When a STOP condition is hit, leave a clear note in the relevant place (for example `TASKS.md`, a status file, or a log file) describing why AXP stopped for this task.
+When a STOP condition is hit, leave a clear note in the relevant place (for example `TASKS.md`, a status file, or a
+log file) describing why AXP stopped for this task.
 
 ### Command Safety Rules
 
@@ -603,14 +623,18 @@ Before running any shell command, you should scan the command string and compare
 
 Banned Commands (Hard Stop)
 
-If any of these exact commands or dangerous variants appear (even with flags or parameters), immediately abort execution and log an entry in .axp/TRACE.md.
+If any of these exact commands or dangerous variants appear (even with flags or parameters), immediately abort
+execution and log an entry in .axp/TRACE.md.
 
-| Category                 | Command / Pattern                                                                                                        | Reason                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| **System Destruction**   | `rm -rf /`, `sudo rm -rf /`, `rm -rf *`, `rm -rf .*`, `rm --no-preserve-root`                                            | Irrecoverable file deletion                         |
-| **Privilege Escalation** | `sudo` (unless in a safe script explicitly whitelisted)                                                                  | Prevent privilege escalation                        |
-| **Terraform**            | `terraform destroy`, `terraform apply -target=*`, `terraform apply -replace=*`                                           | Avoid unintended deletions or partial applies       |
-| **Kubernetes**           | `kubectl delete namespace`, `kubectl delete node`, `kubectl delete pvc --all`, `kubectl delete --force --grace-period=0` | Cluster/data destruction risk                       |
-| **AWS / Cloud**          | `aws iam delete-*`, `aws ec2 terminate-instances --all`, `aws s3 rm --recursive s3://*`                                  | Cloud resource deletion risk                        |
-| **Git / Repo**           | `git rebase -i origin/main`, `git reset --hard origin/main`                                          | Avoid losing commit history or overwriting branches |
-| **Shell / System**       | `shutdown`, `reboot`, `halt`, `kill -9 1`                                                                                | System stability risk                               |
+* **System Destruction:** `rm -rf /`, `sudo rm -rf /`, `rm -rf *`, `rm -rf .*`, `rm --no-preserve-root` — irrecoverable
+  file deletion
+* **Privilege Escalation:** `sudo` (unless in a safe script explicitly whitelisted) — prevent privilege escalation
+* **Terraform:** `terraform destroy`, `terraform apply -target=*`, `terraform apply -replace=*` — avoid unintended
+  deletions or partial applies
+* **Kubernetes:** `kubectl delete namespace`, `kubectl delete node`, `kubectl delete pvc --all`, `kubectl delete
+  --force --grace-period=0` — cluster/data destruction risk
+* **AWS / Cloud:** `aws iam delete-*`, `aws ec2 terminate-instances --all`, `aws s3 rm --recursive s3://*` — cloud
+  resource deletion risk
+* **Git / Repo:** `git rebase -i origin/main`, `git reset --hard origin/main` — avoid losing commit history or
+  overwriting branches
+* **Shell / System:** `shutdown`, `reboot`, `halt`, `kill -9 1` — system stability risk

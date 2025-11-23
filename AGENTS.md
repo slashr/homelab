@@ -554,6 +554,14 @@ You must continuously monitor the PR and merge when all of the following are tru
 2. Codex Reviewer Bot has indicated approval as defined above.
 3. The PR has no unresolved review threads that require action.
 
+**AXP merge gate checklist (one PR per task, do not stop early):**
+
+* Create exactly one PR per TASKS.md entry—do not combine tasks in a single PR.
+* Poll PR checks until all required jobs are green.
+* Poll for Codex approval (thumbs-up or explicit approval comment); keep polling until received or a STOP condition applies.
+* After approval and green checks, merge the PR.
+* After merge, monitor the post-merge Actions run until it succeeds; stop only on success or an AXP STOP condition.
+
 Once these conditions are met:
 
 1. Commit an update that moves the corresponding task entry from `TASKS.md` to `COMPLETED.md`.

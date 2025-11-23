@@ -530,7 +530,7 @@ Your responsibilities:
 
 ### Merge gate and release workflow
 
-You must only merge when all of the following are true:
+You must continuously monitor the PR and merge when all of the following are true:
 
 1. All required checks and GitHub Actions workflows for the PR are passing.
 2. Codex Reviewer Bot has indicated approval as defined above.
@@ -557,7 +557,7 @@ If a post merge Actions run fails:
   Keep going on the current task until a STOP condition is met.
 
 * **Merge gate**  
-  Only merge when:
+  Continuously monitor the PR and only merge when:
   * All required checks are passing, and
   * Codex Reviewer Bot has explicitly approved the PR.
 
@@ -576,6 +576,9 @@ If a post merge Actions run fails:
 
 * **Be conservative with dangerous changes**  
   For infrastructure or workflow files that you do not fully understand, prefer stopping with a clear blocked reason rather than speculative edits that might break environments.
+
+* **Always create one PR per task**
+  When picking a task from TASKS.md, always create one PR per task and never combine multiple tasks into one PR
 
 ---
 

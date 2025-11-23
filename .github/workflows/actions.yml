@@ -808,18 +808,11 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: "1.9.6"
 
       - name: Terraform Init
         run: terraform init
-
-      - name: Import existing ACL into state
-        run: |
-          if ! terraform state list 2>/dev/null | grep -q '^tailscale_acl.this$'; then
-            terraform import tailscale_acl.this acl
-          else
-            echo "tailscale_acl.this already in state"
-          fi
 
       - name: Terraform Plan
         run: |

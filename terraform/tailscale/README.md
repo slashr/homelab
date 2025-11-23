@@ -1,6 +1,6 @@
 # Tailscale ACL via Terraform
 
-This module applies the Tailscale ACL policy defined in `tailscale/acl.json` using the Tailscale Terraform provider.
+This module applies the Tailscale ACL policy defined in `terraform/tailscale/acl.json` using the Tailscale Terraform provider.
 
 ## Inputs
 
@@ -8,9 +8,12 @@ This module applies the Tailscale ACL policy defined in `tailscale/acl.json` usi
 
 ## Files
 
-* `tailscale/acl.json`: Source ACL policy applied to the tailnet.
+* `terraform/tailscale/acl.json`: Source ACL policy applied to the tailnet.
 
 ## Usage
+
+State is stored in Terraform Cloud (`formcloud`) using a workspace tagged `tailscale` (execution mode: local/CLI-driven, like the other stacks).
+Ensure that workspace exists and has `TS_API_KEY` (or set via CLI) before running.
 
 Run in `terraform/tailscale`:
 

@@ -1,4 +1,11 @@
 terraform {
+  cloud {
+    organization = "formcloud"
+    workspaces {
+      tags = ["tailscale"]
+    }
+  }
+
   required_providers {
     tailscale = {
       source  = "tailscale/tailscale"
@@ -13,5 +20,5 @@ provider "tailscale" {
 }
 
 resource "tailscale_acl" "this" {
-  acl = file("${path.module}/../../tailscale/acl.json")
+  acl = file("${path.module}/acl.json")
 }

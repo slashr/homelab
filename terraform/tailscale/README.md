@@ -12,6 +12,9 @@ This module applies the Tailscale ACL policy defined in `tailscale/acl.json` usi
 
 ## Usage
 
+State is stored in Terraform Cloud (`formcloud`) using a workspace tagged `tailscale` (execution mode: local/CLI-driven, like the other stacks).
+Ensure that workspace exists and has `TS_API_KEY` (or set via CLI) before running.
+
 Run in `terraform/tailscale`:
 
 ```bash

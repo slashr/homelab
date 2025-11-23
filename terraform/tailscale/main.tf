@@ -1,4 +1,11 @@
 terraform {
+  cloud {
+    organization = "formcloud"
+    workspaces {
+      tags = ["tailscale"]
+    }
+  }
+
   required_providers {
     tailscale = {
       source  = "tailscale/tailscale"

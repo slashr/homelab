@@ -9,7 +9,7 @@ terraform {
 
 provider "tailscale" {
   api_key = var.tailscale_api_key
-  tailnet = var.tailscale_tailnet
+  tailnet = local.tailscale_tailnet_id
 }
 
 resource "tailscale_acl" "this" {

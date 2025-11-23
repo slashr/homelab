@@ -5,7 +5,6 @@ This module applies the Tailscale ACL policy defined in `tailscale/acl.json` usi
 ## Inputs
 
 * `tailscale_api_key` (sensitive): Tailscale API key with ACL edit permission.
-* `tailscale_tailnet`: Tailnet ID.
 
 ## Files
 
@@ -17,8 +16,8 @@ Run in `terraform/tailscale`:
 
 ```bash
 terraform init
-terraform plan -var="tailscale_api_key=..." -var="tailscale_tailnet=..."
-terraform apply -var="tailscale_api_key=..." -var="tailscale_tailnet=..."
+terraform plan -var="tailscale_api_key=..."
+terraform apply -var="tailscale_api_key=..."
 ```
 
 Store the API key securely (e.g., Terraform Cloud variable or CI secret).

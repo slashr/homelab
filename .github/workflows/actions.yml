@@ -810,15 +810,13 @@ jobs:
       - name: Terraform Plan
         run: |
           terraform plan \
-            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}" \
-            -var="tailscale_tailnet=${{ secrets.TS_TAILNET }}"
+            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}"
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           terraform apply -auto-approve \
-            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}" \
-            -var="tailscale_tailnet=${{ secrets.TS_TAILNET }}"
+            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}"
 
       - name: Tailscale ACL Summary
         if: always()

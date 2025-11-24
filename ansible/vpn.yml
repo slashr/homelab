@@ -101,6 +101,20 @@
       failed_when: tailscale_up.rc != 0 and "already authenticated" not in tailscale_up.stderr
       no_log: true
 
+    - name: Check Tailscale SSH status
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_status
+      changed_when: false
+      failed_when: tailscale_status.rc != 0
+
+    - name: Enable Tailscale SSH if disabled
+      ansible.builtin.command: tailscale set --ssh=true --accept-risk=lose-ssh
+      when: >
+        (tailscale_status.stdout | from_json).Self.SSHEnabled is not defined or
+        (tailscale_status.stdout | from_json).Self.SSHEnabled | bool == false
+      register: tailscale_set_ssh
+      changed_when: "'aborted' not in tailscale_set_ssh.stderr and tailscale_set_ssh.rc == 0"
+
     - name: Check Tailscale status
       ansible.builtin.command: tailscale status
       register: tailscale_status

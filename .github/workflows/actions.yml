@@ -32,7 +32,7 @@ jobs:
       tailscale: ${{ steps.filter.outputs.tailscale }}
       docs-only: ${{ steps.filter.outputs.docs-only }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1  # Shallow clone sufficient for path filtering
       - uses: dorny/paths-filter@v3
@@ -74,7 +74,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -138,7 +138,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs
 
@@ -233,7 +233,7 @@ jobs:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
@@ -328,7 +328,7 @@ jobs:
       TF_VAR_compartment_id: ${{ secrets.TF_COMPARTMENT_ID }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
@@ -407,7 +407,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
           fetch-depth: 0
@@ -548,7 +548,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
           fetch-depth: 0
@@ -598,7 +598,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
           fetch-depth: 0
@@ -645,7 +645,7 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
           fetch-depth: 0
@@ -695,7 +695,7 @@ jobs:
       TF_VAR_kube_cluster_ca_cert: ${{ secrets.TF_KUBE_CLUSTER_CA_CERT }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
@@ -801,7 +801,7 @@ jobs:
         working-directory: ./terraform/tailscale
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

@@ -36,6 +36,22 @@ runs:
           echo "Warning: tailscale command not found. Tailscale SSH may not work."
         fi
 
+        # Create wrapper script for Ansible to use Tailscale SSH
+        # This ensures Ansible uses Tailscale SSH authentication instead of requiring SSH keys
+        mkdir -p /home/runner/.local/bin
+        cat > /home/runner/.local/bin/tailscale-ssh-wrapper << 'WRAPPER_EOF'
+        #!/bin/bash
+        # Wrapper script to use tailscale ssh when available, fallback to regular ssh
+        if command -v tailscale >/dev/null 2>&1 && tailscale status >/dev/null 2>&1; then
+          exec tailscale ssh "$@"
+        else
+          exec ssh "$@"
+        fi
+        WRAPPER_EOF
+        chmod +x /home/runner/.local/bin/tailscale-ssh-wrapper
+        # Add to PATH so Ansible can find it
+        echo "/home/runner/.local/bin" >> $GITHUB_PATH
+
         # Optionally set up SSH key as fallback if provided
         if [ -n "${{ inputs.ssh_private_key }}" ]; then
           echo -e "${{ inputs.ssh_private_key }}" > /home/runner/.ssh/id_rsa

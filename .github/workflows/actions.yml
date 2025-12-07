@@ -455,7 +455,7 @@ jobs:
             echo "### Pis Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml \
+            ansible-playbook -i hosts.ini playbooks/pis.yml \
               --check 2>&1 | tee dry_run.log || true
             cat dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -469,7 +469,7 @@ jobs:
             echo "### VPN Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect vault-encrypted content)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml \
+            ansible-playbook -i hosts.ini vpn.yml \
               --vault-password-file ./vault.pass --check 2>&1 | tee vpn_dry_run.log || true
             cat vpn_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -484,7 +484,7 @@ jobs:
             echo "### k3s Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml \
+            ansible-playbook -i hosts.ini k3s.yml \
               --vault-password-file ./vault.pass --check 2>&1 | tee k3s_dry_run.log || true
             cat k3s_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -499,7 +499,7 @@ jobs:
             echo "### Security Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check for fail2ban and firewall deployment" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/security.yml \
+            ansible-playbook -i hosts.ini playbooks/security.yml \
               --check 2>&1 | tee security_dry_run.log || true
             cat security_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -512,7 +512,7 @@ jobs:
         id: vpn_playbook
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini vpn.yml --vault-password-file ./vault.pass
+          ansible-playbook -i hosts.ini vpn.yml --vault-password-file ./vault.pass
 
       - name: vpn-playbook Summary
         if: always()
@@ -568,7 +568,7 @@ jobs:
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/pis.yml
+          ansible-playbook -i hosts.ini playbooks/pis.yml
 
       - name: pis-playbook Summary
         if: always()
@@ -615,7 +615,7 @@ jobs:
         id: security_playbook
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini playbooks/security.yml
+          ansible-playbook -i hosts.ini playbooks/security.yml
 
       - name: security-playbook Summary
         if: always()
@@ -663,7 +663,7 @@ jobs:
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          ansible-playbook --private-key /home/runner/.ssh/id_rsa -i hosts.ini k3s.yml --vault-password-file ./vault.pass
+          ansible-playbook -i hosts.ini k3s.yml --vault-password-file ./vault.pass
 
       - name: k3s-playbook Summary
         if: always()

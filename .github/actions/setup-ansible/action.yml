@@ -9,8 +9,9 @@ inputs:
     description: 'Tailscale OAuth client secret'
     required: true
   ssh_private_key:
-    description: 'SSH private key for server authentication'
-    required: true
+    description: 'SSH private key for server authentication (optional when using Tailscale SSH)'
+    required: false
+    default: ''
   ansible_vault_password:
     description: 'Ansible vault password for decrypting files'
     required: true
@@ -19,7 +20,7 @@ runs:
   using: 'composite'
   steps:
     # Setup Tailscale network on the Actions worker
-    # Enables connection to k3s nodes using Tailscale public IP
+    # Enables connection to nodes via Tailscale SSH (no SSH keys needed)
     - name: Tailscale
       uses: tailscale/github-action@v4.1.0
       with:

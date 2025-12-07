@@ -1,10 +1,11 @@
 ---
 name: 'Setup SSH'
-description: 'Configure SSH with private key and disable strict host checking'
+description: 'Configure SSH for Tailscale SSH (SSH keys optional as fallback)'
 inputs:
   ssh_private_key:
-    description: 'SSH private key for authentication'
-    required: true
+    description: 'SSH private key for authentication (optional when using Tailscale SSH)'
+    required: false
+    default: ''
   ansible_vault_password:
     description: 'Ansible vault password (optional, only needed for Ansible jobs)'
     required: false
@@ -17,12 +18,24 @@ runs:
       run: |
         eval `ssh-agent -s`
         mkdir -p /home/runner/.ssh/
-        touch /home/runner/.ssh/id_rsa
-        # Create the SSH Private Key used to connect to all the servers using the Secret
-        echo -e "${{ inputs.ssh_private_key }}" > /home/runner/.ssh/id_rsa
-        chmod 600 /home/runner/.ssh/id_rsa
-        # Disable strict host key checking
-        echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /home/runner/.ssh/config
+
+        # Configure SSH for Tailscale SSH
+        # Tailscale SSH handles authentication, but we can keep SSH keys as fallback
+        cat > /home/runner/.ssh/config << 'EOF'
+        Host *
+          StrictHostKeyChecking no
+          UserKnownHostsFile=/dev/null
+          # Tailscale SSH will handle authentication automatically
+          # No need to specify IdentityFile when using Tailscale SSH
+        EOF
+
+        # Optionally set up SSH key as fallback if provided
+        if [ -n "${{ inputs.ssh_private_key }}" ]; then
+          echo -e "${{ inputs.ssh_private_key }}" > /home/runner/.ssh/id_rsa
+          chmod 600 /home/runner/.ssh/id_rsa
+          # Add IdentityFile to config if key is provided
+          echo "  IdentityFile ~/.ssh/id_rsa" >> /home/runner/.ssh/config
+        fi
 
     - name: Setup Ansible Vault
       if: inputs.ansible_vault_password != ''
@@ -31,4 +44,3 @@ runs:
       run: |
         # Create the Ansible Vault password file for decryption
         echo -e "${{ inputs.ansible_vault_password }}" > ./vault.pass
-

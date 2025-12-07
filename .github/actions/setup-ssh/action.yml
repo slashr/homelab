@@ -20,14 +20,21 @@ runs:
         mkdir -p /home/runner/.ssh/
 
         # Configure SSH for Tailscale SSH
-        # Tailscale SSH handles authentication, but we can keep SSH keys as fallback
+        # When Tailscale is running (via tailscale/github-action), SSH connections to Tailscale
+        # hostnames automatically use Tailscale SSH authentication. No explicit ProxyCommand
+        # or SSH key is needed - Tailscale handles authentication via its identity system.
+        # This works because Tailscale intercepts SSH connections to Tailscale hostnames
+        # when the Tailscale daemon is running.
         cat > /home/runner/.ssh/config << 'EOF'
         Host *
           StrictHostKeyChecking no
           UserKnownHostsFile=/dev/null
-          # Tailscale SSH will handle authentication automatically
-          # No need to specify IdentityFile when using Tailscale SSH
         EOF
+
+        # Verify Tailscale is available (should be set up by tailscale/github-action)
+        if ! command -v tailscale >/dev/null 2>&1; then
+          echo "Warning: tailscale command not found. Tailscale SSH may not work."
+        fi
 
         # Optionally set up SSH key as fallback if provided
         if [ -n "${{ inputs.ssh_private_key }}" ]; then

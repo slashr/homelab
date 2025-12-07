@@ -433,6 +433,19 @@ jobs:
           VPN_CHANGED=false
           K3S_CHANGED=false
           SECURITY_CHANGED=false
+          HOSTS_INI_CHANGED=false
+
+          # Check if hosts.ini changed (important for Tailscale SSH migration)
+          if git diff --name-only origin/main...HEAD | grep -E '^ansible/hosts\.ini'; then
+            HOSTS_INI_CHANGED=true
+            echo "### ⚠️ hosts.ini Changed - Testing Connectivity" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "Testing Ansible connectivity to all nodes via Tailscale SSH..." >> $GITHUB_STEP_SUMMARY
+            ansible all -i hosts.ini -m ping --one-line 2>&1 | tee connectivity_test.log || true
+            cat connectivity_test.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
 
           if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/pis\.yml|roles/(common|network)/|group_vars/pis\.yml)'; then
             PIS_CHANGED=true
@@ -448,6 +461,24 @@ jobs:
 
           if git diff --name-only origin/main...HEAD | grep -E '^ansible/(k3s\.yml|k3s-master-config\.yaml|roles/k3s[^/]+/|playbooks/k3s\.yml)'; then
             K3S_CHANGED=true
+          fi
+
+          # If hosts.ini changed, also run a basic dry-run on at least one playbook to verify end-to-end
+          if [ "$HOSTS_INI_CHANGED" = true ]; then
+            echo "### End-to-End Connectivity Test" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "Running dry-run on a sample node to verify Tailscale SSH works end-to-end..." >> $GITHUB_STEP_SUMMARY
+            # Try to run a dry-run on a simple playbook or just test with a single node
+            if [ -f playbooks/pis.yml ]; then
+              ansible-playbook -i hosts.ini playbooks/pis.yml --check --limit michael-pi 2>&1 | head -20 | tee e2e_test.log || true
+            elif [ -f vpn.yml ]; then
+              ansible-playbook -i hosts.ini vpn.yml --check --limit pam-amd1 2>&1 | head -20 | tee e2e_test.log || true
+            else
+              echo "No playbooks found for end-to-end test" >> e2e_test.log
+            fi
+            cat e2e_test.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Check pis playbook only if related files changed

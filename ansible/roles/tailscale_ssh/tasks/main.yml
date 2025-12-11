@@ -1,0 +1,146 @@
+---
+# Ensures Tailscale SSH is properly configured on the host
+# This role should run BEFORE any roles that may reboot the host
+
+- name: Tailscale SSH disabled
+  ansible.builtin.debug:
+    msg: "Tailscale SSH configuration skipped (tailscale_ssh_enabled=false)."
+  when: not (tailscale_ssh_enabled | default(true) | bool)
+  tags: [tailscale_ssh]
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - tailscale_ssh_tag | length > 0
+    fail_msg: "tailscale_ssh_tag must be set (e.g., 'tag:pi', 'tag:cloud')"
+  when: tailscale_ssh_enabled | default(true) | bool
+  tags: [tailscale_ssh]
+
+- block:
+    - name: Check if Tailscale is installed
+      ansible.builtin.command: which tailscale
+      register: tailscale_installed
+      changed_when: false
+      failed_when: false
+      tags: [tailscale_ssh]
+
+    - name: Fail if Tailscale is not installed
+      ansible.builtin.fail:
+        msg: >-
+          Tailscale is not installed on this host. Install Tailscale first.
+      when: tailscale_installed.rc != 0
+      tags: [tailscale_ssh]
+
+    - name: Get current Tailscale status
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_status_raw
+      changed_when: false
+      failed_when: false
+      tags: [tailscale_ssh]
+
+    - name: Parse Tailscale status
+      ansible.builtin.set_fact:
+        tailscale_status: "{{ tailscale_status_raw.stdout | from_json }}"
+      when: tailscale_status_raw.rc == 0
+      tags: [tailscale_ssh]
+
+    - name: Check if Tailscale is logged in
+      ansible.builtin.set_fact:
+        tailscale_logged_in: >-
+          {{ tailscale_status.BackendState | default('') == 'Running' }}
+      when: tailscale_status is defined
+      tags: [tailscale_ssh]
+
+    - name: Get current Tailscale preferences
+      ansible.builtin.command: tailscale debug prefs
+      register: tailscale_prefs_raw
+      changed_when: false
+      when: tailscale_logged_in | default(false)
+      tags: [tailscale_ssh]
+
+    - name: Parse Tailscale preferences
+      ansible.builtin.set_fact:
+        tailscale_prefs: "{{ tailscale_prefs_raw.stdout | from_json }}"
+      when:
+        - tailscale_logged_in | default(false)
+        - tailscale_prefs_raw.stdout | length > 0
+      tags: [tailscale_ssh]
+
+    - name: Check if SSH is already enabled
+      ansible.builtin.set_fact:
+        tailscale_ssh_already_enabled: >-
+          {{ tailscale_prefs.RunSSH | default(false) }}
+        tailscale_current_tags: >-
+          {{ tailscale_prefs.AdvertiseTags | default([]) }}
+      when: tailscale_prefs is defined
+      tags: [tailscale_ssh]
+
+    - name: Determine if Tailscale configuration needs update
+      ansible.builtin.set_fact:
+        tailscale_needs_update: >-
+          {{
+            not (tailscale_ssh_already_enabled | default(false)) or
+            (tailscale_ssh_tag not in (tailscale_current_tags | default([])))
+          }}
+      tags: [tailscale_ssh]
+
+    - name: Display current Tailscale SSH status
+      ansible.builtin.debug:
+        msg: >-
+          SSH enabled: {{ tailscale_ssh_already_enabled | default(false) }},
+          Current tags: {{ tailscale_current_tags | default([]) }},
+          Needs update: {{ tailscale_needs_update }}
+      tags: [tailscale_ssh]
+
+    - name: Build tailscale up command
+      ansible.builtin.set_fact:
+        tailscale_up_cmd: >-
+          tailscale up --ssh
+          --advertise-tags={{ tailscale_ssh_tag }}
+          {{ '--accept-routes' if tailscale_ssh_accept_routes | default(true)
+             else '' }}
+          {{ '--advertise-routes=' + tailscale_ssh_advertise_routes
+             if tailscale_ssh_advertise_routes | length > 0 else '' }}
+          --accept-risk=lose-ssh
+          --reset
+      when: tailscale_needs_update
+      tags: [tailscale_ssh]
+
+    - name: Configure Tailscale SSH
+      ansible.builtin.command: "{{ tailscale_up_cmd }}"
+      register: tailscale_up_result
+      when: tailscale_needs_update
+      tags: [tailscale_ssh]
+
+    - name: Wait for Tailscale to be ready
+      ansible.builtin.command: tailscale status
+      register: tailscale_ready_check
+      until: tailscale_ready_check.rc == 0
+      retries: "{{ (tailscale_ssh_ready_timeout | int / 5) | int }}"
+      delay: 5
+      changed_when: false
+      when: tailscale_needs_update
+      tags: [tailscale_ssh]
+
+    - name: Verify Tailscale SSH is enabled
+      ansible.builtin.command: tailscale debug prefs
+      register: tailscale_verify_raw
+      changed_when: false
+      tags: [tailscale_ssh]
+
+    - name: Parse verification result
+      ansible.builtin.set_fact:
+        tailscale_verify: "{{ tailscale_verify_raw.stdout | from_json }}"
+      tags: [tailscale_ssh]
+
+    - name: Confirm Tailscale SSH configuration
+      ansible.builtin.assert:
+        that:
+          - tailscale_verify.RunSSH | default(false)
+        fail_msg: "Tailscale SSH failed to enable. Check Tailscale logs."
+        success_msg: >-
+          Tailscale SSH is enabled with tags:
+          {{ tailscale_verify.AdvertiseTags | default([]) }}
+      tags: [tailscale_ssh]
+
+  when: tailscale_ssh_enabled | default(true) | bool

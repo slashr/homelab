@@ -13,8 +13,11 @@ Type=oneshot
 EnvironmentFile=/etc/tailscale/auth.conf
 ExecStartPre=/bin/sleep 5
 ExecStart=/bin/bash -c '\
-  if tailscale status 2>&1 | grep -q "Logged out"; then \
-    echo "Tailscale logged out, re-authenticating..."; \
+  STATUS_JSON=$(tailscale status --json 2>/dev/null); \
+  if echo "$STATUS_JSON" | grep -q "\"BackendState\":\"Running\""; then \
+    echo "Tailscale already authenticated and running"; \
+  else \
+    echo "Tailscale needs authentication, re-authenticating..."; \
     tailscale up \
       --auth-key=${TAILSCALE_AUTH_KEY} \
       --ssh \
@@ -23,8 +26,6 @@ ExecStart=/bin/bash -c '\
       ${TAILSCALE_ADVERTISE_ROUTES:+--advertise-routes=${TAILSCALE_ADVERTISE_ROUTES}} \
       --accept-risk=lose-ssh \
       --reset; \
-  else \
-    echo "Tailscale already authenticated"; \
   fi'
 RemainAfterExit=yes
 StandardOutput=journal

@@ -19,7 +19,7 @@
     {
       "action": "accept",
       "src": ["autogroup:admin", "tag:k3s"],
-      "dst": ["tag:k3s", "tag:pi", "tag:cloud"],
+      "dst": ["autogroup:tagged"],
       "users": ["autogroup:nonroot", "root"]
     },
     {

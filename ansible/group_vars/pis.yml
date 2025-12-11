@@ -37,6 +37,8 @@ tailscale_ssh_enabled: true
 tailscale_ssh_tag: "tag:pi"
 tailscale_ssh_accept_routes: true
 # Routes are host-specific, set in host_vars or inventory
+# Auth key from TAILSCALE_JOIN_KEY env var (set in GitHub Actions)
+tailscale_ssh_auth_key: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
 
 # UFW firewall configuration for Raspberry Pis
 ufw_enabled: true

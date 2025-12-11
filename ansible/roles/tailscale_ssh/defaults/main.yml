@@ -17,3 +17,10 @@ tailscale_ssh_accept_routes: true
 
 # Timeout for waiting for Tailscale to be ready after configuration
 tailscale_ssh_ready_timeout: 60
+
+# Tailscale auth key for automatic re-authentication after reboots
+# Generate a reusable, pre-authorized key in Tailscale admin console:
+# https://login.tailscale.com/admin/settings/keys
+# Store in Ansible vault for security
+# Required when using tags (tagged nodes need re-auth after reboots)
+tailscale_ssh_auth_key: ""

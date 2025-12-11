@@ -1,6 +1,9 @@
 ---
 # Ensures Tailscale SSH is properly configured on the host
 # This role should run BEFORE any roles that may reboot the host
+#
+# When using tags (--advertise-tags), nodes may need re-authentication
+# after reboots. This role handles that automatically using an auth key.
 
 - name: Tailscale SSH disabled
   ansible.builtin.debug:
@@ -32,6 +35,63 @@
       tags: [tailscale_ssh]
 
     - name: Get current Tailscale status
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_status_raw
+      changed_when: false
+      failed_when: false
+      tags: [tailscale_ssh]
+
+    - name: Check if Tailscale is logged out
+      ansible.builtin.set_fact:
+        tailscale_logged_out: >-
+          {{ 'Logged out' in tailscale_status_raw.stdout or
+             tailscale_status_raw.rc != 0 }}
+      tags: [tailscale_ssh]
+
+    - name: Handle logged out state with auth key
+      when: tailscale_logged_out | bool
+      block:
+        - name: Validate auth key is provided for re-authentication
+          ansible.builtin.assert:
+            that:
+              - tailscale_ssh_auth_key | length > 0
+            fail_msg: >-
+              Tailscale is logged out and requires re-authentication.
+              Set tailscale_ssh_auth_key (from Ansible vault) to enable
+              automatic re-auth. Generate a reusable, pre-authorized key at
+              https://login.tailscale.com/admin/settings/keys
+          tags: [tailscale_ssh]
+
+        - name: Authenticate with Tailscale using auth key
+          ansible.builtin.command: >-
+            tailscale up
+            --auth-key={{ tailscale_ssh_auth_key }}
+            --ssh
+            --advertise-tags={{ tailscale_ssh_tag }}
+            {{ '--accept-routes' if tailscale_ssh_accept_routes | default(true)
+               else '' }}
+            {{ '--advertise-routes=' + tailscale_ssh_advertise_routes
+               if tailscale_ssh_advertise_routes | length > 0 else '' }}
+            --accept-risk=lose-ssh
+            --reset
+          register: tailscale_auth_result
+          no_log: true  # Hide auth key from logs
+          tags: [tailscale_ssh]
+
+        - name: Wait for Tailscale to connect after auth
+          ansible.builtin.command: tailscale status
+          register: tailscale_post_auth_check
+          until: >-
+            tailscale_post_auth_check.rc == 0 and
+            'Logged out' not in tailscale_post_auth_check.stdout
+          retries: 12
+          delay: 5
+          changed_when: false
+          tags: [tailscale_ssh]
+      tags: [tailscale_ssh]
+
+    # Re-check status after potential re-authentication
+    - name: Get Tailscale status after auth check
       ansible.builtin.command: tailscale status --json
       register: tailscale_status_raw
       changed_when: false
@@ -86,16 +146,18 @@
             (tailscale_ssh_advertise_routes | default('') !=
              tailscale_current_routes | default(''))
           }}
+      when: tailscale_logged_in | default(false)
       tags: [tailscale_ssh]
 
     - name: Display current Tailscale SSH status
       ansible.builtin.debug:
         msg:
+          - "Logged in: {{ tailscale_logged_in | default(false) }}"
           - "SSH enabled: {{ tailscale_ssh_already_enabled | default(false) }}"
           - "Current tags: {{ tailscale_current_tags | default([]) }}"
           - "Current routes: {{ tailscale_current_routes | default('') }}"
           - "Desired routes: {{ tailscale_ssh_advertise_routes | default('') }}"
-          - "Needs update: {{ tailscale_needs_update }}"
+          - "Needs update: {{ tailscale_needs_update | default(false) }}"
       tags: [tailscale_ssh]
 
     - name: Build tailscale up command
@@ -109,13 +171,13 @@
              if tailscale_ssh_advertise_routes | length > 0 else '' }}
           --accept-risk=lose-ssh
           --reset
-      when: tailscale_needs_update
+      when: tailscale_needs_update | default(false)
       tags: [tailscale_ssh]
 
     - name: Configure Tailscale SSH
       ansible.builtin.command: "{{ tailscale_up_cmd }}"
       register: tailscale_up_result
-      when: tailscale_needs_update
+      when: tailscale_needs_update | default(false)
       tags: [tailscale_ssh]
 
     - name: Wait for Tailscale to be ready
@@ -125,7 +187,7 @@
       retries: "{{ (tailscale_ssh_ready_timeout | int / 5) | int }}"
       delay: 5
       changed_when: false
-      when: tailscale_needs_update
+      when: tailscale_needs_update | default(false)
       tags: [tailscale_ssh]
 
     - name: Verify Tailscale SSH is enabled

@@ -1,11 +1,7 @@
 ---
 name: 'Setup SSH'
-description: 'Configure SSH for Tailscale SSH (SSH keys optional as fallback)'
+description: 'Configure SSH for Tailscale SSH connections'
 inputs:
-  ssh_private_key:
-    description: 'SSH private key for authentication (optional when using Tailscale SSH)'
-    required: false
-    default: ''
   ansible_vault_password:
     description: 'Ansible vault password (optional, only needed for Ansible jobs)'
     required: false
@@ -16,50 +12,32 @@ runs:
     - name: Setup SSH
       shell: bash
       run: |
-        eval `ssh-agent -s`
         mkdir -p /home/runner/.ssh/
 
         # Configure SSH for Tailscale SSH
         # When Tailscale is running (via tailscale/github-action), SSH connections to Tailscale
-        # hostnames automatically use Tailscale SSH authentication. No explicit ProxyCommand
-        # or SSH key is needed - Tailscale handles authentication via its identity system.
-        # This works because Tailscale intercepts SSH connections to Tailscale hostnames
-        # when the Tailscale daemon is running.
-        cat > /home/runner/.ssh/config << 'EOF'
+        # hostnames automatically use Tailscale SSH authentication. Regular 'ssh' is used -
+        # Tailscale intercepts connections to Tailscale hostnames automatically.
+        # No wrapper or special SSH executable needed.
+        cat > /home/runner/.ssh/config << 'SSHEOF'
         Host *
           StrictHostKeyChecking no
           UserKnownHostsFile=/dev/null
-        EOF
+        SSHEOF
 
         # Verify Tailscale is available (should be set up by tailscale/github-action)
         if ! command -v tailscale >/dev/null 2>&1; then
-          echo "Warning: tailscale command not found. Tailscale SSH may not work."
+          echo "::error::tailscale command not found. Tailscale must be set up first."
+          exit 1
         fi
 
-        # Use the committed Tailscale SSH wrapper script from the ansible directory
-        # The wrapper checks for Tailscale and falls back to regular ssh
-        # Works in GitHub Actions, local development, and self-hosted runners
-        ANSIBLE_DIR="${{ github.workspace }}/ansible"
-        WRAPPER_SCRIPT="$ANSIBLE_DIR/tailscale-ssh-wrapper"
-
-        # Ensure the wrapper is executable (it's already committed to the repo)
-        chmod +x "$WRAPPER_SCRIPT"
-
-        # Export wrapper path for Ansible (group_vars/all.yml consumes ANSIBLE_TAILSCALE_WRAPPER)
-        echo "ANSIBLE_TAILSCALE_WRAPPER=$WRAPPER_SCRIPT" >> $GITHUB_ENV
-
-        # Add ansible directory to PATH for subsequent steps
-        echo "$ANSIBLE_DIR" >> $GITHUB_PATH
-        # Also export to current PATH for use in this step
-        export PATH="$ANSIBLE_DIR:$PATH"
-
-        # Optionally set up SSH key as fallback if provided
-        if [ -n "${{ inputs.ssh_private_key }}" ]; then
-          echo -e "${{ inputs.ssh_private_key }}" > /home/runner/.ssh/id_rsa
-          chmod 600 /home/runner/.ssh/id_rsa
-          # Add IdentityFile to config if key is provided
-          echo "  IdentityFile ~/.ssh/id_rsa" >> /home/runner/.ssh/config
+        # Verify Tailscale is connected
+        if ! tailscale status >/dev/null 2>&1; then
+          echo "::error::Tailscale is not connected. Check tailscale/github-action setup."
+          exit 1
         fi
+
+        echo "✅ Tailscale is connected. SSH to Tailscale hostnames will work automatically."
 
     - name: Setup Ansible Vault
       if: inputs.ansible_vault_password != ''

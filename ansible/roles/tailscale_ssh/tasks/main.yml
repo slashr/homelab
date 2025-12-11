@@ -190,15 +190,26 @@
       when: tailscale_needs_update | default(false)
       tags: [tailscale_ssh]
 
+    - name: Fail if Tailscale is still not logged in after auth attempt
+      ansible.builtin.fail:
+        msg: >-
+          Tailscale is not logged in. Auth key may be invalid or expired.
+          Check TAILSCALE_JOIN_KEY and ensure it's a valid, reusable,
+          pre-authorized key with appropriate tags.
+      when: not (tailscale_logged_in | default(false))
+      tags: [tailscale_ssh]
+
     - name: Verify Tailscale SSH is enabled
       ansible.builtin.command: tailscale debug prefs
       register: tailscale_verify_raw
       changed_when: false
+      when: tailscale_logged_in | default(false)
       tags: [tailscale_ssh]
 
     - name: Parse verification result
       ansible.builtin.set_fact:
         tailscale_verify: "{{ tailscale_verify_raw.stdout | from_json }}"
+      when: tailscale_logged_in | default(false)
       tags: [tailscale_ssh]
 
     - name: Confirm Tailscale SSH configuration
@@ -209,6 +220,7 @@
         success_msg: >-
           Tailscale SSH is enabled with tags:
           {{ tailscale_verify.AdvertiseTags | default([]) }}
+      when: tailscale_logged_in | default(false)
       tags: [tailscale_ssh]
 
   when: tailscale_ssh_enabled | default(true) | bool

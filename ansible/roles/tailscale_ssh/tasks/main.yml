@@ -152,6 +152,8 @@
           {{ tailscale_prefs.AdvertiseTags | default([]) }}
         tailscale_current_routes: >-
           {{ tailscale_prefs.AdvertiseRoutes | default([]) | join(',') }}
+        tailscale_current_accept_routes: >-
+          {{ tailscale_prefs.RouteAll | default(false) }}
       when: tailscale_prefs is defined
       tags: [tailscale_ssh]
 
@@ -162,7 +164,9 @@
             not (tailscale_ssh_already_enabled | default(false)) or
             (tailscale_ssh_tag not in (tailscale_current_tags | default([]))) or
             (tailscale_ssh_advertise_routes | default('') !=
-             tailscale_current_routes | default(''))
+             tailscale_current_routes | default('')) or
+            ((tailscale_ssh_accept_routes | default(true) | bool) !=
+             (tailscale_current_accept_routes | default(false) | bool))
           }}
       when: tailscale_logged_in | default(false)
       tags: [tailscale_ssh]
@@ -175,6 +179,10 @@
           - "Current tags: {{ tailscale_current_tags | default([]) }}"
           - "Current routes: {{ tailscale_current_routes | default('') }}"
           - "Desired routes: {{ tailscale_ssh_advertise_routes | default('') }}"
+          - "Accept routes: {{ tailscale_current_accept_routes
+               | default(false) }}"
+          - "Desired accept-routes: {{ tailscale_ssh_accept_routes
+               | default(true) }}"
           - "Needs update: {{ tailscale_needs_update | default(false) }}"
       tags: [tailscale_ssh]
 

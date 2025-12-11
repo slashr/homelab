@@ -2,3 +2,17 @@
 k3s_version: "v1.34.1+k3s1"
 k3s_master_ip: "100.100.1.100"
 k3s_master_port: "6443"
+# Prefer an explicit Tailscale SSH wrapper if provided; otherwise use the wrapper
+# in the inventory directory (created by the setup-ssh action). Falls back to ssh.
+tailscale_wrapper_path: "{{ inventory_dir ~ '/tailscale-ssh-wrapper' }}"
+# Use env override if provided; otherwise use the wrapper file when it exists; else fallback to system ssh
+ansible_ssh_executable: >-
+  {{
+    lookup('env', 'ANSIBLE_TAILSCALE_WRAPPER')
+    if lookup('env', 'ANSIBLE_TAILSCALE_WRAPPER') | length > 0
+    else (
+      tailscale_wrapper_path
+      if lookup('file', tailscale_wrapper_path, errors='ignore') | length > 0
+      else 'ssh'
+    )
+  }}

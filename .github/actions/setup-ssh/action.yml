@@ -36,30 +36,22 @@ runs:
           echo "Warning: tailscale command not found. Tailscale SSH may not work."
         fi
 
-        # Create Tailscale SSH wrapper script in the ansible directory
-        # This ensures Ansible uses Tailscale SSH authentication instead of requiring SSH keys
-        # The wrapper script checks for Tailscale and falls back to regular ssh
+        # Use the committed Tailscale SSH wrapper script from the ansible directory
+        # The wrapper checks for Tailscale and falls back to regular ssh
         # Works in GitHub Actions, local development, and self-hosted runners
-        # The wrapper is created in the ansible directory so it's always available
         ANSIBLE_DIR="${{ github.workspace }}/ansible"
         WRAPPER_SCRIPT="$ANSIBLE_DIR/tailscale-ssh-wrapper"
-        cat > "$WRAPPER_SCRIPT" << 'WRAPPER_EOF'
-        #!/bin/bash
-        # Universal wrapper script for Ansible to use Tailscale SSH when available
-        # This script checks for Tailscale and falls back to regular ssh
-        # Works in GitHub Actions, local development, and self-hosted runners
 
-        # If tailscale is available and running, use it directly
-        if command -v tailscale >/dev/null 2>&1 && tailscale status >/dev/null 2>&1; then
-          exec tailscale ssh "$@"
-        fi
-
-        # Fallback to regular ssh
-        exec ssh "$@"
-        WRAPPER_EOF
+        # Ensure the wrapper is executable (it's already committed to the repo)
         chmod +x "$WRAPPER_SCRIPT"
-        # Add ansible directory to PATH so the wrapper can be found
+
+        # Export wrapper path for Ansible (group_vars/all.yml consumes ANSIBLE_TAILSCALE_WRAPPER)
+        echo "ANSIBLE_TAILSCALE_WRAPPER=$WRAPPER_SCRIPT" >> $GITHUB_ENV
+
+        # Add ansible directory to PATH for subsequent steps
         echo "$ANSIBLE_DIR" >> $GITHUB_PATH
+        # Also export to current PATH for use in this step
+        export PATH="$ANSIBLE_DIR:$PATH"
 
         # Optionally set up SSH key as fallback if provided
         if [ -n "${{ inputs.ssh_private_key }}" ]; then

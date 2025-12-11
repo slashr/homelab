@@ -41,15 +41,32 @@
       failed_when: false
       tags: [tailscale_ssh]
 
-    - name: Check if Tailscale is logged out
+    - name: Parse Tailscale status for auth check
       ansible.builtin.set_fact:
-        tailscale_logged_out: >-
-          {{ 'Logged out' in tailscale_status_raw.stdout or
-             tailscale_status_raw.rc != 0 }}
+        tailscale_backend_state: >-
+          {{ (tailscale_status_raw.stdout | from_json).BackendState
+             | default('Unknown') }}
+      when: tailscale_status_raw.rc == 0
+      failed_when: false
       tags: [tailscale_ssh]
 
-    - name: Handle logged out state with auth key
-      when: tailscale_logged_out | bool
+    - name: Check if Tailscale needs authentication
+      ansible.builtin.set_fact:
+        tailscale_needs_auth: >-
+          {{ tailscale_status_raw.rc != 0 or
+             tailscale_backend_state | default('Unknown')
+               not in ['Running', 'Starting'] }}
+      tags: [tailscale_ssh]
+
+    - name: Display Tailscale backend state
+      ansible.builtin.debug:
+        msg: >-
+          Backend state: {{ tailscale_backend_state | default('Unknown') }},
+          Needs auth: {{ tailscale_needs_auth }}
+      tags: [tailscale_ssh]
+
+    - name: Handle unauthenticated state with auth key
+      when: tailscale_needs_auth | bool
       block:
         - name: Validate auth key is provided for re-authentication
           ansible.builtin.assert:
@@ -78,12 +95,13 @@
           no_log: true  # Hide auth key from logs
           tags: [tailscale_ssh]
 
-        - name: Wait for Tailscale to connect after auth
-          ansible.builtin.command: tailscale status
+        - name: Wait for Tailscale to reach Running state
+          ansible.builtin.command: tailscale status --json
           register: tailscale_post_auth_check
           until: >-
             tailscale_post_auth_check.rc == 0 and
-            'Logged out' not in tailscale_post_auth_check.stdout
+            (tailscale_post_auth_check.stdout | from_json).BackendState
+              | default('') == 'Running'
           retries: 12
           delay: 5
           changed_when: false

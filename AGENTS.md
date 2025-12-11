@@ -82,11 +82,11 @@ Reusable action that installs pre-commit, caches environments, and runs checks o
 
 ### `.github/actions/setup-ssh/`
 
-Configures SSH authentication with private key and disables strict host checking. Optionally sets up Ansible Vault password file when provided.
+Configures SSH for Tailscale SSH connections and optionally sets up Ansible Vault password file.
+No SSH keys needed - authentication is handled by Tailscale's identity system.
 
 **Inputs:**
 
-* `ssh_private_key` (required) — SSH private key for server authentication
 * `ansible_vault_password` (optional) — Vault password for decrypting encrypted Ansible files
 
 ## Secrets and Environment Requirements
@@ -128,7 +128,6 @@ Configures SSH authentication with private key and disables strict host checking
 
 **Ansible:**
 
-* `SSH_AUTH_PRIVATE_KEY` — SSH private key for accessing all managed nodes
 * `ANSIBLE_VAULT_PASSWORD` — Password for decrypting vault-encrypted configuration files
 
 ### Terraform Cloud Workspaces
@@ -381,7 +380,7 @@ pod-to-pod networking across cloud providers and on-premises Raspberry Pis.
 **Ansible playbook fails:**
 
 * Ensure Tailscale is connected (run `tailscale status` on nodes)
-* Verify SSH keys are correct and have proper permissions
+* Verify Tailscale ACL allows SSH from the runner's tag to target nodes
 * Check Ansible Vault password is correct
 * Confirm `TAILSCALE_JOIN_KEY` is set in environment
 

@@ -8,10 +8,6 @@ inputs:
   tailscale_client_secret:
     description: 'Tailscale OAuth client secret'
     required: true
-  ssh_private_key:
-    description: 'SSH private key for server authentication (optional when using Tailscale SSH)'
-    required: false
-    default: ''
   ansible_vault_password:
     description: 'Ansible vault password for decrypting files'
     required: true
@@ -64,5 +60,4 @@ runs:
     - name: Setup SSH
       uses: ./.github/actions/setup-ssh
       with:
-        ssh_private_key: ${{ inputs.ssh_private_key }}
         ansible_vault_password: ${{ inputs.ansible_vault_password }}

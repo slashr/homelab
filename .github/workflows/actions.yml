@@ -417,7 +417,6 @@ jobs:
         with:
           tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Dry-run check (PR only)
@@ -589,7 +588,7 @@ jobs:
         with:
           tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
+          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run pis-playbook
         id: pis_playbook
@@ -639,7 +638,6 @@ jobs:
         with:
           tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run security-playbook
@@ -686,7 +684,6 @@ jobs:
         with:
           tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
           tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          ssh_private_key: ${{ secrets.SSH_AUTH_PRIVATE_KEY }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run k3s-playbook

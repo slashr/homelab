@@ -68,6 +68,17 @@
     - name: Reboot after firmware update
       ansible.builtin.reboot:
         reboot_timeout: "{{ firmware_upgrade_reboot_timeout | default(600) }}"
+        # Extra delay for Tailscale daemon to reconnect after reboot
+        post_reboot_delay: "{{ firmware_upgrade_post_reboot_delay | default(30) }}"
+        # Test that we can actually run commands, not just connect
+        test_command: "whoami"
+      when: firmware_update_required
+      tags: [firmware_upgrade]
+
+    - name: Wait for Tailscale to reconnect (if using Tailscale SSH)
+      ansible.builtin.wait_for_connection:
+        timeout: 120
+        delay: 10
       when: firmware_update_required
       tags: [firmware_upgrade]
 

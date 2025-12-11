@@ -1,0 +1,12 @@
+# Tailscale authentication configuration
+# Managed by Ansible - do not edit manually
+# File permissions: 0600 (root only)
+
+TAILSCALE_AUTH_KEY={{ tailscale_ssh_auth_key }}
+TAILSCALE_TAGS={{ tailscale_ssh_tag }}
+{% if tailscale_ssh_accept_routes | default(true) %}
+TAILSCALE_ACCEPT_ROUTES=1
+{% endif %}
+{% if tailscale_ssh_advertise_routes | default('') | length > 0 %}
+TAILSCALE_ADVERTISE_ROUTES={{ tailscale_ssh_advertise_routes }}
+{% endif %}

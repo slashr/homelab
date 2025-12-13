@@ -266,4 +266,58 @@
       when: tailscale_logged_in | default(false)
       tags: [tailscale_ssh]
 
+    # Deploy systemd service for automatic re-authentication on boot
+    # This ensures Tailscale SSH works after reboots without intervention
+    - name: Deploy auto-auth systemd service
+      when: tailscale_ssh_auth_key | default('') | length > 0
+      block:
+        - name: Create Tailscale config directory
+          ansible.builtin.file:
+            path: /etc/tailscale
+            state: directory
+            owner: root
+            group: root
+            mode: "0700"
+          tags: [tailscale_ssh]
+
+        - name: Deploy Tailscale auth configuration
+          ansible.builtin.template:
+            src: tailscale-auth.conf.j2
+            dest: /etc/tailscale/auth.conf
+            owner: root
+            group: root
+            mode: "0600"
+          no_log: true  # Hide auth key from logs
+          tags: [tailscale_ssh]
+
+        - name: Deploy Tailscale auto-auth systemd service
+          ansible.builtin.template:
+            src: tailscale-autoauth.service.j2
+            dest: /etc/systemd/system/tailscale-autoauth.service
+            owner: root
+            group: root
+            mode: "0644"
+          register: tailscale_service_deployed
+          tags: [tailscale_ssh]
+
+        - name: Reload systemd daemon
+          ansible.builtin.systemd:
+            daemon_reload: true
+          when: tailscale_service_deployed.changed
+          tags: [tailscale_ssh]
+
+        - name: Enable Tailscale auto-auth service
+          ansible.builtin.systemd:
+            name: tailscale-autoauth
+            enabled: true
+          tags: [tailscale_ssh]
+
+        - name: Display auto-auth service status
+          ansible.builtin.debug:
+            msg: >-
+              Tailscale auto-auth service deployed. Tailscale will
+              automatically re-authenticate on boot using the auth key.
+          tags: [tailscale_ssh]
+      tags: [tailscale_ssh]
+
   when: tailscale_ssh_enabled | default(true) | bool

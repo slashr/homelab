@@ -83,7 +83,7 @@
         - name: Authenticate with Tailscale using auth key
           ansible.builtin.command: >-
             tailscale up
-            --auth-key={{ tailscale_ssh_auth_key }}
+            --authkey={{ tailscale_ssh_auth_key }}
             --ssh
             --advertise-tags={{ tailscale_ssh_tag }}
             {{ '--accept-routes' if tailscale_ssh_accept_routes | default(true)

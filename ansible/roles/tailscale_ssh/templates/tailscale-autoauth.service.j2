@@ -19,7 +19,7 @@ ExecStart=/bin/bash -c '\
   else \
     echo "Tailscale needs authentication, re-authenticating..."; \
     tailscale up \
-      --auth-key=${TAILSCALE_AUTH_KEY} \
+      --authkey=${TAILSCALE_AUTH_KEY} \
       --ssh \
       --advertise-tags=${TAILSCALE_TAGS} \
       ${TAILSCALE_ACCEPT_ROUTES:+--accept-routes} \

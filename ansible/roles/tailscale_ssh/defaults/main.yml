@@ -1,0 +1,19 @@
+---
+# Tailscale SSH role defaults
+
+# Whether to enable Tailscale SSH on this host
+tailscale_ssh_enabled: true
+
+# Tag to advertise for this host (required for ACL-based SSH access)
+# Common values: tag:pi, tag:k3s, tag:cloud
+tailscale_ssh_tag: ""
+
+# Routes to advertise (optional, host-specific)
+# Example: "10.42.0.0/24" for k3s pod network
+tailscale_ssh_advertise_routes: ""
+
+# Whether to accept routes from other Tailscale nodes
+tailscale_ssh_accept_routes: true
+
+# Timeout for waiting for Tailscale to be ready after configuration
+tailscale_ssh_ready_timeout: 60

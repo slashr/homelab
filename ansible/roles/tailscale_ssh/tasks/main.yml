@@ -159,10 +159,13 @@
 
     - name: Determine if Tailscale configuration needs update
       ansible.builtin.set_fact:
+        # Compare full tag set, not just presence of desired tag
+        # This ensures stale tags are removed on re-runs
         tailscale_needs_update: >-
           {{
             not (tailscale_ssh_already_enabled | default(false)) or
-            (tailscale_ssh_tag not in (tailscale_current_tags | default([]))) or
+            (tailscale_current_tags | default([]) | sort !=
+             [tailscale_ssh_tag] | sort) or
             (tailscale_ssh_advertise_routes | default('') !=
              tailscale_current_routes | default('')) or
             ((tailscale_ssh_accept_routes | default(true) | bool) !=
@@ -177,6 +180,7 @@
           - "Logged in: {{ tailscale_logged_in | default(false) }}"
           - "SSH enabled: {{ tailscale_ssh_already_enabled | default(false) }}"
           - "Current tags: {{ tailscale_current_tags | default([]) }}"
+          - "Desired tags: {{ [tailscale_ssh_tag] }}"
           - "Current routes: {{ tailscale_current_routes | default('') }}"
           - "Desired routes: {{ tailscale_ssh_advertise_routes | default('') }}"
           - "Accept routes: {{ tailscale_current_accept_routes

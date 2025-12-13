@@ -108,7 +108,22 @@
           tags: [tailscale_ssh]
       tags: [tailscale_ssh]
 
-    # Re-check status after potential re-authentication
+    # Wait for Tailscale to reach Running state
+    # Handles Starting state that occurs briefly after boot
+    - name: Wait for Tailscale to reach Running state
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_wait_result
+      until: >-
+        tailscale_wait_result.rc == 0 and
+        (tailscale_wait_result.stdout | from_json).BackendState
+          | default('') == 'Running'
+      retries: 24
+      delay: 5
+      changed_when: false
+      failed_when: false
+      tags: [tailscale_ssh]
+
+    # Re-check status after potential re-authentication or wait
     - name: Get Tailscale status after auth check
       ansible.builtin.command: tailscale status --json
       register: tailscale_status_raw

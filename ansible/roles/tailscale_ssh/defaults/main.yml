@@ -17,3 +17,10 @@ tailscale_ssh_accept_routes: true
 
 # Timeout for waiting for Tailscale to be ready after configuration
 tailscale_ssh_ready_timeout: 60
+
+# Tailscale auth key for automatic re-authentication
+# Required when using tags (tagged nodes need re-auth after reboots)
+# Generate a reusable, pre-authorized key at:
+# https://login.tailscale.com/admin/settings/keys
+# Pass via environment variable TAILSCALE_JOIN_KEY in CI/CD
+tailscale_ssh_auth_key: ""

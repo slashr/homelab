@@ -1,10 +1,12 @@
 ---
-# Common configuration for all Raspberry Pi nodes (michael-pi, jim-pi, dwight-pi)
+# Common configuration for all Raspberry Pi nodes
+# (michael-pi, jim-pi, dwight-pi)
 
 # WiFi stability fix (critical for network reliability)
 wifi_power_save_disabled: true
 
-# Debian release management (set enabled=true when performing an in-place upgrade)
+# Debian release management
+# Set enabled=true when performing an in-place upgrade
 debian_upgrade_enabled: true
 debian_upgrade_target_release: trixie
 debian_upgrade_target_version: '13'
@@ -29,6 +31,13 @@ dns_servers:
 # SSH hardening
 ssh_permit_root_login: false
 ssh_password_authentication: false
+
+# Tailscale SSH configuration
+# Ensures SSH is enabled with correct tags for ACL-based access
+tailscale_ssh_enabled: true
+tailscale_ssh_tag: "tag:pi"
+tailscale_ssh_accept_routes: true
+# Routes are host-specific, set in playbook vars
 
 # UFW firewall configuration for Raspberry Pis
 ufw_enabled: true

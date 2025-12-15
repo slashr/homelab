@@ -91,7 +91,7 @@ jobs:
           pip3 install pre-commit
 
       - name: Cache pre-commit environments
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -162,7 +162,7 @@ jobs:
           pip3 install pre-commit 'ansible-core==2.20.0rc2' ansible-lint
 
       - name: Cache Ansible collections
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.ansible/collections
           key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}
@@ -173,13 +173,13 @@ jobs:
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
       - name: Cache pre-commit environments
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
 
       - name: Cache pre-commit hook repositories
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pre-commit/repo*
           key: ${{ runner.os }}-pre-commit-repos-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -250,7 +250,7 @@ jobs:
       # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
       # overwriting the tracked lock file with stale provider versions
       - name: Cache Terraform
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.terraform.d/plugin-cache
@@ -279,7 +279,7 @@ jobs:
 
       # Save plan as artifact for review
       - name: Save Terraform Plan
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: github.event_name == 'pull_request'
         with:
           name: gcp-terraform-plan
@@ -345,7 +345,7 @@ jobs:
       # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
       # overwriting the tracked lock file with stale provider versions
       - name: Cache Terraform
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.terraform.d/plugin-cache
@@ -740,7 +740,7 @@ jobs:
       # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
       # overwriting the tracked lock file with stale provider versions
       - name: Cache Terraform
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.terraform.d/plugin-cache

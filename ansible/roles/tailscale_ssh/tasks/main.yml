@@ -1,6 +1,9 @@
 ---
 # Ensures Tailscale SSH is properly configured on the host
 # This role should run BEFORE any roles that may reboot the host
+#
+# When using tags (--advertise-tags), nodes may need re-authentication
+# after reboots. This role handles that automatically using an auth key.
 
 - name: Tailscale SSH disabled
   ansible.builtin.debug:
@@ -38,6 +41,95 @@
       failed_when: false
       tags: [tailscale_ssh]
 
+    - name: Parse Tailscale status for auth check
+      ansible.builtin.set_fact:
+        tailscale_backend_state: >-
+          {{ (tailscale_status_raw.stdout | from_json).BackendState
+             | default('Unknown') }}
+      when: tailscale_status_raw.rc == 0
+      failed_when: false
+      tags: [tailscale_ssh]
+
+    - name: Check if Tailscale needs authentication
+      ansible.builtin.set_fact:
+        tailscale_needs_auth: >-
+          {{ tailscale_status_raw.rc != 0 or
+             tailscale_backend_state | default('Unknown')
+               not in ['Running', 'Starting'] }}
+      tags: [tailscale_ssh]
+
+    - name: Display Tailscale backend state
+      ansible.builtin.debug:
+        msg: >-
+          Backend state: {{ tailscale_backend_state | default('Unknown') }},
+          Needs auth: {{ tailscale_needs_auth }}
+      tags: [tailscale_ssh]
+
+    - name: Handle unauthenticated state with auth key
+      when: tailscale_needs_auth | bool
+      block:
+        - name: Validate auth key is provided for re-authentication
+          ansible.builtin.assert:
+            that:
+              - tailscale_ssh_auth_key | length > 0
+            fail_msg: >-
+              Tailscale is not authenticated (state:
+              {{ tailscale_backend_state | default('Unknown') }}).
+              Set tailscale_ssh_auth_key to enable automatic re-auth.
+              Generate a reusable, pre-authorized key at
+              https://login.tailscale.com/admin/settings/keys
+          tags: [tailscale_ssh]
+
+        - name: Authenticate with Tailscale using auth key
+          ansible.builtin.command: >-
+            tailscale up
+            --authkey={{ tailscale_ssh_auth_key }}
+            --ssh
+            --advertise-tags={{ tailscale_ssh_tag }}
+            {{ '--accept-routes' if tailscale_ssh_accept_routes | default(true)
+               else '' }}
+            {{ '--advertise-routes=' + tailscale_ssh_advertise_routes
+               if tailscale_ssh_advertise_routes | length > 0 else '' }}
+            --accept-risk=lose-ssh
+            --reset
+          register: tailscale_auth_result
+          no_log: true  # Hide auth key from logs
+          tags: [tailscale_ssh]
+
+        - name: Wait for Tailscale to reach Running state after auth
+          ansible.builtin.command: tailscale status --json
+          register: tailscale_post_auth_check
+          until: >-
+            tailscale_post_auth_check.rc == 0 and
+            (tailscale_post_auth_check.stdout | from_json).BackendState
+              | default('') == 'Running'
+          retries: 12
+          delay: 5
+          changed_when: false
+          tags: [tailscale_ssh]
+      tags: [tailscale_ssh]
+
+    # Wait for Tailscale to reach Running state (handles Starting state)
+    - name: Wait for Tailscale to reach Running state
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_wait_result
+      until: >-
+        tailscale_wait_result.rc == 0 and
+        (tailscale_wait_result.stdout | from_json).BackendState
+          | default('') == 'Running'
+      retries: 24
+      delay: 5
+      changed_when: false
+      tags: [tailscale_ssh]
+
+    # Re-check status after potential re-authentication or wait
+    - name: Get Tailscale status after auth check
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_status_raw
+      changed_when: false
+      failed_when: false
+      tags: [tailscale_ssh]
+
     - name: Parse Tailscale status
       ansible.builtin.set_fact:
         tailscale_status: "{{ tailscale_status_raw.stdout | from_json }}"
@@ -51,12 +143,12 @@
       when: tailscale_status is defined
       tags: [tailscale_ssh]
 
-    - name: Fail if Tailscale is not logged in
+    - name: Fail if Tailscale is still not logged in
       ansible.builtin.fail:
         msg: >-
-          Tailscale is not logged in (state: {{ tailscale_status.BackendState
-          | default('Unknown') }}). Please authenticate Tailscale first
-          or use the auth key feature in a future version of this role.
+          Tailscale is not logged in. Auth key may be invalid or expired.
+          Check TAILSCALE_JOIN_KEY and ensure it's a valid, reusable,
+          pre-authorized key with appropriate tags.
       when: not (tailscale_logged_in | default(false))
       tags: [tailscale_ssh]
 

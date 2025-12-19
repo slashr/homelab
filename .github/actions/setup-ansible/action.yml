@@ -40,7 +40,7 @@ runs:
         pip3 install 'ansible-core==2.20.0rc2' ansible-lint
 
     - name: Cache Ansible collections
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.ansible/collections
         key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}

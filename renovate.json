@@ -65,11 +65,11 @@
     ]
   },
   "schedule": [
-    "before 6am on monday"
+    "every weekday"
   ],
   "timezone": "UTC",
-  "prConcurrentLimit": 5,
-  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
   "labels": [
     "dependencies"
   ],
@@ -123,5 +123,19 @@
     "managerFilePatterns": [
       "/\\.pre-commit-config\\.ya?ml$/"
     ]
-  }
+  },
+  "regexManagers": [
+    {
+      "description": "Ansible k3s version in group_vars/all.yml",
+      "fileMatch": [
+        "^ansible/group_vars/all\\.yml$"
+      ],
+      "matchStrings": [
+        "k3s_version:\\s+\"?(?<currentValue>[^\"\\n]+)\"?"
+      ],
+      "datasourceTemplate": "github-tags",
+      "packageNameTemplate": "k3s-io/k3s",
+      "versioningTemplate": "semver-coerced"
+    }
+  ]
 }

@@ -31,9 +31,9 @@
   ],
   "autoApprovers": {
     "routes": {
-      "10.42.0.0/16": ["slashr@github", "tag:k3s"],
-      "10.43.0.0/16": ["slashr@github", "tag:k3s"],
-      "2001:cafe:42::/56": ["slashr@github", "tag:k3s"]
+      "10.42.0.0/16": ["slashr@github", "tag:k3s", "tag:pi"],
+      "10.43.0.0/16": ["slashr@github", "tag:k3s", "tag:pi"],
+      "2001:cafe:42::/56": ["slashr@github", "tag:k3s", "tag:pi"]
     }
   },
   "nodeAttrs": [

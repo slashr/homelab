@@ -7,7 +7,7 @@ variable "namespace" {
 variable "chart_version" {
   description = "The Helm chart version to install"
   type        = string
-  default     = "1.78.3"
+  default     = "1.92.4"
 }
 
 variable "timeout" {

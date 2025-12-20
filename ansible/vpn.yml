@@ -97,14 +97,21 @@
       changed_when: "'Updated' in tailscale_update.stdout"
       failed_when: false  # Don't fail if already up to date
 
+    - name: Check if Tailscale needs authentication
+      ansible.builtin.command: tailscale status
+      register: tailscale_auth_check
+      changed_when: false
+      failed_when: false
+
     - name: Configure Tailscale with join key
       ansible.builtin.command: tailscale up --authkey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}
       when:
         - lookup('env', 'TAILSCALE_JOIN_KEY') is defined
         - lookup('env', 'TAILSCALE_JOIN_KEY') | length > 0
+        - tailscale_auth_check.rc != 0 or 'Logged out' in tailscale_auth_check.stdout
       register: tailscale_up
       changed_when: "'Success' in tailscale_up.stdout"
-      failed_when: tailscale_up.rc != 0 and "already authenticated" not in tailscale_up.stderr
+      failed_when: tailscale_up.rc != 0
       no_log: true
 
     - name: Check Tailscale SSH status

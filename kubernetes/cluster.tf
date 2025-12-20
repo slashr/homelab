@@ -17,3 +17,9 @@ module "external-dns" {
   cloudflare_api_token = var.cloudflare_api_token
   depends_on           = [module.cert-manager]
 }
+
+module "tailscale-operator" {
+  source              = "../terraform-modules/tailscale-operator"
+  oauth_client_id     = var.tailscale_oauth_client_id
+  oauth_client_secret = var.tailscale_oauth_client_secret
+}

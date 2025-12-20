@@ -104,7 +104,7 @@
       failed_when: false
 
     - name: Configure Tailscale with join key
-      ansible.builtin.command: tailscale up --authkey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}
+      ansible.builtin.command: tailscale up --authkey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }} --ssh --accept-risk=lose-ssh
       when:
         - lookup('env', 'TAILSCALE_JOIN_KEY') is defined
         - lookup('env', 'TAILSCALE_JOIN_KEY') | length > 0

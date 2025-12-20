@@ -172,9 +172,9 @@
         tailscale_ssh_already_enabled: >-
           {{ tailscale_prefs.RunSSH | default(false) }}
         tailscale_current_tags: >-
-          {{ tailscale_prefs.AdvertiseTags | default([]) }}
+          {{ tailscale_prefs.AdvertiseTags | default([], true) }}
         tailscale_current_routes: >-
-          {{ tailscale_prefs.AdvertiseRoutes | default([]) | join(',') }}
+          {{ tailscale_prefs.AdvertiseRoutes | default([], true) | join(',') }}
         tailscale_current_accept_routes: >-
           {{ tailscale_prefs.RouteAll | default(false) }}
       when: tailscale_prefs is defined

@@ -48,3 +48,24 @@ variable "kube_cluster_ca_cert" {
     error_message = "kube_cluster_ca_cert must be valid base64-encoded data."
   }
 }
+
+# Tailscale operator variables
+variable "tailscale_oauth_client_id" {
+  description = "Tailscale OAuth client ID for the Kubernetes operator"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.tailscale_oauth_client_id) > 0
+    error_message = "Tailscale OAuth client ID cannot be empty."
+  }
+}
+
+variable "tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret for the Kubernetes operator"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.tailscale_oauth_client_secret) > 0
+    error_message = "Tailscale OAuth client secret cannot be empty."
+  }
+}

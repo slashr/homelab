@@ -91,6 +91,12 @@
         state: started
         enabled: true
 
+    - name: Update Tailscale to latest version
+      ansible.builtin.command: tailscale update --yes
+      register: tailscale_update
+      changed_when: "'Updated' in tailscale_update.stdout"
+      failed_when: false  # Don't fail if already up to date
+
     - name: Configure Tailscale with join key
       ansible.builtin.command: tailscale up --authkey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}
       when:

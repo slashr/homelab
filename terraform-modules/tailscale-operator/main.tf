@@ -1,4 +1,4 @@
-resource "kubernetes_namespace" "tailscale" {
+resource "kubernetes_namespace_v1" "tailscale" {
   metadata {
     name = var.namespace
   }
@@ -28,6 +28,6 @@ resource "helm_release" "tailscale_operator" {
   ]
 
   depends_on = [
-    kubernetes_namespace.tailscale
+    kubernetes_namespace_v1.tailscale
   ]
 }

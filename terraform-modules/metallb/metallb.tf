@@ -1,4 +1,9 @@
-resource "kubernetes_namespace" "metallb" {
+moved {
+  from = kubernetes_namespace.metallb
+  to   = kubernetes_namespace_v1.metallb
+}
+
+resource "kubernetes_namespace_v1" "metallb" {
   metadata {
     name = "metallb"
   }
@@ -12,6 +17,6 @@ resource "helm_release" "metallb" {
   version    = "~0.15.0"
 
   depends_on = [
-    resource.kubernetes_namespace.metallb
+    kubernetes_namespace_v1.metallb
   ]
 }

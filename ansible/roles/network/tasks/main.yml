@@ -1,6 +1,7 @@
 ---
-# WiFi Power Save Fix - Critical for network stability
-# Disables WiFi power management to prevent latency spikes and packet loss
+# WiFi Power Save Configuration
+# Now that Pis use ethernet as primary (metric 100), WiFi power save is safe to enable.
+# WiFi serves as backup only (metric 600), so latency from power save won't affect k3s.
 
 - name: Check if NetworkManager is active
   ansible.builtin.systemd:
@@ -20,26 +21,27 @@
     - wifi
     - dns
 
-- name: Disable WiFi power save via NetworkManager
+- name: Configure WiFi power save via NetworkManager
   ansible.builtin.copy:
     dest: /etc/NetworkManager/conf.d/wifi-powersave.conf
     content: |
       [connection]
-      wifi.powersave = 2
+      # 2 = disable, 3 = enable
+      wifi.powersave = {{ 3 if wifi_power_save_enabled | default(false) else 2 }}
     mode: '0644'
   become: true
   when: nm_status.status is defined and nm_status.status.ActiveState == "active"
   notify: Restart NetworkManager
   tags: wifi
 
-- name: Disable WiFi power save via dhcpcd hook
+- name: Configure WiFi power save via dhcpcd hook
   ansible.builtin.copy:
     dest: /etc/dhcpcd.enter-hook
     content: |
       #!/bin/sh
-      # Disable WiFi power management for stability
+      # Configure WiFi power management
       if [ "$interface" = "wlan0" ]; then
-          /sbin/iwconfig wlan0 power off 2>/dev/null || true
+          /sbin/iwconfig wlan0 power {{ 'on' if wifi_power_save_enabled | default(false) else 'off' }} 2>/dev/null || true
       fi
     mode: '0755'
   become: true
@@ -47,8 +49,8 @@
   notify: Restart dhcpcd
   tags: wifi
 
-- name: Immediately disable WiFi power save (runtime)
-  ansible.builtin.command: iwconfig wlan0 power off
+- name: Apply WiFi power save setting (runtime)
+  ansible.builtin.command: iwconfig wlan0 power {{ 'on' if wifi_power_save_enabled | default(false) else 'off' }}
   become: true
   when: not ansible_check_mode
   register: iwconfig_result
@@ -113,4 +115,3 @@
     name: Europe/Berlin
   become: true
   tags: ntp
-

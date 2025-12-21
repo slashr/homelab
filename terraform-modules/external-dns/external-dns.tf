@@ -1,4 +1,4 @@
-resource "kubernetes_namespace" "external-dns" {
+resource "kubernetes_namespace_v1" "external-dns" {
   metadata {
     name = "external-dns"
   }
@@ -14,7 +14,7 @@ resource "helm_release" "external-dns" {
   values = [templatefile("${path.module}/values.yaml", {})]
 
   depends_on = [
-    resource.kubernetes_namespace.external-dns
+    kubernetes_namespace_v1.external-dns
   ]
 }
 
@@ -29,6 +29,6 @@ resource "kubernetes_secret" "cloudflare-api-token" {
     api-token = var.cloudflare_api_token
   }
   depends_on = [
-    kubernetes_namespace.external-dns
+    kubernetes_namespace_v1.external-dns
   ]
 }

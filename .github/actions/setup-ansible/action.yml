@@ -26,6 +26,8 @@ runs:
 
     - name: Set up Python 3.x
       uses: actions/setup-python@v6
+      env:
+        NODE_OPTIONS: --no-deprecation
       with:
         python-version: '3.x'
         cache: 'pip'

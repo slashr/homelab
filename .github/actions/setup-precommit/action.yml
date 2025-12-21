@@ -6,6 +6,8 @@ runs:
   steps:
     - name: Set up Python for pre-commit
       uses: actions/setup-python@v6
+      env:
+        NODE_OPTIONS: --no-deprecation
       with:
         python-version: '3.x'
         cache: 'pip'

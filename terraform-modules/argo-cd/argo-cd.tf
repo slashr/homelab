@@ -1,4 +1,9 @@
-resource "kubernetes_namespace" "argo-cd" {
+moved {
+  from = kubernetes_namespace.argo-cd
+  to   = kubernetes_namespace_v1.argo-cd
+}
+
+resource "kubernetes_namespace_v1" "argo-cd" {
   metadata {
     name = "argo-cd"
   }
@@ -14,7 +19,7 @@ resource "helm_release" "argo-cd" {
   values = [templatefile("${path.module}/values.yaml", {})]
 
   depends_on = [
-    resource.kubernetes_namespace.argo-cd
+    kubernetes_namespace_v1.argo-cd
   ]
 }
 
@@ -28,6 +33,6 @@ resource "helm_release" "argo-cd-apps" {
   values = [templatefile("${path.module}/argo-cd-apps-values.yaml", {})]
 
   depends_on = [
-    resource.kubernetes_namespace.argo-cd
+    kubernetes_namespace_v1.argo-cd
   ]
 }

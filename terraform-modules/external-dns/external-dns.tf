@@ -1,4 +1,14 @@
-resource "kubernetes_namespace" "external-dns" {
+moved {
+  from = kubernetes_namespace.external-dns
+  to   = kubernetes_namespace_v1.external-dns
+}
+
+moved {
+  from = kubernetes_secret.cloudflare-api-token
+  to   = kubernetes_secret_v1.cloudflare-api-token
+}
+
+resource "kubernetes_namespace_v1" "external-dns" {
   metadata {
     name = "external-dns"
   }
@@ -14,12 +24,12 @@ resource "helm_release" "external-dns" {
   values = [templatefile("${path.module}/values.yaml", {})]
 
   depends_on = [
-    resource.kubernetes_namespace.external-dns
+    kubernetes_namespace_v1.external-dns
   ]
 }
 
 # Required for external-dns to allow it to set dns records on cloudflare
-resource "kubernetes_secret" "cloudflare-api-token" {
+resource "kubernetes_secret_v1" "cloudflare-api-token" {
   metadata {
     name      = "cloudflare-api-token-secret"
     namespace = "external-dns"
@@ -29,6 +39,6 @@ resource "kubernetes_secret" "cloudflare-api-token" {
     api-token = var.cloudflare_api_token
   }
   depends_on = [
-    kubernetes_namespace.external-dns
+    kubernetes_namespace_v1.external-dns
   ]
 }

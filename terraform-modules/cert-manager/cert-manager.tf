@@ -1,4 +1,4 @@
-resource "kubernetes_namespace" "cert-manager" {
+resource "kubernetes_namespace_v1" "cert-manager" {
   metadata {
     name = var.namespace
   }
@@ -20,7 +20,7 @@ resource "helm_release" "cert-manager" {
   version    = var.chart_version
 
   depends_on = [
-    kubernetes_namespace.cert-manager
+    kubernetes_namespace_v1.cert-manager
   ]
 }
 
@@ -49,6 +49,6 @@ resource "kubernetes_secret" "cloudflare-api-token" {
     api-token = var.cloudflare_api_token
   }
   depends_on = [
-    kubernetes_namespace.cert-manager
+    kubernetes_namespace_v1.cert-manager
   ]
 }

@@ -2,8 +2,8 @@
 # Common configuration for all Raspberry Pi nodes
 # (michael-pi, jim-pi, dwight-pi)
 
-# WiFi stability fix (critical for network reliability)
-wifi_power_save_disabled: true
+# WiFi power management (safe to enable now that Pis use ethernet as primary)
+wifi_power_save_enabled: true
 
 # Debian release management
 # Set enabled=true when performing an in-place upgrade

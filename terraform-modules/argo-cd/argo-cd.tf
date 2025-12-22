@@ -1,8 +1,3 @@
-moved {
-  from = kubernetes_namespace.argo-cd
-  to   = kubernetes_namespace_v1.argo-cd
-}
-
 resource "kubernetes_namespace_v1" "argo-cd" {
   metadata {
     name = "argo-cd"

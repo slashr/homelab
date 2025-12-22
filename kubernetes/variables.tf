@@ -8,24 +8,6 @@ variable "cloudflare_api_token" {
   }
 }
 
-variable "cloudflare_account_id" {
-  description = "Cloudflare account ID for tunnel management"
-  type        = string
-  validation {
-    condition     = length(var.cloudflare_account_id) > 0
-    error_message = "Cloudflare account ID cannot be empty."
-  }
-}
-
-variable "cloudflare_zone_id" {
-  description = "Cloudflare zone ID for shrub.dev DNS records"
-  type        = string
-  validation {
-    condition     = length(var.cloudflare_zone_id) > 0
-    error_message = "Cloudflare zone ID cannot be empty."
-  }
-}
-
 variable "letsencrypt_prod_email" {
   description = "Email address registered with Let's Encrypt for the production ClusterIssuer"
   type        = string

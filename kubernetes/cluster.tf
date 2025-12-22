@@ -26,8 +26,8 @@ module "tailscale-operator" {
 
 module "cloudflare-tunnel" {
   source                 = "../terraform-modules/cloudflare-tunnel"
-  cloudflare_account_id  = var.cloudflare_account_id
-  cloudflare_zone_id     = var.cloudflare_zone_id
+  cloudflare_account_id  = "0c9db0acdf0395f9fef4f94939f2b0c7"
+  cloudflare_zone_id     = "a39b7d8ffa6518631ae4192c80ca4209"
   tunnel_name            = "homelab-ha"
   tunnel_hostnames       = ["argo.shrub.dev"]
 }

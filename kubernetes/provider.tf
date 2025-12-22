@@ -20,6 +20,14 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 3.1.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -51,4 +59,8 @@ provider "helm" {
     client_key             = base64decode(var.kube_client_key)
     cluster_ca_certificate = base64decode(var.kube_cluster_ca_cert)
   }
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }

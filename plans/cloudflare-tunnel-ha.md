@@ -10,17 +10,21 @@ After this change, all public-facing services will route through Cloudflare Tunn
 
 ## Progress
 
-- [ ] Create Cloudflare Tunnel named `homelab-ha`
-- [ ] Create Ansible role for cloudflared deployment
+- [x] Create Terraform module for Cloudflare Tunnel
+- [x] Add module to kubernetes/cluster.tf
+- [x] Create Ansible role for cloudflared deployment
+- [x] Create Ansible playbook for deployment
+- [ ] Add Cloudflare account_id and zone_id variables to Terraform Cloud
+- [ ] Apply Terraform to create tunnel, config, and DNS records
+- [ ] Get tunnel token from Terraform output
 - [ ] Deploy cloudflared to pam-amd1, angela-amd2, toby-gcp1
-- [ ] Configure tunnel ingress rules for all services
-- [ ] Migrate DNS records from A records to CNAME (tunnel)
+- [ ] Update ArgoCD ingress to remove external-dns annotations
 - [ ] Verify failover by stopping cloudflared on one node
 - [ ] Optional: Remove direct inbound firewall rules for 80/443
 
 ## Surprises & Discoveries
 
-(To be updated during implementation)
+- (2025-12-22) The Terraform Cloudflare provider supports creating tunnels, tunnel configs, and DNS records via `cloudflare_tunnel`, `cloudflare_tunnel_config`, and `cloudflare_record` resources. This enables full GitOps instead of manual CLI commands.
 
 ## Decision Log
 
@@ -35,6 +39,10 @@ After this change, all public-facing services will route through Cloudflare Tunn
 - Decision: Route tunnel traffic to ingress-nginx ClusterIP rather than individual services
   Rationale: Reuses existing ingress configuration, TLS termination, and routing rules. No need to duplicate service routing logic in cloudflared config.
   Date/Author: 2025-12-22 / slashr
+
+- Decision: Use Terraform to create tunnel instead of CLI
+  Rationale: Full GitOps approach - tunnel, config, and DNS records all managed as code. Tunnel token output can be passed to Ansible. More reproducible and auditable than manual CLI commands.
+  Date/Author: 2025-12-22 / Claude
 
 ## Outcomes & Retrospective
 
@@ -65,370 +73,206 @@ Traffic flow after this change:
 
 Key files and directories:
 
-- `ansible/roles/` — Ansible roles for node configuration
-- `ansible/hosts.ini` — Inventory with node groups including `[public_nodes]`
-- `terraform-modules/external-dns/` — ExternalDNS Helm deployment
-- `terraform-modules/argo-cd/values.yaml` — ArgoCD ingress configuration
+- `terraform-modules/cloudflare-tunnel/` — Terraform module for tunnel management
+- `ansible/roles/cloudflared/` — Ansible role for cloudflared installation
+- `ansible/playbooks/cloudflared.yml` — Playbook for deploying cloudflared
+- `kubernetes/cluster.tf` — Main Terraform config that includes the tunnel module
 
-Cloudflare account is already authenticated via `cloudflared tunnel login` with credentials stored at `~/.cloudflared/cert.pem`.
+## Architecture
+
+### Terraform Module (`terraform-modules/cloudflare-tunnel/`)
+
+The module manages:
+1. `cloudflare_tunnel` - Creates the tunnel with a random secret
+2. `cloudflare_tunnel_config` - Defines ingress rules (hostnames → localhost:80)
+3. `cloudflare_record` - Creates CNAME records pointing to the tunnel
+
+Outputs:
+- `tunnel_id` - UUID of the tunnel
+- `tunnel_token` - Token for cloudflared authentication (sensitive)
+- `tunnel_cname` - CNAME target for DNS records
+
+### Ansible Role (`ansible/roles/cloudflared/`)
+
+The role:
+1. Adds Cloudflare APT repository
+2. Installs cloudflared package
+3. Deploys systemd service using `--token` flag
+4. Enables and starts the service
+
+The role uses the simpler `--token` authentication (single value) instead of credentials JSON file.
 
 ## Plan of Work
 
-### Milestone 1: Create Tunnel and Credentials
+### Milestone 1: Configure Terraform Cloud Variables
 
-Create a Cloudflare Tunnel named `homelab-ha`. This generates a credentials JSON file that must be distributed to all nodes running cloudflared. The tunnel ID and credentials are sensitive and should be stored securely.
+Add the following variables to the kubernetes workspace in Terraform Cloud:
 
-1. Run `cloudflared tunnel create homelab-ha` to create the tunnel
-2. Note the tunnel UUID and credentials file path
-3. Store credentials securely (Ansible Vault or similar)
+| Variable | Type | Description |
+|----------|------|-------------|
+| `cloudflare_account_id` | String | Cloudflare account ID |
+| `cloudflare_zone_id` | String | Zone ID for shrub.dev |
 
-### Milestone 2: Create Ansible Role for cloudflared
+To find these values:
+```bash
+# Account ID: Cloudflare dashboard → any domain → Overview → right sidebar
+# Zone ID: Cloudflare dashboard → shrub.dev → Overview → right sidebar
+```
 
-Create an Ansible role that installs and configures cloudflared on target nodes. The role will:
+### Milestone 2: Apply Terraform
 
-1. Install cloudflared package from Cloudflare's repository
-2. Create `/etc/cloudflared/` directory
-3. Deploy credentials JSON file (from Ansible Vault)
-4. Deploy config.yml with ingress rules
-5. Install and enable systemd service
+```bash
+cd kubernetes
+terraform init   # Download cloudflare provider
+terraform plan   # Verify changes
+terraform apply  # Create tunnel, config, and DNS records
+```
 
-Role structure:
+This creates:
+- Tunnel named `homelab-ha`
+- Ingress rules routing `argo.shrub.dev` → `http://localhost:80`
+- CNAME record: `argo.shrub.dev` → `<tunnel-id>.cfargotunnel.com`
 
-    ansible/roles/cloudflared/
-    ├── tasks/
-    │   └── main.yml
-    ├── templates/
-    │   ├── config.yml.j2
-    │   └── credentials.json.j2
-    ├── handlers/
-    │   └── main.yml
-    └── defaults/
-        └── main.yml
+### Milestone 3: Get Tunnel Token
 
-### Milestone 3: Configure Tunnel Ingress Rules
+```bash
+terraform output -raw cloudflare_tunnel_token
+```
 
-The cloudflared config.yml defines which hostnames route to which backend services. All HTTP traffic routes to ingress-nginx, which handles path-based routing internally.
+Store this token securely for Ansible deployment.
 
-Config template (`config.yml.j2`):
+### Milestone 4: Deploy Cloudflared
 
-    tunnel: {{ cloudflared_tunnel_id }}
-    credentials-file: /etc/cloudflared/credentials.json
+```bash
+# Set the tunnel token from Terraform output
+export CLOUDFLARE_TUNNEL_TOKEN=$(cd kubernetes && terraform output -raw cloudflare_tunnel_token)
 
-    ingress:
-      - hostname: argo.shrub.dev
-        service: http://localhost:80
-      - hostname: signoz.shrub.dev
-        service: http://localhost:80
-      - hostname: hey.shrub.dev
-        service: http://localhost:80
-      # Catch-all rule (required)
-      - service: http_status:404
+# Deploy to public nodes
+ansible-playbook -i ansible/hosts.ini ansible/playbooks/cloudflared.yml \
+  -e "cloudflared_tunnel_token=$CLOUDFLARE_TUNNEL_TOKEN"
+```
 
-The `localhost:80` target works because ingress-nginx runs as a DaemonSet with hostPort, making it accessible on each node's localhost.
+### Milestone 5: Update Ingress Annotations
 
-### Milestone 4: Deploy to Public Nodes
+Remove external-dns annotations from ArgoCD ingress since DNS is now managed by Terraform:
 
-Create a playbook that deploys the cloudflared role to all public nodes:
-
-    ansible/playbooks/cloudflared.yml:
-    ---
-    - name: Deploy Cloudflare Tunnel
-      hosts: public_nodes
-      become: true
-      roles:
-        - cloudflared
-
-Run with:
-
-    ansible-playbook -i ansible/hosts.ini ansible/playbooks/cloudflared.yml
-
-### Milestone 5: Migrate DNS Records
-
-After cloudflared is running on all nodes and connected to Cloudflare, migrate DNS from A records to CNAME records pointing to the tunnel.
-
-For each hostname:
-
-    cloudflared tunnel route dns homelab-ha argo.shrub.dev
-    cloudflared tunnel route dns homelab-ha signoz.shrub.dev
-    cloudflared tunnel route dns homelab-ha hey.shrub.dev
-
-This creates CNAME records: `<hostname> → <tunnel-id>.cfargotunnel.com`
-
-Important: external-dns will need to be configured to NOT manage these records, or it will overwrite them with A records. Options:
-
-1. Add annotation to Ingress: `external-dns.alpha.kubernetes.io/exclude: "true"`
-2. Or filter by hostname in external-dns config
-3. Or disable external-dns for these specific hostnames
+Edit `terraform-modules/argo-cd/values.yaml`:
+```yaml
+server:
+  ingress:
+    annotations:
+      # Remove these lines:
+      # external-dns.alpha.kubernetes.io/hostname: argo.shrub.dev
+      # external-dns.alpha.kubernetes.io/target: 130.61.64.164
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+```
 
 ### Milestone 6: Verify Failover
 
-Test that failover works correctly:
+```bash
+# Check tunnel status in Cloudflare dashboard
+# Should show 3 connections (one per node)
 
-1. Access a service (e.g., https://argo.shrub.dev)
-2. Stop cloudflared on one node: `sudo systemctl stop cloudflared`
-3. Refresh the page — should still work (routed to another node)
-4. Check Cloudflare dashboard for connection status
-5. Restart cloudflared: `sudo systemctl start cloudflared`
+# Test service access
+curl -I https://argo.shrub.dev
+
+# Test failover
+ssh pam-amd1 'sudo systemctl stop cloudflared'
+curl -I https://argo.shrub.dev  # Should still work
+ssh pam-amd1 'sudo systemctl start cloudflared'
+```
 
 ### Milestone 7: Optional Hardening
 
 After confirming tunnel works, optionally remove direct inbound access:
 
-    # On each public node (careful - ensure tunnel is working first!)
-    sudo ufw delete allow 80/tcp
-    sudo ufw delete allow 443/tcp
-
-This forces all traffic through Cloudflare, adding DDoS protection.
-
-## Concrete Steps
-
-All commands assume the working directory is the repository root (`~/Code/personal/homelab`).
-
-### Step 1: Create tunnel
-
-    cloudflared tunnel create homelab-ha
-
-    # Expected output:
-    # Tunnel credentials written to /Users/akash/.cloudflared/<uuid>.json
-    # Created tunnel homelab-ha with id <uuid>
-
-Save the UUID for later use.
-
-### Step 2: Create Ansible role directory structure
-
-    mkdir -p ansible/roles/cloudflared/{tasks,templates,handlers,defaults}
-
-### Step 3: Create role files
-
-Create `ansible/roles/cloudflared/defaults/main.yml`:
-
-    ---
-    cloudflared_tunnel_id: "{{ vault_cloudflared_tunnel_id }}"
-    cloudflared_tunnel_secret: "{{ vault_cloudflared_tunnel_secret }}"
-    cloudflared_account_id: "{{ vault_cloudflared_account_id }}"
-
-    cloudflared_ingress:
-      - hostname: argo.shrub.dev
-        service: http://localhost:80
-      - hostname: signoz.shrub.dev
-        service: http://localhost:80
-      - hostname: hey.shrub.dev
-        service: http://localhost:80
-
-Create `ansible/roles/cloudflared/tasks/main.yml`:
-
-    ---
-    - name: Add Cloudflare GPG key
-      ansible.builtin.get_url:
-        url: https://pkg.cloudflare.com/cloudflare-main.gpg
-        dest: /usr/share/keyrings/cloudflare-main.gpg
-        mode: '0644'
-
-    - name: Add Cloudflare repository
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main"
-        state: present
-        filename: cloudflared
-
-    - name: Install cloudflared
-      ansible.builtin.apt:
-        name: cloudflared
-        state: present
-        update_cache: true
-
-    - name: Create cloudflared config directory
-      ansible.builtin.file:
-        path: /etc/cloudflared
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
-
-    - name: Deploy tunnel credentials
-      ansible.builtin.template:
-        src: credentials.json.j2
-        dest: /etc/cloudflared/credentials.json
-        owner: root
-        group: root
-        mode: '0600'
-      notify: Restart cloudflared
-
-    - name: Deploy tunnel config
-      ansible.builtin.template:
-        src: config.yml.j2
-        dest: /etc/cloudflared/config.yml
-        owner: root
-        group: root
-        mode: '0644'
-      notify: Restart cloudflared
-
-    - name: Install cloudflared service
-      ansible.builtin.command:
-        cmd: cloudflared service install
-        creates: /etc/systemd/system/cloudflared.service
-
-    - name: Enable and start cloudflared
-      ansible.builtin.systemd:
-        name: cloudflared
-        enabled: true
-        state: started
-
-Create `ansible/roles/cloudflared/handlers/main.yml`:
-
-    ---
-    - name: Restart cloudflared
-      ansible.builtin.systemd:
-        name: cloudflared
-        state: restarted
-
-Create `ansible/roles/cloudflared/templates/credentials.json.j2`:
-
-    {
-      "AccountTag": "{{ cloudflared_account_id }}",
-      "TunnelID": "{{ cloudflared_tunnel_id }}",
-      "TunnelSecret": "{{ cloudflared_tunnel_secret }}"
-    }
-
-Create `ansible/roles/cloudflared/templates/config.yml.j2`:
-
-    tunnel: {{ cloudflared_tunnel_id }}
-    credentials-file: /etc/cloudflared/credentials.json
-
-    ingress:
-    {% for rule in cloudflared_ingress %}
-      - hostname: {{ rule.hostname }}
-        service: {{ rule.service }}
-    {% endfor %}
-      - service: http_status:404
-
-### Step 4: Add secrets to Ansible Vault
-
-    # Extract values from credentials JSON
-    cat ~/.cloudflared/<uuid>.json
-
-    # Create or edit vault file
-    ansible-vault edit ansible/group_vars/public_nodes/vault.yml
-
-    # Add:
-    vault_cloudflared_tunnel_id: "<uuid>"
-    vault_cloudflared_tunnel_secret: "<secret from JSON>"
-    vault_cloudflared_account_id: "<account tag from JSON>"
-
-### Step 5: Create playbook
-
-Create `ansible/playbooks/cloudflared.yml`:
-
-    ---
-    - name: Deploy Cloudflare Tunnel
-      hosts: public_nodes
-      become: true
-      roles:
-        - cloudflared
-
-### Step 6: Deploy
-
-    ansible-playbook -i ansible/hosts.ini ansible/playbooks/cloudflared.yml --vault-password-file ./vault.pass
-
-### Step 7: Route DNS
-
-    cloudflared tunnel route dns homelab-ha argo.shrub.dev
-    cloudflared tunnel route dns homelab-ha signoz.shrub.dev
-    cloudflared tunnel route dns homelab-ha hey.shrub.dev
-
-### Step 8: Verify
-
-    # Check tunnel status
-    cloudflared tunnel info homelab-ha
-
-    # Should show 3 connections (one per node)
-
-    # Test service access
-    curl -I https://argo.shrub.dev
-
-    # Test failover
-    ssh pam-amd1 'sudo systemctl stop cloudflared'
-    curl -I https://argo.shrub.dev  # Should still work
-    ssh pam-amd1 'sudo systemctl start cloudflared'
+```bash
+# On each public node (careful - ensure tunnel is working first!)
+sudo ufw delete allow 80/tcp
+sudo ufw delete allow 443/tcp
+```
 
 ## Validation and Acceptance
 
 Acceptance criteria:
 
-1. `cloudflared tunnel info homelab-ha` shows 3 active connections
-2. All services (argo.shrub.dev, signoz.shrub.dev, hey.shrub.dev) are accessible
+1. Cloudflare dashboard shows 3 active tunnel connections
+2. All services (argo.shrub.dev) are accessible via HTTPS
 3. Stopping cloudflared on any single node does not cause service outage
 4. DNS records show CNAME to `<uuid>.cfargotunnel.com` instead of A records
 
 Verification commands:
 
-    # Check connections
-    cloudflared tunnel info homelab-ha
+```bash
+# Check DNS
+dig argo.shrub.dev
+# Expected: CNAME to <uuid>.cfargotunnel.com
 
-    # Check DNS
-    dig argo.shrub.dev
-    # Expected: CNAME to <uuid>.cfargotunnel.com
+# Check service
+curl -sI https://argo.shrub.dev | head -1
+# Expected: HTTP/2 200
 
-    # Check service
-    curl -sI https://argo.shrub.dev | head -1
-    # Expected: HTTP/2 200
-
-    # Check failover
-    ssh pam-amd1 'sudo systemctl stop cloudflared'
-    curl -sI https://argo.shrub.dev | head -1
-    # Expected: HTTP/2 200 (still works)
-    ssh pam-amd1 'sudo systemctl start cloudflared'
+# Check failover
+ssh pam-amd1 'sudo systemctl stop cloudflared'
+curl -sI https://argo.shrub.dev | head -1
+# Expected: HTTP/2 200 (still works)
+ssh pam-amd1 'sudo systemctl start cloudflared'
+```
 
 ## Idempotence and Recovery
 
-The Ansible role is idempotent — running it multiple times produces the same result. The `cloudflared service install` command uses `creates:` to skip if already installed.
+Both Terraform and Ansible are idempotent — running them multiple times produces the same result.
 
 If a node fails:
-
 1. Other nodes continue serving traffic automatically
 2. Fix the node and restart cloudflared: `sudo systemctl start cloudflared`
 3. Cloudflare automatically adds it back to the pool
 
 To rollback to direct A records:
+1. Remove the cloudflare-tunnel module from cluster.tf
+2. Run `terraform apply` to destroy tunnel and DNS records
+3. external-dns will recreate A records from Ingress annotations
+4. Stop cloudflared: `ansible public_nodes -m service -a "name=cloudflared state=stopped"`
 
-1. Update DNS manually or via external-dns to point to pam-amd1
-2. Stop cloudflared: `ansible public_nodes -m service -a "name=cloudflared state=stopped"`
-3. Optionally uninstall: `ansible public_nodes -m apt -a "name=cloudflared state=absent"`
+## Artifacts
 
-## Artifacts and Notes
+Files created:
 
-Files to be created:
+```
+terraform-modules/cloudflare-tunnel/
+├── main.tf           # Tunnel, config, and DNS resources
+├── variables.tf      # Input variables
+└── outputs.tf        # Tunnel token and ID outputs
 
-    ansible/roles/cloudflared/
-    ├── tasks/main.yml
-    ├── templates/config.yml.j2
-    ├── templates/credentials.json.j2
-    ├── handlers/main.yml
-    └── defaults/main.yml
+ansible/roles/cloudflared/
+├── tasks/main.yml           # Installation tasks
+├── templates/cloudflared.service.j2  # Systemd service
+├── handlers/main.yml        # Restart handler
+└── defaults/main.yml        # Default variables
 
-    ansible/playbooks/cloudflared.yml
-    ansible/group_vars/public_nodes/vault.yml (encrypted)
+ansible/playbooks/cloudflared.yml  # Deployment playbook
+
+kubernetes/
+├── provider.tf      # Added cloudflare provider
+├── variables.tf     # Added account_id and zone_id
+├── cluster.tf       # Added cloudflare-tunnel module
+└── outputs.tf       # Tunnel token output
+```
 
 ## Interfaces and Dependencies
 
 External dependencies:
-
 - Cloudflare account with shrub.dev zone
-- `cloudflared` CLI authenticated (`~/.cloudflared/cert.pem`)
-- Ansible with vault password for encrypted secrets
+- Cloudflare API token with Zone:DNS:Edit and Account:Cloudflare Tunnel:Edit permissions
+- Terraform Cloud workspace with cloudflare variables
 
 Internal dependencies:
-
 - ingress-nginx running as DaemonSet with hostPort 80/443
-- `[public_nodes]` group in `ansible/hosts.ini` containing pam-amd1, angela-amd2, toby-gcp1
-
-The tunnel credentials JSON contains three fields that must be stored in Ansible Vault:
-
-    AccountTag: Cloudflare account ID
-    TunnelID: UUID of the tunnel
-    TunnelSecret: Base64-encoded secret for authentication
+- `[public_nodes]` group in `ansible/hosts.ini`
 
 ---
 
 Plan history:
 
 - (2025-12-22) Initial plan created based on discussion of CGNAT bypass and service HA requirements.
+- (2025-12-22) Updated to GitOps approach using Terraform instead of manual CLI commands.

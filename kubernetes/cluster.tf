@@ -23,3 +23,11 @@ module "tailscale-operator" {
   oauth_client_id     = var.tailscale_oauth_client_id
   oauth_client_secret = var.tailscale_oauth_client_secret
 }
+
+module "cloudflare-tunnel" {
+  source                 = "../terraform-modules/cloudflare-tunnel"
+  cloudflare_account_id  = var.cloudflare_account_id
+  cloudflare_zone_id     = var.cloudflare_zone_id
+  tunnel_name            = "homelab-ha"
+  tunnel_hostnames       = ["argo.shrub.dev"]
+}

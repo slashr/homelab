@@ -40,7 +40,14 @@
       "Bash(cloudflared --version:*)",
       "Bash(cloudflared tunnel:*)",
       "Bash(dig:*)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(cloudflared tunnel list:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add Cloudflare Tunnel HA infrastructure\n\nTerraform module:\n- cloudflare_tunnel resource with random secret\n- cloudflare_tunnel_config for ingress rules\n- cloudflare_record for CNAME DNS records\n- Outputs tunnel_token for Ansible deployment\n\nAnsible role:\n- Install cloudflared from Cloudflare APT repo\n- Systemd service using --token authentication\n- Staged deployment playbook for public nodes\n\nKubernetes workspace:\n- Add cloudflare and random providers\n- Add cloudflare_account_id and zone_id variables\n- Wire up cloudflare-tunnel module\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(gh pr create --title \"feat: add Cloudflare Tunnel HA infrastructure \\(GitOps\\)\" --body \"$\\(cat <<''EOF''\n## Summary\n- Add Terraform module for Cloudflare Tunnel management \\(`terraform-modules/cloudflare-tunnel/`\\)\n- Add Ansible role for cloudflared deployment \\(`ansible/roles/cloudflared/`\\)\n- Add deployment playbook for public nodes\n- Wire up module in kubernetes workspace with new providers and variables\n\n## Architecture\n```\nInternet → Cloudflare Edge → cloudflared \\(pam OR angela OR toby\\) → ingress-nginx → k8s Service → Pod\n```\n\nThree cloudflared instances provide automatic failover via Cloudflare''s health-based routing.\n\n## What Terraform manages\n- `cloudflare_tunnel` - Creates tunnel with random secret\n- `cloudflare_tunnel_config` - Ingress rules \\(hostnames → localhost:80\\)\n- `cloudflare_record` - CNAME DNS records to tunnel\n\n## Prerequisites before merge\n1. Add `cloudflare_account_id` variable to Terraform Cloud kubernetes workspace\n2. Add `cloudflare_zone_id` variable \\(for shrub.dev zone\\)\n3. Ensure API token has `Cloudflare Tunnel:Edit` permission\n\n## Post-merge steps\n1. `terraform apply` to create tunnel\n2. Get token: `terraform output -raw cloudflare_tunnel_token`\n3. Deploy cloudflared: `ansible-playbook -i ansible/hosts.ini ansible/playbooks/cloudflared.yml -e \"cloudflared_tunnel_token=$TOKEN\"`\n\n## Test plan\n- [ ] Terraform plan shows tunnel, config, and DNS record creation\n- [ ] Terraform apply succeeds\n- [ ] Ansible deploys cloudflared to public nodes\n- [ ] Services accessible via tunnel\n- [ ] Failover works \\(stop cloudflared on one node, service still works\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(npx markdownlint-cli:*)"
     ]
   }
 }

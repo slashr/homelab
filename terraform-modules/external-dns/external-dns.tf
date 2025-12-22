@@ -1,13 +1,3 @@
-moved {
-  from = kubernetes_namespace.external-dns
-  to   = kubernetes_namespace_v1.external-dns
-}
-
-moved {
-  from = kubernetes_secret.cloudflare-api-token
-  to   = kubernetes_secret_v1.cloudflare-api-token
-}
-
 resource "kubernetes_namespace_v1" "external-dns" {
   metadata {
     name = "external-dns"

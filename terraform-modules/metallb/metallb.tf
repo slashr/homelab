@@ -1,8 +1,3 @@
-moved {
-  from = kubernetes_namespace.metallb
-  to   = kubernetes_namespace_v1.metallb
-}
-
 resource "kubernetes_namespace_v1" "metallb" {
   metadata {
     name = "metallb"

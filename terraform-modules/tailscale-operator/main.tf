@@ -1,8 +1,3 @@
-moved {
-  from = kubernetes_namespace.tailscale
-  to   = kubernetes_namespace_v1.tailscale
-}
-
 resource "kubernetes_namespace_v1" "tailscale" {
   metadata {
     name = var.namespace

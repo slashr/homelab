@@ -1,8 +1,3 @@
-moved {
-  from = kubernetes_namespace.ingress-nginx
-  to   = kubernetes_namespace_v1.ingress-nginx
-}
-
 resource "kubernetes_namespace_v1" "ingress-nginx" {
   metadata {
     name = "ingress-nginx"

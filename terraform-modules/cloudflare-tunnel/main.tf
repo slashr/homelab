@@ -32,7 +32,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab_ha" {
     ingress = concat(
       [for hostname in var.tunnel_hostnames : {
         hostname = hostname
-        service  = "http://localhost:80"
+        service  = "http://localhost:30456"  # Traefik NodePort (k3s svclb uses iptables NAT which doesn't work for localhost)
       }],
       [{
         service = "http_status:404"

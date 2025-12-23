@@ -1,0 +1,7 @@
+---
+- name: Configure swap on memory-constrained nodes
+  hosts: micro_nodes
+  become: true
+  gather_facts: false
+  roles:
+    - ../roles/swap

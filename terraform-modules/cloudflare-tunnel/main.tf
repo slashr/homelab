@@ -59,4 +59,40 @@ resource "cloudflare_dns_record" "tunnel_cname" {
   ttl     = 1 # Auto TTL when proxied
 
   comment = "Managed by Terraform - Cloudflare Tunnel HA"
+
+  depends_on = [terraform_data.delete_existing_dns]
+}
+
+# Delete existing DNS records that conflict with tunnel CNAMEs
+# This is needed because external-dns may have created A records
+resource "terraform_data" "delete_existing_dns" {
+  for_each = toset(var.tunnel_hostnames)
+
+  # Re-run when tunnel ID changes (i.e., tunnel is recreated)
+  triggers_replace = [cloudflare_zero_trust_tunnel_cloudflared.homelab_ha.id]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Get existing record ID if any (excluding our own CNAME to the tunnel)
+      TUNNEL_CNAME="${cloudflare_zero_trust_tunnel_cloudflared.homelab_ha.id}.cfargotunnel.com"
+      RECORD=$(curl -s -X GET \
+        "https://api.cloudflare.com/client/v4/zones/${var.cloudflare_zone_id}/dns_records?name=${each.value}" \
+        -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+        -H "Content-Type: application/json")
+
+      RECORD_ID=$(echo "$RECORD" | jq -r '.result[0].id // empty')
+      RECORD_CONTENT=$(echo "$RECORD" | jq -r '.result[0].content // empty')
+
+      # Only delete if it's not already our tunnel CNAME
+      if [ -n "$RECORD_ID" ] && [ "$RECORD_CONTENT" != "$TUNNEL_CNAME" ]; then
+        echo "Deleting existing DNS record $RECORD_ID for ${each.value} (content: $RECORD_CONTENT)"
+        curl -s -X DELETE \
+          "https://api.cloudflare.com/client/v4/zones/${var.cloudflare_zone_id}/dns_records/$RECORD_ID" \
+          -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+          -H "Content-Type: application/json"
+      else
+        echo "No conflicting DNS record found for ${each.value}"
+      fi
+    EOT
+  }
 }

@@ -5,8 +5,8 @@
 | Module | Description | Path |
 | --- | --- | --- |
 | Cert-Manager | Issue TLS certs via Let's Encrypt with Cloudflare DNS01 | `terraform-modules/cert-manager` |
-| External-DNS | Sync Kubernetes DNS records to Cloudflare | `terraform-modules/external-dns` |
 | Argo CD | GitOps controller and app-of-apps bootstrap | `terraform-modules/argo-cd` |
+| Cloudflare Tunnel | HA tunnel for public ingress via Cloudflare | `terraform-modules/cloudflare-tunnel` |
 | Ingress-Nginx | Optional ingress controller for HTTP(S) | `terraform-modules/ingress-nginx` |
 | MetalLB | Optional bare-metal load balancer | `terraform-modules/metallb` |
 
@@ -20,9 +20,10 @@ annotations:
   cert-manager.io/cluster-issuer: letsencrypt-prod
 ```
 
-## External-DNS
+## Cloudflare Tunnel
 
-Installs ExternalDNS to publish service and ingress DNS records to Cloudflare using a scoped API token.
+Creates a Cloudflare Tunnel with HA support via multiple cloudflared connectors. DNS is managed via wildcard CNAME,
+eliminating the need for external-dns.
 
 ## Ingress-Nginx
 
@@ -36,5 +37,4 @@ Not used by default because k3s ships with Traefik for ingress and load balancin
 
 ## Argo CD
 
-Installs Argo CD to manage application deployments via GitOps (app-of-apps pattern) and coordinates install order with
-cert-manager and ExternalDNS dependencies.
+Installs Argo CD to manage application deployments via GitOps (app-of-apps pattern).

@@ -29,5 +29,5 @@ module "cloudflare-tunnel" {
   cloudflare_account_id = "0c9db0acdf0395f9fef4f94939f2b0c7"
   cloudflare_zone_id    = "a39b7d8ffa6518631ae4192c80ca4209"
   tunnel_name           = "homelab-ha"
-  tunnel_hostnames      = ["argo.shrub.dev"]
+  tunnel_hostnames      = ["*.shrub.dev"]
 }

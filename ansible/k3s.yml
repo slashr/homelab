@@ -185,6 +185,10 @@
           location: cloud
           name: angela
           node_size: micro
+        - node: pam-amd1
+          location: cloud
+          name: pam
+          node_size: micro
         - node: toby-gcp1
           location: cloud
           name: toby

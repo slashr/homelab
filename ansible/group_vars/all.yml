@@ -1,5 +1,5 @@
 ---
 # Managed by Renovate (k3s-io/k3s tags)
-k3s_version: "v1.34.3+k3s1"
+k3s_version: "v1.35.0+k3s1"
 k3s_master_ip: "100.100.1.100"
 k3s_master_port: "6443"

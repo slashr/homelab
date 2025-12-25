@@ -37,6 +37,11 @@
         src: ./k3s-master-config.yaml
         dest: /etc/rancher/k3s/config.yaml
         mode: '0644'
+    - name: Install Traefik HelmChart config
+      ansible.builtin.copy:
+        src: ./traefik-helmchart.yaml
+        dest: /var/lib/rancher/k3s/server/manifests/traefik-helmchart.yaml
+        mode: '0644'
     - name: Check if k3s is already installed
       ansible.builtin.stat:
         path: /usr/local/bin/k3s

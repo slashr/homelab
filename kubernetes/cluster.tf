@@ -25,3 +25,26 @@ module "cloudflare-tunnel" {
   tunnel_name           = "homelab-ha"
   tunnel_hostnames      = ["*.shrub.dev"]
 }
+
+# Kubernetes secret for cloudflared running in-cluster
+resource "kubernetes_namespace" "cloudflared" {
+  metadata {
+    name = "cloudflared"
+    labels = {
+      name = "cloudflared"
+    }
+  }
+}
+
+resource "kubernetes_secret" "cloudflared_tunnel" {
+  metadata {
+    name      = "cloudflared-tunnel"
+    namespace = kubernetes_namespace.cloudflared.metadata[0].name
+  }
+
+  data = {
+    token = module.cloudflare-tunnel.tunnel_token
+  }
+
+  type = "Opaque"
+}

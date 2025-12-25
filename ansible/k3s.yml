@@ -87,6 +87,16 @@
       until: k3s_service.status.ActiveState == "active"
       retries: 5
       delay: 5
+    - name: Ensure k3s manifests directory exists
+      ansible.builtin.file:
+        path: /var/lib/rancher/k3s/server/manifests
+        state: directory
+        mode: '0755'
+    - name: Install Traefik HelmChart config
+      ansible.builtin.copy:
+        src: ./traefik-helmchart.yaml
+        dest: /var/lib/rancher/k3s/server/manifests/traefik-helmchart.yaml
+        mode: '0644'
 
 - name: Get Agent Token
   become: true

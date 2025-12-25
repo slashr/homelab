@@ -14,6 +14,8 @@ spec:
         prometheus.io/port: "8082"
         prometheus.io/scrape: "true"
     providers:
+      kubernetesCRD:
+        allowExternalNameServices: true
       kubernetesIngress:
         publishedService:
           enabled: true

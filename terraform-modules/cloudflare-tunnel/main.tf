@@ -32,7 +32,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab_ha" {
     ingress = concat(
       [for hostname in var.tunnel_hostnames : {
         hostname = hostname
-        service  = "http://traefik.kube-system.svc.cluster.local:80"  # Traefik ClusterIP (cloudflared runs in-cluster)
+        service  = "http://traefik.kube-system.svc.cluster.local:80" # Traefik ClusterIP (cloudflared runs in-cluster)
       }],
       [{
         service = "http_status:404"

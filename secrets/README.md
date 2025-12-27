@@ -45,14 +45,21 @@ sops -e -i secrets/kube.yaml
 
 ```bash
 cp secrets/terraform.yaml.example secrets/terraform.yaml
-# Edit with your actual values for:
+# Edit with actual secret values:
 #   - api_token: Terraform Cloud API token
 #   - gcp_credentials: GCP service account JSON
-#   - user_ocid, tenancy_ocid, compartment_id, fingerprint, ssh_authorized_keys, oci_private_key: OCI credentials
+#   - oci_private_key: OCI API private key
 #   - cloudflare_api_token: Cloudflare API token
-#   - tailscale_oauth_client_id, tailscale_oauth_client_secret: Tailscale OAuth
+#   - tailscale_oauth_client_secret: Tailscale OAuth secret
 sops -e -i secrets/terraform.yaml
 ```
+
+#### Non-secret config (`*.tfvars`)
+
+Non-sensitive identifiers are stored in committed tfvars files:
+
+- `oracle/terraform.tfvars` - OCI identifiers (user_ocid, tenancy_ocid, compartment_id, fingerprint, ssh_authorized_keys)
+- `kubernetes/terraform.tfvars` - Tailscale OAuth client ID
 
 Commit the encrypted files:
 

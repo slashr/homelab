@@ -353,18 +353,13 @@ jobs:
       - name: Decrypt terraform secrets
         run: |
           cd ${{ github.workspace }}
-          # Extract OCI credentials
-          echo "TF_VAR_user_ocid=$(sops -d --extract '["user_ocid"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          echo "TF_VAR_tenancy_ocid=$(sops -d --extract '["tenancy_ocid"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          echo "TF_VAR_compartment_id=$(sops -d --extract '["compartment_id"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          echo "TF_VAR_fingerprint=$(sops -d --extract '["fingerprint"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          echo "TF_VAR_ssh_authorized_keys=$(sops -d --extract '["ssh_authorized_keys"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          # Handle multiline private key
+          # OCI private key (actual secret)
           echo "TF_VAR_oci_private_key<<EOFKEY" >> $GITHUB_ENV
           sops -d --extract '["oci_private_key"]' secrets/terraform.yaml >> $GITHUB_ENV
           echo "EOFKEY" >> $GITHUB_ENV
-          # Extract TF API token
+          # TF API token
           echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          # Note: OCI identifiers (user_ocid, tenancy_ocid, etc.) come from oracle/terraform.tfvars
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -775,11 +770,11 @@ jobs:
           echo "TF_VAR_kube_cluster_ca_cert<<EOFCA" >> $GITHUB_ENV
           sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml >> $GITHUB_ENV
           echo "EOFCA" >> $GITHUB_ENV
-          # Decrypt terraform secrets
+          # Decrypt terraform secrets (actual secrets only)
           echo "TF_VAR_cloudflare_api_token=$(sops -d --extract '["cloudflare_api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          echo "TF_VAR_tailscale_oauth_client_id=$(sops -d --extract '["tailscale_oauth_client_id"]' secrets/terraform.yaml)" >> $GITHUB_ENV
           echo "TF_VAR_tailscale_oauth_client_secret=$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)" >> $GITHUB_ENV
           echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          # Note: tailscale_oauth_client_id comes from kubernetes/terraform.tfvars
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2

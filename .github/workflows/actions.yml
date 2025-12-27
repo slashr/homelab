@@ -249,12 +249,17 @@ jobs:
       - name: Decrypt terraform secrets
         run: |
           cd ${{ github.workspace }}
-          # Extract GCP credentials and write to GITHUB_ENV
-          echo "GOOGLE_CREDENTIALS<<EOFGCP" >> $GITHUB_ENV
-          sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml >> $GITHUB_ENV
-          echo "EOFGCP" >> $GITHUB_ENV
-          # Extract TF API token
-          echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          # Decrypt GCP credentials and compact to single-line JSON
+          GOOGLE_CREDENTIALS="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml | jq -c '.')"
+          TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
+          # Mask sensitive values
+          echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key_id // empty')"
+          echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key // empty')"
+          echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.client_id // empty')"
+          echo "::add-mask::$TF_API_TOKEN"
+          # Write to GITHUB_ENV (compact JSON is single line)
+          echo "GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS" >> $GITHUB_ENV
+          echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -353,12 +358,21 @@ jobs:
       - name: Decrypt terraform secrets
         run: |
           cd ${{ github.workspace }}
-          # OCI private key (actual secret)
-          echo "TF_VAR_oci_private_key<<EOFKEY" >> $GITHUB_ENV
-          sops -d --extract '["oci_private_key"]' secrets/terraform.yaml >> $GITHUB_ENV
-          echo "EOFKEY" >> $GITHUB_ENV
-          # TF API token
-          echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          # Decrypt secrets - use printf %b to convert \n to actual newlines
+          OCI_PRIVATE_KEY_RAW="$(sops -d --extract '["oci_private_key"]' secrets/terraform.yaml)"
+          OCI_PRIVATE_KEY="$(printf '%b' "$OCI_PRIVATE_KEY_RAW")"
+          TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
+          # Mask each line of multiline secrets
+          while IFS= read -r line; do
+            [ -n "$line" ] && echo "::add-mask::$line"
+          done <<< "$OCI_PRIVATE_KEY"
+          echo "::add-mask::$TF_API_TOKEN"
+          # Base64 encode the private key (Terraform expects base64)
+          TF_VAR_oci_private_key="$(printf '%s' "$OCI_PRIVATE_KEY" | base64 -w 0)"
+          echo "::add-mask::$TF_VAR_oci_private_key"
+          # Write to GITHUB_ENV
+          echo "TF_VAR_oci_private_key=$TF_VAR_oci_private_key" >> $GITHUB_ENV
+          echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
           # Note: OCI identifiers (user_ocid, tenancy_ocid, etc.) come from oracle/terraform.tfvars
 
       - name: Setup Terraform
@@ -760,10 +774,25 @@ jobs:
       - name: Decrypt secrets
         run: |
           cd ${{ github.workspace }}
-          # Decrypt kube secrets (capture to var first to handle multiline)
-          TF_VAR_kube_client_cert="$(sops -d --extract '["kube_client_cert"]' secrets/kube.yaml)"
-          TF_VAR_kube_client_key="$(sops -d --extract '["kube_client_key"]' secrets/kube.yaml)"
-          TF_VAR_kube_cluster_ca_cert="$(sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml)"
+          # Decrypt secrets - use printf %b to convert \n to actual newlines
+          KUBE_CERT_RAW="$(sops -d --extract '["kube_client_cert"]' secrets/kube.yaml)"
+          KUBE_KEY_RAW="$(sops -d --extract '["kube_client_key"]' secrets/kube.yaml)"
+          KUBE_CA_RAW="$(sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml)"
+          TF_VAR_kube_client_cert="$(printf '%b' "$KUBE_CERT_RAW")"
+          TF_VAR_kube_client_key="$(printf '%b' "$KUBE_KEY_RAW")"
+          TF_VAR_kube_cluster_ca_cert="$(printf '%b' "$KUBE_CA_RAW")"
+          TF_VAR_cloudflare_api_token="$(sops -d --extract '["cloudflare_api_token"]' secrets/terraform.yaml)"
+          TF_VAR_tailscale_oauth_client_secret="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
+          TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
+          # Mask each line of multiline secrets
+          for secret in "$TF_VAR_kube_client_cert" "$TF_VAR_kube_client_key" "$TF_VAR_kube_cluster_ca_cert"; do
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::add-mask::$line"
+            done <<< "$secret"
+          done
+          echo "::add-mask::$TF_VAR_cloudflare_api_token"
+          echo "::add-mask::$TF_VAR_tailscale_oauth_client_secret"
+          echo "::add-mask::$TF_API_TOKEN"
           # Write to GITHUB_ENV
           echo "TF_VAR_kube_client_cert<<EOFCERT" >> $GITHUB_ENV
           echo "$TF_VAR_kube_client_cert" >> $GITHUB_ENV
@@ -774,10 +803,9 @@ jobs:
           echo "TF_VAR_kube_cluster_ca_cert<<EOFCA" >> $GITHUB_ENV
           echo "$TF_VAR_kube_cluster_ca_cert" >> $GITHUB_ENV
           echo "EOFCA" >> $GITHUB_ENV
-          # Decrypt terraform secrets
-          echo "TF_VAR_cloudflare_api_token=$(sops -d --extract '["cloudflare_api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          echo "TF_VAR_tailscale_oauth_client_secret=$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)" >> $GITHUB_ENV
-          echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_VAR_cloudflare_api_token=$TF_VAR_cloudflare_api_token" >> $GITHUB_ENV
+          echo "TF_VAR_tailscale_oauth_client_secret=$TF_VAR_tailscale_oauth_client_secret" >> $GITHUB_ENV
+          echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
           # Note: tailscale_oauth_client_id comes from kubernetes/terraform.tfvars
 
       - name: Setup Terraform

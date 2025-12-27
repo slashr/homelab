@@ -8,6 +8,8 @@ terraform/*/.terraform
 */.terraform
 .terraform/
 *.tfvars
+!oracle/terraform.tfvars
+!kubernetes/terraform.tfvars
 *.pem
 
 # SOPS - never commit unencrypted secrets or age private keys

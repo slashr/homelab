@@ -48,3 +48,9 @@ repos:
         entry: scripts/check-vault-encrypted.sh
         language: script
         files: ^ansible/confs/.*
+      - id: check-sops-encrypted
+        name: Ensure SOPS secrets remain encrypted
+        entry: scripts/check-sops-encrypted.sh
+        language: script
+        files: ^secrets/.*\.yaml$
+        exclude: \.example$

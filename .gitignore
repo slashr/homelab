@@ -9,3 +9,9 @@ terraform/*/.terraform
 .terraform/
 *.tfvars
 *.pem
+
+# SOPS - never commit unencrypted secrets or age private keys
+secrets/*.yaml
+!secrets/*.yaml.example
+*.age
+keys.txt

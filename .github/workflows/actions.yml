@@ -723,9 +723,6 @@ jobs:
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
       TF_VAR_cloudflare_api_token: ${{ secrets.TF_CLOUDFLARE_API_TOKEN }}
-      TF_VAR_kube_client_cert: ${{ secrets.TF_KUBE_CLIENT_CERT }}
-      TF_VAR_kube_client_key: ${{ secrets.TF_KUBE_CLIENT_KEY }}
-      TF_VAR_kube_cluster_ca_cert: ${{ secrets.TF_KUBE_CLUSTER_CA_CERT }}
       TF_VAR_tailscale_oauth_client_id: ${{ secrets.TF_TAILSCALE_OAUTH_CLIENT_ID }}
       TF_VAR_tailscale_oauth_client_secret: ${{ secrets.TF_TAILSCALE_OAUTH_CLIENT_SECRET }}
     steps:
@@ -733,6 +730,29 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
+
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt kube secrets
+        run: |
+          # Decrypt and export kube secrets as environment variables
+          cd ${{ github.workspace }}
+          export TF_VAR_kube_client_cert="$(sops -d --extract '["kube_client_cert"]' secrets/kube.yaml)"
+          export TF_VAR_kube_client_key="$(sops -d --extract '["kube_client_key"]' secrets/kube.yaml)"
+          export TF_VAR_kube_cluster_ca_cert="$(sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml)"
+          # Write to GITHUB_ENV for subsequent steps
+          echo "TF_VAR_kube_client_cert<<EOFCERT" >> $GITHUB_ENV
+          echo "$TF_VAR_kube_client_cert" >> $GITHUB_ENV
+          echo "EOFCERT" >> $GITHUB_ENV
+          echo "TF_VAR_kube_client_key<<EOFKEY" >> $GITHUB_ENV
+          echo "$TF_VAR_kube_client_key" >> $GITHUB_ENV
+          echo "EOFKEY" >> $GITHUB_ENV
+          echo "TF_VAR_kube_cluster_ca_cert<<EOFCA" >> $GITHUB_ENV
+          echo "$TF_VAR_kube_cluster_ca_cert" >> $GITHUB_ENV
+          echo "EOFCA" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2

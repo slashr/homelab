@@ -56,6 +56,27 @@ moved {
   to   = oci_core_instance.instances["arm2"]
 }
 
+# Import existing instances back into state after failed apply
+import {
+  to = oci_core_instance.instances["amd1"]
+  id = "ocid1.instance.oc1.eu-frankfurt-1.antheljtssvewdacdhfbtjxbhwcn4zctcpkiswnrhfv55mdwbk62k3w4r5wa"
+}
+
+import {
+  to = oci_core_instance.instances["amd2"]
+  id = "ocid1.instance.oc1.eu-frankfurt-1.antheljtssvewdacm6dndgfohskidnnv3aixncrou6wpnknpqzcrzf2xrftq"
+}
+
+import {
+  to = oci_core_instance.instances["arm1"]
+  id = "ocid1.instance.oc1.eu-frankfurt-1.antheljtssvewdac4rhgky3ycdyj4ufi4emye4rs4fdqa24bzwc6ovll52da"
+}
+
+import {
+  to = oci_core_instance.instances["arm2"]
+  id = "ocid1.instance.oc1.eu-frankfurt-1.antheljtssvewdacs4gjlwywcmydwipqvnodbik65nyls45r2lqtch2srtvq"
+}
+
 resource "oci_core_instance" "instances" {
   for_each = local.instances
 

@@ -249,10 +249,11 @@ jobs:
       - name: Decrypt terraform secrets
         run: |
           cd ${{ github.workspace }}
-          # Decrypt all secrets to variables first
-          GOOGLE_CREDENTIALS="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml)"
+          # Decrypt secrets - use printf %b to convert \n to actual newlines
+          GCP_CREDS_RAW="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml)"
+          GOOGLE_CREDENTIALS="$(printf '%b' "$GCP_CREDS_RAW")"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask secrets - mask each line for multiline values
+          # Mask each line of multiline secrets
           while IFS= read -r line; do
             [ -n "$line" ] && echo "::add-mask::$line"
           done <<< "$GOOGLE_CREDENTIALS"
@@ -360,18 +361,20 @@ jobs:
       - name: Decrypt terraform secrets
         run: |
           cd ${{ github.workspace }}
-          # Decrypt all secrets to variables first
-          TF_VAR_oci_private_key="$(sops -d --extract '["oci_private_key"]' secrets/terraform.yaml)"
+          # Decrypt secrets - use printf %b to convert \n to actual newlines
+          OCI_PRIVATE_KEY_RAW="$(sops -d --extract '["oci_private_key"]' secrets/terraform.yaml)"
+          OCI_PRIVATE_KEY="$(printf '%b' "$OCI_PRIVATE_KEY_RAW")"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask secrets - mask each line for multiline values
+          # Mask each line of multiline secrets
           while IFS= read -r line; do
             [ -n "$line" ] && echo "::add-mask::$line"
-          done <<< "$TF_VAR_oci_private_key"
+          done <<< "$OCI_PRIVATE_KEY"
           echo "::add-mask::$TF_API_TOKEN"
+          # Base64 encode the private key (Terraform expects base64)
+          TF_VAR_oci_private_key="$(printf '%s' "$OCI_PRIVATE_KEY" | base64 -w 0)"
+          echo "::add-mask::$TF_VAR_oci_private_key"
           # Write to GITHUB_ENV
-          echo "TF_VAR_oci_private_key<<EOFKEY" >> $GITHUB_ENV
-          echo "$TF_VAR_oci_private_key" >> $GITHUB_ENV
-          echo "EOFKEY" >> $GITHUB_ENV
+          echo "TF_VAR_oci_private_key=$TF_VAR_oci_private_key" >> $GITHUB_ENV
           echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
           # Note: OCI identifiers (user_ocid, tenancy_ocid, etc.) come from oracle/terraform.tfvars
 
@@ -774,14 +777,17 @@ jobs:
       - name: Decrypt secrets
         run: |
           cd ${{ github.workspace }}
-          # Decrypt all secrets to variables first
-          TF_VAR_kube_client_cert="$(sops -d --extract '["kube_client_cert"]' secrets/kube.yaml)"
-          TF_VAR_kube_client_key="$(sops -d --extract '["kube_client_key"]' secrets/kube.yaml)"
-          TF_VAR_kube_cluster_ca_cert="$(sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml)"
+          # Decrypt secrets - use printf %b to convert \n to actual newlines
+          KUBE_CERT_RAW="$(sops -d --extract '["kube_client_cert"]' secrets/kube.yaml)"
+          KUBE_KEY_RAW="$(sops -d --extract '["kube_client_key"]' secrets/kube.yaml)"
+          KUBE_CA_RAW="$(sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml)"
+          TF_VAR_kube_client_cert="$(printf '%b' "$KUBE_CERT_RAW")"
+          TF_VAR_kube_client_key="$(printf '%b' "$KUBE_KEY_RAW")"
+          TF_VAR_kube_cluster_ca_cert="$(printf '%b' "$KUBE_CA_RAW")"
           TF_VAR_cloudflare_api_token="$(sops -d --extract '["cloudflare_api_token"]' secrets/terraform.yaml)"
           TF_VAR_tailscale_oauth_client_secret="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask secrets - mask each line for multiline values
+          # Mask each line of multiline secrets
           for secret in "$TF_VAR_kube_client_cert" "$TF_VAR_kube_client_key" "$TF_VAR_kube_cluster_ca_cert"; do
             while IFS= read -r line; do
               [ -n "$line" ] && echo "::add-mask::$line"

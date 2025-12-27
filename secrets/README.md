@@ -58,8 +58,8 @@ sops -e -i secrets/terraform.yaml
 
 Non-sensitive identifiers are stored in committed tfvars files:
 
-- `oracle/terraform.tfvars` - OCI identifiers (user_ocid, tenancy_ocid, compartment_id, fingerprint, ssh_authorized_keys)
-- `kubernetes/terraform.tfvars` - Tailscale OAuth client ID
+* `oracle/terraform.tfvars` - OCI identifiers (user_ocid, tenancy_ocid, compartment_id, fingerprint, ssh_authorized_keys)
+* `kubernetes/terraform.tfvars` - Tailscale OAuth client ID
 
 Commit the encrypted files:
 
@@ -94,10 +94,12 @@ sops -d --extract '["kube_client_cert"]' secrets/kube.yaml
 2. Decrypt all secrets with old key
 3. Update `.sops.yaml` with new public key
 4. Re-encrypt all secrets:
+
    ```bash
    sops updatekeys secrets/kube.yaml
    sops updatekeys secrets/terraform.yaml
    ```
+
 5. Update `SOPS_AGE_SECRET_KEY` in GitHub Secrets
 
 ## Security Notes

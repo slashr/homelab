@@ -760,17 +760,21 @@ jobs:
       - name: Decrypt secrets
         run: |
           cd ${{ github.workspace }}
-          # Decrypt kube secrets
+          # Decrypt kube secrets (capture to var first to handle multiline)
+          TF_VAR_kube_client_cert="$(sops -d --extract '["kube_client_cert"]' secrets/kube.yaml)"
+          TF_VAR_kube_client_key="$(sops -d --extract '["kube_client_key"]' secrets/kube.yaml)"
+          TF_VAR_kube_cluster_ca_cert="$(sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml)"
+          # Write to GITHUB_ENV
           echo "TF_VAR_kube_client_cert<<EOFCERT" >> $GITHUB_ENV
-          sops -d --extract '["kube_client_cert"]' secrets/kube.yaml >> $GITHUB_ENV
+          echo "$TF_VAR_kube_client_cert" >> $GITHUB_ENV
           echo "EOFCERT" >> $GITHUB_ENV
           echo "TF_VAR_kube_client_key<<EOFKEY" >> $GITHUB_ENV
-          sops -d --extract '["kube_client_key"]' secrets/kube.yaml >> $GITHUB_ENV
+          echo "$TF_VAR_kube_client_key" >> $GITHUB_ENV
           echo "EOFKEY" >> $GITHUB_ENV
           echo "TF_VAR_kube_cluster_ca_cert<<EOFCA" >> $GITHUB_ENV
-          sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml >> $GITHUB_ENV
+          echo "$TF_VAR_kube_cluster_ca_cert" >> $GITHUB_ENV
           echo "EOFCA" >> $GITHUB_ENV
-          # Decrypt terraform secrets (actual secrets only)
+          # Decrypt terraform secrets
           echo "TF_VAR_cloudflare_api_token=$(sops -d --extract '["cloudflare_api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
           echo "TF_VAR_tailscale_oauth_client_secret=$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)" >> $GITHUB_ENV
           echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV

@@ -234,7 +234,6 @@ jobs:
       run:
         working-directory: ./gcp
     env:
-      GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
     steps:
       - name: Checkout
@@ -242,10 +241,25 @@ jobs:
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt terraform secrets
+        run: |
+          cd ${{ github.workspace }}
+          # Extract GCP credentials and write to GITHUB_ENV
+          echo "GOOGLE_CREDENTIALS<<EOFGCP" >> $GITHUB_ENV
+          sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml >> $GITHUB_ENV
+          echo "EOFGCP" >> $GITHUB_ENV
+          # Extract TF API token
+          echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
 
       - name: Setup and Run Pre-commit
@@ -325,22 +339,37 @@ jobs:
         working-directory: ./oracle
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
-      TF_VAR_user_ocid: ${{ secrets.TF_USER_OCID }}
-      TF_VAR_tenancy_ocid: ${{ secrets.TF_TENANCY_OCID }}
-      TF_VAR_ssh_authorized_keys: ${{ secrets.TF_SSH_AUTHORIZED_KEYS }}
-      TF_VAR_oci_private_key: ${{ secrets.TF_OCI_PRIVATE_KEY }}
-      TF_VAR_fingerprint: ${{ secrets.TF_FINGERPRINT }}
-      TF_VAR_compartment_id: ${{ secrets.TF_COMPARTMENT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt terraform secrets
+        run: |
+          cd ${{ github.workspace }}
+          # Extract OCI credentials
+          echo "TF_VAR_user_ocid=$(sops -d --extract '["user_ocid"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_VAR_tenancy_ocid=$(sops -d --extract '["tenancy_ocid"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_VAR_compartment_id=$(sops -d --extract '["compartment_id"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_VAR_fingerprint=$(sops -d --extract '["fingerprint"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_VAR_ssh_authorized_keys=$(sops -d --extract '["ssh_authorized_keys"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          # Handle multiline private key
+          echo "TF_VAR_oci_private_key<<EOFKEY" >> $GITHUB_ENV
+          sops -d --extract '["oci_private_key"]' secrets/terraform.yaml >> $GITHUB_ENV
+          echo "EOFKEY" >> $GITHUB_ENV
+          # Extract TF API token
+          echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
           terraform_version: "1.9.6"  # Pin Terraform version
 
       - name: Setup and Run Pre-commit
@@ -722,9 +751,6 @@ jobs:
         working-directory: ./kubernetes
     env:
       TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
-      TF_VAR_cloudflare_api_token: ${{ secrets.TF_CLOUDFLARE_API_TOKEN }}
-      TF_VAR_tailscale_oauth_client_id: ${{ secrets.TF_TAILSCALE_OAUTH_CLIENT_ID }}
-      TF_VAR_tailscale_oauth_client_secret: ${{ secrets.TF_TAILSCALE_OAUTH_CLIENT_SECRET }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -736,28 +762,29 @@ jobs:
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
 
-      - name: Decrypt kube secrets
+      - name: Decrypt secrets
         run: |
-          # Decrypt and export kube secrets as environment variables
           cd ${{ github.workspace }}
-          export TF_VAR_kube_client_cert="$(sops -d --extract '["kube_client_cert"]' secrets/kube.yaml)"
-          export TF_VAR_kube_client_key="$(sops -d --extract '["kube_client_key"]' secrets/kube.yaml)"
-          export TF_VAR_kube_cluster_ca_cert="$(sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml)"
-          # Write to GITHUB_ENV for subsequent steps
+          # Decrypt kube secrets
           echo "TF_VAR_kube_client_cert<<EOFCERT" >> $GITHUB_ENV
-          echo "$TF_VAR_kube_client_cert" >> $GITHUB_ENV
+          sops -d --extract '["kube_client_cert"]' secrets/kube.yaml >> $GITHUB_ENV
           echo "EOFCERT" >> $GITHUB_ENV
           echo "TF_VAR_kube_client_key<<EOFKEY" >> $GITHUB_ENV
-          echo "$TF_VAR_kube_client_key" >> $GITHUB_ENV
+          sops -d --extract '["kube_client_key"]' secrets/kube.yaml >> $GITHUB_ENV
           echo "EOFKEY" >> $GITHUB_ENV
           echo "TF_VAR_kube_cluster_ca_cert<<EOFCA" >> $GITHUB_ENV
-          echo "$TF_VAR_kube_cluster_ca_cert" >> $GITHUB_ENV
+          sops -d --extract '["kube_cluster_ca_cert"]' secrets/kube.yaml >> $GITHUB_ENV
           echo "EOFCA" >> $GITHUB_ENV
+          # Decrypt terraform secrets
+          echo "TF_VAR_cloudflare_api_token=$(sops -d --extract '["cloudflare_api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_VAR_tailscale_oauth_client_id=$(sops -d --extract '["tailscale_oauth_client_id"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_VAR_tailscale_oauth_client_secret=$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)" >> $GITHUB_ENV
+          echo "TF_API_TOKEN=$(sops -d --extract '["api_token"]' secrets/terraform.yaml)" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
           terraform_version: "1.9.6"
 
       - name: Setup and Run Pre-commit

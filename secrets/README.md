@@ -28,24 +28,37 @@ Replace `AGE_PUBLIC_KEY_HERE` in `.sops.yaml` with your public key.
 2. Create `SOPS_AGE_SECRET_KEY` with the contents of `~/.config/sops/age/keys.txt`
    (includes both the comment and the private key line)
 
-### 4. Create and encrypt kube secrets
+### 4. Create and encrypt secrets
+
+#### Kubernetes secrets (`kube.yaml`)
 
 ```bash
-# Copy the example file
 cp secrets/kube.yaml.example secrets/kube.yaml
-
-# Edit with your actual values (keep base64-encoded, Terraform decodes them)
-# Get values from your cluster:
-kubectl config view --raw -o jsonpath='{.users[0].user.client-certificate-data}'
-kubectl config view --raw -o jsonpath='{.users[0].user.client-key-data}'
-kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}'
-
-# Encrypt in place
+# Edit with base64-encoded values from your cluster:
+#   kubectl config view --raw -o jsonpath='{.users[0].user.client-certificate-data}'
+#   kubectl config view --raw -o jsonpath='{.users[0].user.client-key-data}'
+#   kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}'
 sops -e -i secrets/kube.yaml
+```
 
-# Commit the encrypted file
-git add secrets/kube.yaml
-git commit -m "Add encrypted kube secrets"
+#### Terraform secrets (`terraform.yaml`)
+
+```bash
+cp secrets/terraform.yaml.example secrets/terraform.yaml
+# Edit with your actual values for:
+#   - api_token: Terraform Cloud API token
+#   - gcp_credentials: GCP service account JSON
+#   - user_ocid, tenancy_ocid, compartment_id, fingerprint, ssh_authorized_keys, oci_private_key: OCI credentials
+#   - cloudflare_api_token: Cloudflare API token
+#   - tailscale_oauth_client_id, tailscale_oauth_client_secret: Tailscale OAuth
+sops -e -i secrets/terraform.yaml
+```
+
+Commit the encrypted files:
+
+```bash
+git add secrets/kube.yaml secrets/terraform.yaml
+git commit -m "Add encrypted secrets"
 ```
 
 ## Usage
@@ -73,7 +86,11 @@ sops -d --extract '["kube_client_cert"]' secrets/kube.yaml
 1. Generate new key pair
 2. Decrypt all secrets with old key
 3. Update `.sops.yaml` with new public key
-4. Re-encrypt all secrets: `sops updatekeys secrets/kube.yaml`
+4. Re-encrypt all secrets:
+   ```bash
+   sops updatekeys secrets/kube.yaml
+   sops updatekeys secrets/terraform.yaml
+   ```
 5. Update `SOPS_AGE_SECRET_KEY` in GitHub Secrets
 
 ## Security Notes

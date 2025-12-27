@@ -1,6 +1,0 @@
----
-# Cloudflared tunnel token (required, from Terraform output)
-cloudflared_tunnel_token: ""
-
-# Enable or disable cloudflared
-cloudflared_enabled: true

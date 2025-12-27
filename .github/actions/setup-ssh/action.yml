@@ -45,4 +45,6 @@ runs:
       working-directory: ${{ github.workspace }}/ansible
       run: |
         # Create the Ansible Vault password file for decryption
-        echo -e "${{ inputs.ansible_vault_password }}" > ./vault.pass
+        # Using printf to avoid potential exposure with 'set -x' debugging
+        printf '%s\n' "${{ inputs.ansible_vault_password }}" > ./vault.pass
+        chmod 600 ./vault.pass

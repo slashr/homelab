@@ -252,8 +252,10 @@ jobs:
           # Decrypt all secrets to variables first
           GOOGLE_CREDENTIALS="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml)"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask secrets so they don't appear in logs
-          echo "::add-mask::$GOOGLE_CREDENTIALS"
+          # Mask secrets - mask each line for multiline values
+          while IFS= read -r line; do
+            [ -n "$line" ] && echo "::add-mask::$line"
+          done <<< "$GOOGLE_CREDENTIALS"
           echo "::add-mask::$TF_API_TOKEN"
           # Write to GITHUB_ENV
           echo "GOOGLE_CREDENTIALS<<EOFGCP" >> $GITHUB_ENV
@@ -361,8 +363,10 @@ jobs:
           # Decrypt all secrets to variables first
           TF_VAR_oci_private_key="$(sops -d --extract '["oci_private_key"]' secrets/terraform.yaml)"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask secrets so they don't appear in logs
-          echo "::add-mask::$TF_VAR_oci_private_key"
+          # Mask secrets - mask each line for multiline values
+          while IFS= read -r line; do
+            [ -n "$line" ] && echo "::add-mask::$line"
+          done <<< "$TF_VAR_oci_private_key"
           echo "::add-mask::$TF_API_TOKEN"
           # Write to GITHUB_ENV
           echo "TF_VAR_oci_private_key<<EOFKEY" >> $GITHUB_ENV
@@ -777,10 +781,12 @@ jobs:
           TF_VAR_cloudflare_api_token="$(sops -d --extract '["cloudflare_api_token"]' secrets/terraform.yaml)"
           TF_VAR_tailscale_oauth_client_secret="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask secrets so they don't appear in logs
-          echo "::add-mask::$TF_VAR_kube_client_cert"
-          echo "::add-mask::$TF_VAR_kube_client_key"
-          echo "::add-mask::$TF_VAR_kube_cluster_ca_cert"
+          # Mask secrets - mask each line for multiline values
+          for secret in "$TF_VAR_kube_client_cert" "$TF_VAR_kube_client_key" "$TF_VAR_kube_cluster_ca_cert"; do
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::add-mask::$line"
+            done <<< "$secret"
+          done
           echo "::add-mask::$TF_VAR_cloudflare_api_token"
           echo "::add-mask::$TF_VAR_tailscale_oauth_client_secret"
           echo "::add-mask::$TF_API_TOKEN"

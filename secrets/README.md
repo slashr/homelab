@@ -51,16 +51,19 @@ git commit -m "Add encrypted kube secrets"
 ## Usage
 
 ### Decrypt and view
+
 ```bash
 sops -d secrets/kube.yaml
 ```
 
 ### Edit (decrypts, opens editor, re-encrypts on save)
+
 ```bash
 sops secrets/kube.yaml
 ```
 
 ### Extract single value
+
 ```bash
 sops -d --extract '["kube_client_cert"]' secrets/kube.yaml
 ```
@@ -75,7 +78,7 @@ sops -d --extract '["kube_client_cert"]' secrets/kube.yaml
 
 ## Security Notes
 
-- **Never commit** `secrets/*.yaml` (unencrypted) - gitignore protects this
-- **Never commit** your age private key (`keys.txt`)
-- The encrypted file (`secrets/kube.yaml`) is safe to commit
-- Only values are encrypted, keys remain visible (this is by design)
+* **Never commit** `secrets/*.yaml` (unencrypted) - gitignore protects this
+* **Never commit** your age private key (`keys.txt`)
+* The encrypted file (`secrets/kube.yaml`) is safe to commit
+* Only values are encrypted, keys remain visible (this is by design)

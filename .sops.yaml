@@ -1,10 +1,5 @@
 creation_rules:
-  # Kubernetes secrets
-  - path_regex: secrets/kube\.yaml$
-    age: >-
-      AGE_PUBLIC_KEY_HERE
-
-  # Default rule for any other secrets
+  # Default rule for all secrets
   - path_regex: secrets/.*\.yaml$
     age: >-
-      AGE_PUBLIC_KEY_HERE
+      age1p58f02kktcn4t0qrnnqf4jgx2z0xc9e60jxqffk2jxvcecgheylsp8g9qv

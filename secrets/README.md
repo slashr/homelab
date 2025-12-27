@@ -34,11 +34,11 @@ Replace `AGE_PUBLIC_KEY_HERE` in `.sops.yaml` with your public key.
 # Copy the example file
 cp secrets/kube.yaml.example secrets/kube.yaml
 
-# Edit with your actual values
+# Edit with your actual values (keep base64-encoded, Terraform decodes them)
 # Get values from your cluster:
-kubectl config view --raw -o jsonpath='{.users[0].user.client-certificate-data}' | base64 -d
-kubectl config view --raw -o jsonpath='{.users[0].user.client-key-data}' | base64 -d
-kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d
+kubectl config view --raw -o jsonpath='{.users[0].user.client-certificate-data}'
+kubectl config view --raw -o jsonpath='{.users[0].user.client-key-data}'
+kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}'
 
 # Encrypt in place
 sops -e -i secrets/kube.yaml

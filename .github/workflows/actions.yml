@@ -249,19 +249,16 @@ jobs:
       - name: Decrypt terraform secrets
         run: |
           cd ${{ github.workspace }}
-          # Decrypt secrets - use printf %b to convert \n to actual newlines
-          GCP_CREDS_RAW="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml)"
-          GOOGLE_CREDENTIALS="$(printf '%b' "$GCP_CREDS_RAW")"
+          # Decrypt GCP credentials and compact to single-line JSON
+          GOOGLE_CREDENTIALS="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml | jq -c '.')"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask each line of multiline secrets
-          while IFS= read -r line; do
-            [ -n "$line" ] && echo "::add-mask::$line"
-          done <<< "$GOOGLE_CREDENTIALS"
+          # Mask sensitive values
+          echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key_id // empty')"
+          echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key // empty')"
+          echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.client_id // empty')"
           echo "::add-mask::$TF_API_TOKEN"
-          # Write to GITHUB_ENV
-          echo "GOOGLE_CREDENTIALS<<EOFGCP" >> $GITHUB_ENV
-          echo "$GOOGLE_CREDENTIALS" >> $GITHUB_ENV
-          echo "EOFGCP" >> $GITHUB_ENV
+          # Write to GITHUB_ENV (compact JSON is single line)
+          echo "GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS" >> $GITHUB_ENV
           echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
 
       - name: Setup Terraform

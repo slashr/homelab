@@ -23,7 +23,7 @@ locals {
       private_ip           = "10.0.0.30"
       assign_public_ip     = true
       source_image_id      = var.ampere_source_image_id
-      boot_volume_size_gbs = 97
+      boot_volume_size_gbs = 93
     }
   }
 }

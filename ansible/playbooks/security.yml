@@ -2,7 +2,7 @@
 # Security hardening playbook for public cloud nodes
 # Deploys fail2ban and UFW firewall to protect against attacks
 #
-# Staged rollout order: toby-gcp1 → phyllis-arm2 → stanley-arm1 → pam-amd1 → angela-amd2
+# Staged rollout order: toby-gcp1 → stanley-arm1 → pam-amd1 → angela-amd2
 #
 # Performance optimization: gather_facts: false
 # - fail2ban and firewall roles do not use any Ansible facts
@@ -12,14 +12,6 @@
 
 - name: Deploy security hardening to toby-gcp1
   hosts: toby-gcp1
-  gather_facts: false
-  become: true
-  roles:
-    - role: ../roles/fail2ban
-    - role: ../roles/firewall
-
-- name: Deploy security hardening to phyllis-arm2
-  hosts: phyllis-arm2
   gather_facts: false
   become: true
   roles:

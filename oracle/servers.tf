@@ -5,7 +5,7 @@ locals {
       memory_in_gbs    = 1
       ocpus            = 1
       private_ip       = "10.0.0.10"
-      assign_public_ip = false
+      assign_public_ip = true
       source_image_id  = var.amd_source_image_id
     }
     angela-amd2 = {

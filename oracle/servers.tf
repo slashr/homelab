@@ -1,14 +1,14 @@
 locals {
   instances = {
-    amd1 = {
+    pam-amd1 = {
       shape            = "VM.Standard.E2.1.Micro"
       memory_in_gbs    = 1
       ocpus            = 1
       private_ip       = "10.0.0.10"
-      assign_public_ip = false
+      assign_public_ip = true
       source_image_id  = var.amd_source_image_id
     }
-    amd2 = {
+    angela-amd2 = {
       shape            = "VM.Standard.E2.1.Micro"
       memory_in_gbs    = 1
       ocpus            = 1
@@ -16,44 +16,16 @@ locals {
       assign_public_ip = true
       source_image_id  = var.amd_source_image_id
     }
-    arm1 = {
-      shape            = "VM.Standard.A1.Flex"
-      memory_in_gbs    = 12
-      ocpus            = 2
-      private_ip       = "10.0.0.30"
-      assign_public_ip = true
-      source_image_id  = var.ampere_source_image_id
-    }
-    arm2 = {
-      shape            = "VM.Standard.A1.Flex"
-      memory_in_gbs    = 12
-      ocpus            = 2
-      private_ip       = "10.0.0.40"
-      assign_public_ip = true
-      source_image_id  = var.ampere_source_image_id
+    stanley-arm1 = {
+      shape                = "VM.Standard.A1.Flex"
+      memory_in_gbs        = 24
+      ocpus                = 4
+      private_ip           = "10.0.0.30"
+      assign_public_ip     = true
+      source_image_id      = var.ampere_source_image_id
+      boot_volume_size_gbs = 93
     }
   }
-}
-
-# State migration: map friendly-name keys back to the canonical ones
-moved {
-  from = oci_core_instance.instances["pam-amd1"]
-  to   = oci_core_instance.instances["amd1"]
-}
-
-moved {
-  from = oci_core_instance.instances["angela-amd2"]
-  to   = oci_core_instance.instances["amd2"]
-}
-
-moved {
-  from = oci_core_instance.instances["stanley-arm1"]
-  to   = oci_core_instance.instances["arm1"]
-}
-
-moved {
-  from = oci_core_instance.instances["phyllis-arm2"]
-  to   = oci_core_instance.instances["arm2"]
 }
 
 resource "oci_core_instance" "instances" {
@@ -82,7 +54,8 @@ resource "oci_core_instance" "instances" {
   }
 
   source_details {
-    source_id   = each.value.source_image_id
-    source_type = "image"
+    source_id               = each.value.source_image_id
+    source_type             = "image"
+    boot_volume_size_in_gbs = lookup(each.value, "boot_volume_size_gbs", null)
   }
 }

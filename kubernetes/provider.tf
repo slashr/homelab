@@ -32,9 +32,8 @@ terraform {
 }
 
 locals {
-  # Use Oracle reserved public IP since Terraform Cloud runners cannot access Tailscale network
-  # Alternative would be Tailscale IP: https://100.100.1.100:6443
-  k8s_api_endpoint = "https://130.61.64.164:6443"
+  # Use Tailscale IP for k8s API (requires local execution mode in Terraform Cloud)
+  k8s_api_endpoint = "https://100.100.1.100:6443"
 }
 
 provider "kubectl" {

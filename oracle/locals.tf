@@ -52,13 +52,6 @@ locals {
     },
     {
       protocol    = "6"
-      description = "Allow MicroK8S API traffic"
-      port_min    = 16443
-      port_max    = 16443
-      source      = "0.0.0.0/0"
-    },
-    {
-      protocol    = "6"
       description = "Allow K8S NodePort traffic"
       port_min    = 30000
       port_max    = 32767

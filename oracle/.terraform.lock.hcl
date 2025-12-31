@@ -1,23 +1,13 @@
 # This file is maintained automatically by "terraform init".
 # Manual edits may be lost in future updates.
 
-provider "registry.terraform.io/hashicorp/oci" {
-  version = "7.29.0"
+provider "registry.terraform.io/oracle/oci" {
+  version     = "7.29.0"
+  constraints = ">= 5.0.0"
   hashes = [
-    "h1:+rXjJrjfO5oz82Ue54MZvbvseDJXRcYmBi9yftAQwTc=",
-    "h1:+rcjj1WCvHAndRDxDriJ++DRxYFMjso3eCPGCDG8LQk=",
     "h1:BfFthOvB0qD8CZ2ZCHffhON5VSfdQ6mLNYhnhf4e5Zw=",
     "h1:C+1q2NT1LkIVmFZoJpSkGWxzI3eI8gD4eansd4fYRF4=",
-    "h1:MI8IAWVJ4e/iRBvS1nyLGIwr6GNE56ITFYCeML0oVZQ=",
     "h1:N4q05u8oHfjmKH3KWylxhjOWNQa+IBdgEXDgM4aMjUo=",
-    "h1:U1XNhvaFQuHuM/Lx8O+bH2tC/fxS3AQCNUSwdi72e3U=",
-    "h1:c3IFyoIErCC7z47wmn9itYAD6HAcTQSrrhJefQNOuqE=",
-    "h1:kZYc/DhiZIisHrbBigVTloCwSxRTSSPMW5paoCxprGE=",
-    "h1:l5OboGMWE8EH17/uhGcWX3u3sGV6QDd9eHGeNcV/xpY=",
-    "h1:lnaiC/Pu53Arsf0Q+mOozqg5d3xNgneC7KMIDY3ydhI=",
-    "h1:pm1oi4R5gvTCvQAQRFbGxCS8sUxp7ZRRDRoPNrP8U9s=",
-    "h1:szmx8H4ojTiVT8NDefkxeS9hohMjoALP9bSJtYockmA=",
-    "h1:zf/SFnPvKuU9F1ND7w5wW3xLOh6fwOvpN7FF6eY183k=",
     "zh:229294efb3df230817d06e9220fc1e6fb70c165080bd180baf9973301364b24c",
     "zh:290fddc784d437675451f1d277c9b91b587d0ef13cd963410ea18079bc65a553",
     "zh:3f457a1178630b800ffea9bbbc85f17bce4c2427f76a9d7fb08e324ca33b603d",

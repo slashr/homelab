@@ -6,27 +6,14 @@ resource "oci_core_vcn" "vcn" {
   dns_label    = "vcn"
 }
 
-# Fetches the private IP of the VPN gateway OCI instance (amd1)
-data "oci_core_private_ips" "wireguard_private_ip" {
-  ip_address = oci_core_instance.instances["amd1"].private_ip
-  subnet_id  = oci_core_subnet.public_subnet.id
-}
 
 resource "oci_core_public_ip" "reserved_public_ip" {
-  #Required
   compartment_id = var.compartment_id
   lifetime       = "RESERVED"
   display_name   = "Groundhog"
-  # This basically binds the reserved public IP with the private IP belonging to the wireguard instance
-  private_ip_id = data.oci_core_private_ips.wireguard_private_ip.private_ips[0]["id"]
+
   lifecycle {
     prevent_destroy = true
-  }
-
-  # Set explicit timeouts so Terraform stops detecting drift on the provider-computed values.
-  timeouts {
-    create = "10m"
-    delete = "10m"
   }
 }
 

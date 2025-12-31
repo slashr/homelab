@@ -7,6 +7,16 @@ resource "oci_core_vcn" "vcn" {
 }
 
 
+resource "oci_core_public_ip" "reserved_public_ip" {
+  compartment_id = var.compartment_id
+  lifetime       = "RESERVED"
+  display_name   = "Groundhog"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "oci_core_default_security_list" "default_security_list" {
   manage_default_resource_id = oci_core_vcn.vcn.default_security_list_id
 

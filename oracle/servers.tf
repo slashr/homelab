@@ -17,12 +17,13 @@ locals {
       source_image_id  = var.amd_source_image_id
     }
     stanley-arm1 = {
-      shape            = "VM.Standard.A1.Flex"
-      memory_in_gbs    = 24
-      ocpus            = 4
-      private_ip       = "10.0.0.30"
-      assign_public_ip = true
-      source_image_id  = var.ampere_source_image_id
+      shape                = "VM.Standard.A1.Flex"
+      memory_in_gbs        = 24
+      ocpus                = 4
+      private_ip           = "10.0.0.30"
+      assign_public_ip     = true
+      source_image_id      = var.ampere_source_image_id
+      boot_volume_size_gbs = 97
     }
   }
 }
@@ -53,7 +54,8 @@ resource "oci_core_instance" "instances" {
   }
 
   source_details {
-    source_id   = each.value.source_image_id
-    source_type = "image"
+    source_id               = each.value.source_image_id
+    source_type             = "image"
+    boot_volume_size_in_gbs = lookup(each.value, "boot_volume_size_gbs", null)
   }
 }

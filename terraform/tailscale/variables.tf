@@ -14,7 +14,6 @@ variable "tailscale_device_hostnames" {
     "pam-amd1",
     "angela-amd2",
     "stanley-arm1",
-    "phyllis-arm2",
     "toby-gcp1",
   ]
 }

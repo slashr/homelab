@@ -193,9 +193,6 @@
         - node: stanley-arm1
           location: cloud
           name: stanley
-        - node: phyllis-arm2
-          location: cloud
-          name: phyllis
         - node: angela-amd2
           location: cloud
           name: angela

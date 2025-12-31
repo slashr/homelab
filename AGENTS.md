@@ -345,17 +345,15 @@ pod-to-pod networking across cloud providers and on-premises Raspberry Pis.
 
 **Oracle Cloud (Free Tier):**
 
-* `pam-amd1` — VPN gateway (VM.Standard.E2.1.Micro: 1 CPU / 1GB RAM) — `130.61.64.164`
-* `angela-amd2` — k3s worker (VM.Standard.E2.1.Micro) — `130.61.63.188`
-* `stanley-arm1` — k3s worker (VM.Standard.A1.Flex: 1 OCPU / 6GB RAM) — `130.162.225.255`
-* `phyllis-arm2` — k3s worker (VM.Standard.A1.Flex) — `138.2.130.168`
+* `pam-amd1` — k3s worker (VM.Standard.E2.1.Micro: 1 CPU / 1GB RAM)
+* `angela-amd2` — k3s worker (VM.Standard.E2.1.Micro: 1 CPU / 1GB RAM)
+* `stanley-arm1` — k3s worker (VM.Standard.A1.Flex: 4 OCPU / 24GB RAM / 93GB boot volume)
 
 **Oracle Free Tier Limits:**
 
-* 2 AMD Instances (VM.Standard.E2.1.Micro): 1 CPU / 1GB RAM / 50GB boot volume each
-* 4 ARM Instances (VM.Standard.A1.Flex): 1 OCPU / 6GB RAM / 50GB boot volume each
-* ARM instances are flexible shape and **not always free** — deleted after one-month trial
-* Reserved public IP has `prevent_destroy = true` lifecycle rule to avoid accidental deletion
+* 2 AMD Instances (VM.Standard.E2.1.Micro): 1 CPU / 1GB RAM / 47GB boot volume each
+* ARM Instances (VM.Standard.A1.Flex): Up to 4 OCPU / 24GB RAM total (consolidated into stanley-arm1)
+* 200GB total block volume storage (47 + 47 + 93 = 187GB used)
 
 **Google Cloud Platform:**
 

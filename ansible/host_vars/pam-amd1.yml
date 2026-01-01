@@ -1,0 +1,4 @@
+---
+# Advertise Oracle VCN so pam-amd1 is treated as a subnet router in Tailscale
+# (required for current ACL rules that gate access to tag:pi).
+tailscale_advertise_routes: "10.0.0.0/16"

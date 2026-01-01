@@ -107,8 +107,8 @@
     var: ufw_status.stdout_lines
   tags: [firewall, ufw]
 
-- name: Verify Tailscale connectivity (ping VPN gateway)
-  ansible.builtin.command: ping -c 3 {{ vpn_gateway_ip }}
+- name: Verify Tailscale connectivity (ping k3s master)
+  ansible.builtin.command: ping -c 3 {{ k3s_master_ip }}
   register: tailscale_ping
   changed_when: false
   failed_when: false
@@ -116,5 +116,5 @@
 
 - name: Display Tailscale connectivity status
   ansible.builtin.debug:
-    msg: "Tailscale connectivity: {{ 'OK' if tailscale_ping.rc == 0 else 'FAILED - Check VPN!' }}"
+    msg: "Tailscale connectivity: {{ 'OK' if tailscale_ping.rc == 0 else 'FAILED - Check Tailscale!' }}"
   tags: [firewall, ufw]

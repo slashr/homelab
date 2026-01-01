@@ -124,6 +124,23 @@
   gather_facts: false
   strategy: free  # Parallel execution - install agents simultaneously
   tasks:
+    - name: Create /etc/rancher/k3s directory for cloud nodes
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: '0755'
+      when: inventory_hostname in cloud_node_tailscale_ips
+
+    - name: Configure k3s agent to use Tailscale IP as node-ip
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/config.yaml
+        mode: '0644'
+        content: |
+          # Cloud nodes use Tailscale IP so metrics-server can reach kubelet
+          node-ip: "{{ cloud_node_tailscale_ips[inventory_hostname] }}"
+      when: inventory_hostname in cloud_node_tailscale_ips
+      register: k3s_agent_config
+
     - name: Check if k3s-agent is already installed
       ansible.builtin.stat:
         path: /usr/local/bin/k3s-agent
@@ -168,6 +185,27 @@
       until: k3s_agent_service.status.ActiveState == "active"
       retries: 5
       delay: 5
+
+    - name: Remove old kubelet certs if node-ip config changed
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/rancher/k3s/agent/client-kubelet.crt
+        - /var/lib/rancher/k3s/agent/client-kubelet.key
+        - /var/lib/rancher/k3s/agent/serving-kubelet.crt
+        - /var/lib/rancher/k3s/agent/serving-kubelet.key
+      when:
+        - k3s_agent_config is defined
+        - k3s_agent_config.changed
+      notify: Restart k3s-agent
+
+  handlers:
+    - name: Restart k3s-agent
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: restarted
+      listen: Restart k3s-agent
 
 - name: Enabling Nodes
   hosts: michael-pi

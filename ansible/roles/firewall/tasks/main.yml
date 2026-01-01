@@ -10,17 +10,10 @@
   become: true
   tags: [firewall, ufw]
 
-# Check if this is VPN gateway BEFORE reset (to preserve NAT rules)
-- name: Check if this is the VPN gateway (pam-amd1)
-  ansible.builtin.set_fact:
-    is_vpn_gateway: "{{ (inventory_hostname == 'pam-amd1') | bool }}"
-  tags: [firewall, ufw]
-
-- name: Reset UFW to default state (skip on VPN gateway to preserve NAT)
+- name: Reset UFW to default state
   community.general.ufw:
     state: reset
   become: true
-  when: not is_vpn_gateway
   tags: [firewall, ufw]
 
 - name: Set UFW default incoming policy to deny
@@ -96,16 +89,6 @@
   become: true
   tags: [firewall, ufw]
 
-# Additional VPN gateway configuration (already set is_vpn_gateway above)
-- name: Enable IP forwarding in UFW for VPN gateway
-  ansible.builtin.lineinfile:
-    path: /etc/default/ufw
-    regexp: '^DEFAULT_FORWARD_POLICY='
-    line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
-  become: true
-  when: is_vpn_gateway
-  tags: [firewall, ufw]
-
 - name: Enable UFW (forced, non-interactive)
   community.general.ufw:
     state: enabled
@@ -135,4 +118,3 @@
   ansible.builtin.debug:
     msg: "Tailscale connectivity: {{ 'OK' if tailscale_ping.rc == 0 else 'FAILED - Check VPN!' }}"
   tags: [firewall, ufw]
-

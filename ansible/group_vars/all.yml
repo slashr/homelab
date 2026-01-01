@@ -3,3 +3,11 @@
 k3s_version: "v1.35.0+k3s1"
 k3s_master_ip: "100.100.1.100"
 k3s_master_port: "6443"
+
+# Tailscale IPs for cloud nodes (used as k3s node-ip)
+# Cloud nodes use Tailscale IPs so metrics-server can reach kubelet
+cloud_node_tailscale_ips:
+  pam-amd1: "100.100.2.100"
+  angela-amd2: "100.100.2.101"
+  stanley-arm1: "100.100.2.103"
+  toby-gcp1: "100.100.2.104"

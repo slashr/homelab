@@ -56,7 +56,7 @@
 
     - name: Set installed k3s version fact
       ansible.builtin.set_fact:
-        k3s_installed_version: "{{ k3s_current_version.stdout.split()[2] }}"
+        k3s_installed_version: "{{ (k3s_current_version.stdout.split())[2] }}"
       when: k3s_binary.stat.exists
 
     - name: Installing k3s
@@ -155,8 +155,7 @@
 
     - name: Set installed k3s agent version fact
       ansible.builtin.set_fact:
-        k3s_agent_installed_version: >-
-          {{ k3s_agent_current_version.stdout.split()[2] }}
+        k3s_agent_installed_version: "{{ (k3s_agent_current_version.stdout.split())[2] }}"
       when: k3s_agent_binary.stat.exists
 
     - name: Installing k3s agent
@@ -205,6 +204,20 @@
       ansible.builtin.systemd:
         name: k3s-agent
         state: restarted
+      listen: Restart k3s-agent
+      register: k3s_restart
+      retries: 3
+      delay: 10
+      until: k3s_restart is success
+
+    - name: Wait for k3s-agent after restart
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: started
+      register: k3s_agent_after_restart
+      until: k3s_agent_after_restart.status.ActiveState == "active"
+      retries: 5
+      delay: 10
       listen: Restart k3s-agent
 
 - name: Enabling Nodes

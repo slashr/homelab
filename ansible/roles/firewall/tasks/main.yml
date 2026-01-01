@@ -118,7 +118,6 @@
   changed_when: false
   become: true
   tags: [firewall, ufw]
-
 - name: Display UFW status
   ansible.builtin.debug:
     var: ufw_status.stdout_lines
@@ -135,4 +134,3 @@
   ansible.builtin.debug:
     msg: "Tailscale connectivity: {{ 'OK' if tailscale_ping.rc == 0 else 'FAILED - Check VPN!' }}"
   tags: [firewall, ufw]
-

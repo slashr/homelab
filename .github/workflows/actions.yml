@@ -50,7 +50,7 @@ jobs:
               - 'kubernetes/**'
               - '.github/workflows/**'
             ansible:
-              - 'ansible/vpn.yml'
+              - 'ansible/tailscale.yml'
               - 'ansible/k3s.yml'
               - 'ansible/playbooks/**'
               - 'ansible/roles/**'
@@ -472,7 +472,7 @@ jobs:
 
           # Detect which playbooks have changes
           PIS_CHANGED=false
-          VPN_CHANGED=false
+          TAILSCALE_CHANGED=false
           K3S_CHANGED=false
           SECURITY_CHANGED=false
           HOSTS_INI_CHANGED=false
@@ -493,8 +493,8 @@ jobs:
             PIS_CHANGED=true
           fi
 
-          if git diff --name-only origin/main...HEAD | grep -E '^ansible/(vpn\.yml|confs/)'; then
-            VPN_CHANGED=true
+          if git diff --name-only origin/main...HEAD | grep -E '^ansible/tailscale\.yml'; then
+            TAILSCALE_CHANGED=true
           fi
 
           if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/security\.yml|roles/(fail2ban|firewall)/|group_vars/public_nodes\.yml)'; then
@@ -513,8 +513,8 @@ jobs:
             # Try to run a dry-run on a simple playbook or just test with a single node
             if [ -f playbooks/pis.yml ]; then
               ansible-playbook -i hosts.ini playbooks/pis.yml --check --limit michael-pi 2>&1 | head -20 | tee e2e_test.log || true
-            elif [ -f vpn.yml ]; then
-              ansible-playbook -i hosts.ini vpn.yml --check --limit pam-amd1 2>&1 | head -20 | tee e2e_test.log || true
+            elif [ -f tailscale.yml ]; then
+              ansible-playbook -i hosts.ini tailscale.yml --check --limit pam-amd1 2>&1 | head -20 | tee e2e_test.log || true
             else
               echo "No playbooks found for end-to-end test" >> e2e_test.log
             fi
@@ -536,19 +536,19 @@ jobs:
             echo "⏭️ Pis playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Check vpn playbook only if related files changed
-          if [ "$VPN_CHANGED" = true ]; then
+          # Check tailscale playbook only if related files changed
+          if [ "$TAILSCALE_CHANGED" = true ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### VPN Playbook Check" >> $GITHUB_STEP_SUMMARY
+            echo "### Tailscale Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "Running syntax check only (--check without --diff to protect vault-encrypted content)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook -i hosts.ini vpn.yml \
-              --vault-password-file ./vault.pass --check 2>&1 | tee vpn_dry_run.log || true
-            cat vpn_dry_run.log >> $GITHUB_STEP_SUMMARY
+            echo "Running syntax check only (--check without --diff)" >> $GITHUB_STEP_SUMMARY
+            ansible-playbook -i hosts.ini tailscale.yml \
+              --check 2>&1 | tee tailscale_dry_run.log || true
+            cat tailscale_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           else
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⏭️ VPN playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
+            echo "⏭️ Tailscale playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Check k3s playbook only if related files changed
@@ -581,21 +581,21 @@ jobs:
             echo "⏭️ Security playbook - no changes detected, skipping dry-run" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Run vpn-playbook
-        id: vpn_playbook
+      - name: Run tailscale-playbook
+        id: tailscale_playbook
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ansible-playbook -i hosts.ini vpn.yml --vault-password-file ./vault.pass
+          ansible-playbook -i hosts.ini tailscale.yml
 
-      - name: vpn-playbook Summary
+      - name: tailscale-playbook Summary
         if: always()
         run: |
-          if [ "${{ steps.vpn_playbook.outcome }}" = "success" ]; then
-            echo "✅ vpn-playbook succeeded." >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ steps.vpn_playbook.outcome }}" = "skipped" ]; then
-            echo "⏭️ vpn-playbook skipped (PR dry-run only)." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.tailscale_playbook.outcome }}" = "success" ]; then
+            echo "✅ tailscale-playbook succeeded." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.tailscale_playbook.outcome }}" = "skipped" ]; then
+            echo "⏭️ tailscale-playbook skipped (PR dry-run only)." >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ vpn-playbook failed." >> $GITHUB_STEP_SUMMARY
+            echo "❌ tailscale-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
   pis-setup:

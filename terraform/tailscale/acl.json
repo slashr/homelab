@@ -2,7 +2,9 @@
   "groups": {
     "group:slashr": ["slashr@github"]
   },
-  "hosts": {},
+  "hosts": {
+    "k3s-master": "100.100.1.100"
+  },
   "tagOwners": {
     "tag:k3s": ["group:slashr"],
     "tag:pi": ["group:slashr"],
@@ -13,8 +15,18 @@
   "acls": [
     {
       "action": "accept",
-      "src": ["*"],
+      "src": ["group:slashr"],
       "dst": ["*:*"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:k3s", "tag:pi", "tag:cloud"],
+      "dst": ["tag:k3s:*", "tag:pi:*", "tag:cloud:*"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:k3s", "tag:pi", "tag:cloud"],
+      "dst": ["10.42.0.0/16:*", "10.43.0.0/16:*"]
     }
   ],
   "ssh": [
@@ -46,6 +58,35 @@
     {
       "target": ["group:slashr", "tag:k3s"],
       "ipPool": ["100.100.0.0/16"]
+    }
+  ],
+  "tests": [
+    {
+      "src": "slashr@github",
+      "accept": [
+        "tag:k3s:22",
+        "tag:k3s:6443",
+        "tag:pi:22",
+        "tag:cloud:22"
+      ]
+    },
+    {
+      "src": "tag:k3s",
+      "accept": [
+        "tag:k3s:6443",
+        "tag:k3s:10250",
+        "tag:pi:6443",
+        "tag:pi:10250",
+        "10.42.0.1:80",
+        "10.43.0.1:443"
+      ]
+    },
+    {
+      "src": "tag:pi",
+      "accept": [
+        "tag:k3s:6443",
+        "tag:cloud:10250"
+      ]
     }
   ]
 }

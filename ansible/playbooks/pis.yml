@@ -1,39 +1,11 @@
 ---
-# Staged rollout: dwight-pi → jim-pi → michael-pi
-# tailscale_ssh role runs first to ensure SSH config is correct
-- name: Configure dwight-pi
-  hosts: dwight-pi
+# Parallel execution with strategy: free
+# Each Pi runs tasks independently without waiting for others
+# Per-host variables (tailscale_ssh_advertise_routes) defined in host_vars/
+- name: Configure Raspberry Pis
+  hosts: pis
   become: true
-  vars:
-    tailscale_ssh_advertise_routes: "10.42.2.0/24"
-  roles:
-    - role: ../roles/tailscale_ssh
-    - role: ../roles/debian_upgrade
-    - role: ../roles/firmware_upgrade
-    - role: ../roles/common
-    - role: ../roles/network
-    - role: ../roles/k3s_prereqs
-    - role: ../roles/security
-
-- name: Configure jim-pi
-  hosts: jim-pi
-  become: true
-  vars:
-    tailscale_ssh_advertise_routes: "10.42.1.0/24"
-  roles:
-    - role: ../roles/tailscale_ssh
-    - role: ../roles/debian_upgrade
-    - role: ../roles/firmware_upgrade
-    - role: ../roles/common
-    - role: ../roles/network
-    - role: ../roles/k3s_prereqs
-    - role: ../roles/security
-
-- name: Configure michael-pi
-  hosts: michael-pi
-  become: true
-  vars:
-    tailscale_ssh_advertise_routes: "10.42.0.0/24"
+  strategy: free
   roles:
     - role: ../roles/tailscale_ssh
     - role: ../roles/debian_upgrade

@@ -2,42 +2,17 @@
 # Security hardening playbook for public cloud nodes
 # Deploys fail2ban and UFW firewall to protect against attacks
 #
-# Staged rollout order: toby-gcp1 → stanley-arm1 → pam-amd1 → angela-amd2
+# Parallel execution with strategy: free
+# Each node runs tasks independently without waiting for others
 #
-# Performance optimization: gather_facts: false
-# - fail2ban and firewall roles do not use any Ansible facts
-# - Skipping fact gathering saves ~4-5 seconds per host
-# - Total time saved: ~20-25 seconds across 5 hosts
-# - Verified: All tasks use only hard-coded values or inventory_hostname
-
-- name: Deploy security hardening to toby-gcp1
-  hosts: toby-gcp1
+# Performance optimizations:
+# - gather_facts: false - roles don't use Ansible facts (saves ~4-5s per host)
+# - strategy: free - hosts proceed independently (saves ~30-50% total time)
+- name: Deploy security hardening to public nodes
+  hosts: public_nodes
   gather_facts: false
   become: true
-  roles:
-    - role: ../roles/fail2ban
-    - role: ../roles/firewall
-
-- name: Deploy security hardening to stanley-arm1
-  hosts: stanley-arm1
-  gather_facts: false
-  become: true
-  roles:
-    - role: ../roles/fail2ban
-    - role: ../roles/firewall
-
-- name: Deploy security hardening to pam-amd1
-  hosts: pam-amd1
-  gather_facts: false
-  become: true
-  roles:
-    - role: ../roles/fail2ban
-    - role: ../roles/firewall
-
-- name: Deploy security hardening to angela-amd2
-  hosts: angela-amd2
-  gather_facts: false
-  become: true
+  strategy: free
   roles:
     - role: ../roles/fail2ban
     - role: ../roles/firewall

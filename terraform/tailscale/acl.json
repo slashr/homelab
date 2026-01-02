@@ -5,10 +5,7 @@
   "hosts": {},
   "tagOwners": {
     "tag:k3s": ["group:slashr", "tag:k3s"],
-    "tag:pi": ["group:slashr"],
-    "tag:cloud": ["group:slashr"],
-    "tag:k8s-operator": [],
-    "tag:k8s": ["tag:k8s-operator"]
+    "tag:k8s": ["group:slashr", "tag:k8s"]
   },
   "acls": [
     {
@@ -21,7 +18,7 @@
     {
       "action": "accept",
       "src": ["autogroup:admin", "tag:k3s"],
-      "dst": ["tag:k3s", "tag:pi", "tag:cloud"],
+      "dst": ["tag:k3s"],
       "users": ["autogroup:nonroot", "root"]
     },
     {
@@ -33,9 +30,9 @@
   ],
   "autoApprovers": {
     "routes": {
-      "10.42.0.0/16": ["slashr@github", "tag:k3s", "tag:pi"],
-      "10.43.0.0/16": ["slashr@github", "tag:k3s", "tag:pi"],
-      "2001:cafe:42::/56": ["slashr@github", "tag:k3s", "tag:pi"]
+      "10.42.0.0/16": ["slashr@github", "tag:k3s"],
+      "10.43.0.0/16": ["slashr@github", "tag:k3s"],
+      "2001:cafe:42::/56": ["slashr@github", "tag:k3s"]
     }
   },
   "nodeAttrs": [

@@ -2,6 +2,10 @@
 # Security configuration for public cloud nodes
 # These nodes are publicly accessible and require enhanced security measures
 
+# Tailscale SSH configuration
+tailscale_ssh_enabled: true
+tailscale_ssh_tag: "tag:k3s"
+
 # fail2ban configuration - protect against SSH brute force attacks
 fail2ban_enabled: true
 fail2ban_bantime: 86400    # 24 hours (in seconds)

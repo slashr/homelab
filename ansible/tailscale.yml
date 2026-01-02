@@ -79,6 +79,18 @@
       register: tailscale_set_ssh
       changed_when: "'aborted' not in tailscale_set_ssh.stderr and tailscale_set_ssh.rc == 0"
 
+    - name: Enable Tailscale route acceptance when requested
+      ansible.builtin.command: tailscale set --accept-routes=true
+      when: tailscale_accept_routes | default(false) | bool
+      register: tailscale_accept_routes_result
+      changed_when: "'aborted' not in tailscale_accept_routes_result.stderr and tailscale_accept_routes_result.rc == 0"
+
+    - name: Advertise Tailscale subnet routes when configured
+      ansible.builtin.command: "tailscale set --advertise-routes={{ tailscale_advertise_routes }}"
+      when: tailscale_advertise_routes | default('') | length > 0
+      register: tailscale_advertise_routes_result
+      changed_when: "'aborted' not in tailscale_advertise_routes_result.stderr and tailscale_advertise_routes_result.rc == 0"
+
     - name: Check Tailscale status
       ansible.builtin.command: tailscale status
       register: tailscale_status

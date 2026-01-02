@@ -98,12 +98,7 @@ jobs:
   lint:
     needs: changes
     name: "Lint & Format Checks"
-    # Skip only for docs-only changes
-    # Run unless docs-only changes (but always run on schedule/dispatch for drift detection)
-    if: |
-      needs.changes.outputs.docs-only != 'true' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'schedule'
+    # Always run - pre-commit only checks changed files, so it's fast for small changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

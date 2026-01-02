@@ -45,11 +45,6 @@ repos:
           - .markdownlint.json
   - repo: local
     hooks:
-      - id: check-ansible-vault
-        name: Ensure Ansible vault files remain encrypted
-        entry: scripts/check-vault-encrypted.sh
-        language: script
-        files: ^ansible/confs/.*
       - id: check-sops-encrypted
         name: Ensure SOPS secrets remain encrypted
         entry: scripts/check-sops-encrypted.sh

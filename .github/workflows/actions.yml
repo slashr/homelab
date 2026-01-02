@@ -477,7 +477,6 @@ jobs:
         with:
           tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
-          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Dry-run check (PR only)
         if: github.event_name == 'pull_request'
@@ -574,8 +573,7 @@ jobs:
             echo "### k3s Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook -i hosts.ini k3s.yml \
-              --vault-password-file ./vault.pass --check 2>&1 | tee k3s_dry_run.log || true
+            ansible-playbook -i hosts.ini k3s.yml --check 2>&1 | tee k3s_dry_run.log || true
             cat k3s_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           else
@@ -660,7 +658,6 @@ jobs:
         with:
           tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
-          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run pis-playbook
         id: pis_playbook
@@ -722,7 +719,6 @@ jobs:
         with:
           tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
-          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run security-playbook
         id: security_playbook
@@ -780,14 +776,13 @@ jobs:
         with:
           tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
-          ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run k3s-playbook
         id: k3s_playbook
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          ansible-playbook -i hosts.ini k3s.yml --vault-password-file ./vault.pass
+          ansible-playbook -i hosts.ini k3s.yml
 
       - name: k3s-playbook Summary
         if: always()

@@ -1,11 +1,6 @@
 ---
 name: 'Setup SSH'
 description: 'Configure SSH for Tailscale SSH connections'
-inputs:
-  ansible_vault_password:
-    description: 'Ansible vault password (optional, only needed for Ansible jobs)'
-    required: false
-    default: ''
 runs:
   using: 'composite'
   steps:
@@ -38,13 +33,3 @@ runs:
         fi
 
         echo "✅ Tailscale is connected. SSH to Tailscale hostnames will work automatically."
-
-    - name: Setup Ansible Vault
-      if: inputs.ansible_vault_password != ''
-      shell: bash
-      working-directory: ${{ github.workspace }}/ansible
-      run: |
-        # Create the Ansible Vault password file for decryption
-        # Using printf to avoid potential exposure with 'set -x' debugging
-        printf '%s\n' "${{ inputs.ansible_vault_password }}" > ./vault.pass
-        chmod 600 ./vault.pass

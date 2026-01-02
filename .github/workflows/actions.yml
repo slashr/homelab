@@ -17,6 +17,11 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && github.run_id || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: false
 
+# Tailscale OAuth client ID for GitHub Actions (non-sensitive, like a username)
+# Named to avoid conflict with Tailscale Terraform provider's auto-discovery
+env:
+  TS_OAUTH_CLIENT_ID: kwd6uysYz621CNTRL
+
 jobs:
   # Detect which files changed to skip irrelevant jobs
   changes:
@@ -470,7 +475,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -653,7 +658,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -715,7 +720,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -773,7 +778,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -829,7 +834,7 @@ jobs:
       - name: Setup Tailscale
         uses: tailscale/github-action@v4.1.1
         with:
-          oauth-client-id: kwPnqSFLy811CNTRL
+          oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
 
@@ -988,8 +993,11 @@ jobs:
         run: |
           cd ${{ github.workspace }}
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
+          TS_OAUTH_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           echo "::add-mask::$TF_API_TOKEN"
+          echo "::add-mask::$TS_OAUTH_SECRET"
           echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
+          echo "TS_OAUTH_SECRET=$TS_OAUTH_SECRET" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -1003,7 +1011,8 @@ jobs:
       - name: Terraform Plan
         run: |
           terraform plan -out=plan-tailscale.tfplan \
-            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}"
+            -var="tailscale_oauth_client_id=${{ env.TS_OAUTH_CLIENT_ID }}" \
+            -var="tailscale_oauth_client_secret=${{ env.TS_OAUTH_SECRET }}"
 
       - name: Terraform Plan Summary
         uses: ./.github/actions/terraform-plan-summary

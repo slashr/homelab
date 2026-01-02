@@ -87,7 +87,7 @@
             --ssh
             --advertise-tags={{ tailscale_ssh_tag }}
             {{ '--accept-routes' if tailscale_ssh_accept_routes | default(true)
-               else '' }}
+               else '--accept-routes=false' }}
             {{ '--advertise-routes=' + tailscale_ssh_advertise_routes
                if tailscale_ssh_advertise_routes | length > 0 else '' }}
             --accept-risk=lose-ssh
@@ -218,7 +218,7 @@
           tailscale up --ssh
           --advertise-tags={{ tailscale_ssh_tag }}
           {{ '--accept-routes' if tailscale_ssh_accept_routes | default(true)
-             else '' }}
+             else '--accept-routes=false' }}
           {{ '--advertise-routes=' + tailscale_ssh_advertise_routes
              if tailscale_ssh_advertise_routes | length > 0 else '' }}
           --accept-risk=lose-ssh

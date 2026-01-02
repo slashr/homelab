@@ -22,7 +22,7 @@ ExecStart=/bin/bash -c '\
       --authkey=${TAILSCALE_AUTH_KEY} \
       --ssh \
       --advertise-tags=${TAILSCALE_TAGS} \
-      ${TAILSCALE_ACCEPT_ROUTES:+--accept-routes} \
+      $([ "$TAILSCALE_ACCEPT_ROUTES" = "1" ] && echo "--accept-routes" || echo "--accept-routes=false") \
       ${TAILSCALE_ADVERTISE_ROUTES:+--advertise-routes=${TAILSCALE_ADVERTISE_ROUTES}} \
       --accept-risk=lose-ssh \
       --reset; \

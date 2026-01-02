@@ -239,7 +239,7 @@ jobs:
       run:
         working-directory: ./gcp
     env:
-      TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+      TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -282,14 +282,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.terraform.d/plugin-cache
+            /home/runner/.terraform.d/plugin-cache
             gcp/.terraform
           key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-gcp-
 
       - name: Create plugin cache directory
-        run: mkdir -p ~/.terraform.d/plugin-cache
+        run: mkdir -p /home/runner/.terraform.d/plugin-cache
 
       - name: Terraform Format
         id: fmt
@@ -348,7 +348,7 @@ jobs:
       run:
         working-directory: ./oracle
     env:
-      TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+      TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -396,14 +396,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.terraform.d/plugin-cache
+            /home/runner/.terraform.d/plugin-cache
             oracle/.terraform
           key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-oracle-
 
       - name: Create plugin cache directory
-        run: mkdir -p ~/.terraform.d/plugin-cache
+        run: mkdir -p /home/runner/.terraform.d/plugin-cache
 
       - name: Terraform Format
         id: fmt
@@ -812,7 +812,7 @@ jobs:
       run:
         working-directory: ./kubernetes
     env:
-      TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
+      TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -891,14 +891,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ~/.terraform.d/plugin-cache
+            /home/runner/.terraform.d/plugin-cache
             kubernetes/.terraform
           key: ${{ runner.os }}-terraform-k8s-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
           restore-keys: |
             ${{ runner.os }}-terraform-k8s-
 
       - name: Create plugin cache directory
-        run: mkdir -p ~/.terraform.d/plugin-cache
+        run: mkdir -p /home/runner/.terraform.d/plugin-cache
 
       - name: Terraform Format
         id: fmt

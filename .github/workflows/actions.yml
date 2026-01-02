@@ -455,11 +455,23 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt Tailscale secret
+        run: |
+          cd ${{ github.workspace }}
+          TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
+          echo "::add-mask::$TS_SECRET"
+          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Dry-run check (PR only)
@@ -626,11 +638,23 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt Tailscale secret
+        run: |
+          cd ${{ github.workspace }}
+          TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
+          echo "::add-mask::$TS_SECRET"
+          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run pis-playbook
@@ -676,11 +700,23 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt Tailscale secret
+        run: |
+          cd ${{ github.workspace }}
+          TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
+          echo "::add-mask::$TS_SECRET"
+          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run security-playbook
@@ -722,11 +758,23 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt Tailscale secret
+        run: |
+          cd ${{ github.workspace }}
+          TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
+          echo "::add-mask::$TS_SECRET"
+          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          tailscale_client_secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run k3s-playbook
@@ -766,17 +814,24 @@ jobs:
         with:
           fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
 
-      - name: Setup Tailscale
-        uses: tailscale/github-action@v4.1.1
-        with:
-          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
-          tags: tag:k3s
-
       - name: Setup SOPS
         uses: ./.github/actions/setup-sops
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt Tailscale secret for runner
+        run: |
+          cd ${{ github.workspace }}
+          TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
+          echo "::add-mask::$TS_SECRET"
+          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v4.1.1
+        with:
+          oauth-client-id: kwPnqSFLy811CNTRL
+          oauth-secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
+          tags: tag:k3s
 
       - name: Decrypt secrets
         run: |

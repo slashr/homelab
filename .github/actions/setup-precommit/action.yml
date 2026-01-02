@@ -37,7 +37,14 @@ runs:
         else
           BASE_SHA="${{ github.event.before }}"
         fi
-        CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
+
+        # Handle workflow_dispatch or initial pushes where BASE_SHA is empty or all zeros
+        if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+          echo "No base SHA available (workflow_dispatch or initial push), running on all files in workspace"
+          CHANGED_FILES=""
+        else
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}")
+        fi
 
         # Skip terraform hooks if terraform is not installed
         SKIP_HOOKS=""

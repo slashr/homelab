@@ -244,7 +244,7 @@ jobs:
 
   terraform-infra:
     needs: [changes, lint]
-    name: "Terraform ${{ matrix.workspace }}"
+    name: "Terraform ${{ matrix.display_name }}"
     if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -254,9 +254,9 @@ jobs:
         workspace: [gcp, oracle]
         include:
           - workspace: gcp
-            changes_key: gcp
+            display_name: GCP
           - workspace: oracle
-            changes_key: oracle
+            display_name: Oracle
     defaults:
       run:
         working-directory: ./${{ matrix.workspace }}
@@ -386,7 +386,7 @@ jobs:
         uses: ./.github/actions/terraform-plan-summary
         with:
           plan_file: 'plan.tfplan'
-          job_name: ${{ matrix.workspace }}
+          job_name: ${{ matrix.display_name }}
 
   tailscale-setup:
     name: "Ansible Tailscale"

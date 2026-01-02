@@ -35,7 +35,7 @@ ssh_password_authentication: false
 # Tailscale SSH configuration
 # Ensures SSH is enabled with correct tags for ACL-based access
 tailscale_ssh_enabled: true
-tailscale_ssh_tag: "tag:pi"
+tailscale_ssh_tag: "tag:k3s"
 tailscale_ssh_accept_routes: true
 # Routes are host-specific, set in playbook vars
 # Auth key from TAILSCALE_JOIN_KEY env var (set in GitHub Actions)

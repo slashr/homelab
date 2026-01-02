@@ -10,14 +10,13 @@ Before using this module, configure your Tailscale account:
 
    ```json
    "tagOwners": {
-     "tag:k8s-operator": [],
-     "tag:k8s": ["tag:k8s-operator"]
+     "tag:k8s": ["group:slashr", "tag:k8s"]
    }
    ```
 
 2. Create an OAuth client in the [Tailscale admin console](https://login.tailscale.com/admin/settings/oauth):
-   * Scopes: `Devices Core`, `Auth Keys`, `Services` (write)
-   * Tag: `tag:k8s-operator`
+   * Scopes: `Devices Core`, `Auth Keys` (write)
+   * Tag: `tag:k8s`
 
 3. Enable HTTPS and MagicDNS in [DNS settings](https://login.tailscale.com/admin/dns).
 

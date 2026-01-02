@@ -27,7 +27,7 @@ module "cloudflare-tunnel" {
 }
 
 # Kubernetes secret for cloudflared running in-cluster
-resource "kubernetes_namespace" "cloudflared" {
+resource "kubernetes_namespace_v1" "cloudflared" {
   metadata {
     name = "cloudflared"
     labels = {
@@ -39,7 +39,7 @@ resource "kubernetes_namespace" "cloudflared" {
 resource "kubernetes_secret" "cloudflared_tunnel" {
   metadata {
     name      = "cloudflared-tunnel"
-    namespace = kubernetes_namespace.cloudflared.metadata[0].name
+    namespace = kubernetes_namespace_v1.cloudflared.metadata[0].name
   }
 
   data = {

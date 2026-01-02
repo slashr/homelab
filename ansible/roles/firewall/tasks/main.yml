@@ -111,7 +111,7 @@
   ansible.builtin.command: ping -c 3 {{ k3s_master_ip }}
   register: tailscale_ping
   changed_when: false
-  failed_when: false
+  failed_when: tailscale_ping.rc != 0 and (lookup('env', 'CI') | lower) == 'true'
   tags: [firewall, ufw]
 
 - name: Display Tailscale connectivity status

@@ -470,7 +470,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: kwd6uysYz621CNTRL
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -653,7 +653,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: kwd6uysYz621CNTRL
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -715,7 +715,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: kwd6uysYz621CNTRL
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -773,7 +773,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
+          tailscale_client_id: kwd6uysYz621CNTRL
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -829,7 +829,7 @@ jobs:
       - name: Setup Tailscale
         uses: tailscale/github-action@v4.1.1
         with:
-          oauth-client-id: kwPnqSFLy811CNTRL
+          oauth-client-id: kwd6uysYz621CNTRL
           oauth-secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
 

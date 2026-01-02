@@ -258,6 +258,7 @@ jobs:
           GOOGLE_CREDENTIALS="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml | jq -c '.')"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
           # Mask sensitive values
+          echo "::add-mask::$GOOGLE_CREDENTIALS"
           echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key_id // empty')"
           echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key // empty')"
           echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.client_id // empty')"

@@ -4,9 +4,7 @@
 
 TAILSCALE_AUTH_KEY={{ tailscale_ssh_auth_key }}
 TAILSCALE_TAGS={{ tailscale_ssh_tag }}
-{% if tailscale_ssh_accept_routes | default(true) %}
-TAILSCALE_ACCEPT_ROUTES=1
-{% endif %}
+TAILSCALE_ACCEPT_ROUTES={{ '1' if tailscale_ssh_accept_routes | default(true) else '0' }}
 {% if tailscale_ssh_advertise_routes | default('') | length > 0 %}
 TAILSCALE_ADVERTISE_ROUTES={{ tailscale_ssh_advertise_routes }}
 {% endif %}

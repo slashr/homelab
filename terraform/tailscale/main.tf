@@ -15,8 +15,9 @@ terraform {
 }
 
 provider "tailscale" {
-  api_key = var.tailscale_api_key
-  tailnet = local.tailscale_tailnet_id
+  oauth_client_id     = var.tailscale_oauth_client_id
+  oauth_client_secret = var.tailscale_oauth_client_secret
+  tailnet             = local.tailscale_tailnet_id
 }
 
 data "tailscale_device" "managed" {

@@ -1,6 +1,11 @@
-variable "tailscale_api_key" {
+variable "tailscale_oauth_client_id" {
   type        = string
-  description = "Tailscale API key with ACL edit permission"
+  description = "Tailscale OAuth client ID"
+}
+
+variable "tailscale_oauth_client_secret" {
+  type        = string
+  description = "Tailscale OAuth client secret"
   sensitive   = true
 }
 

@@ -993,8 +993,11 @@ jobs:
         run: |
           cd ${{ github.workspace }}
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
+          TS_OAUTH_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           echo "::add-mask::$TF_API_TOKEN"
+          echo "::add-mask::$TS_OAUTH_SECRET"
           echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
+          echo "TS_OAUTH_SECRET=$TS_OAUTH_SECRET" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -1008,7 +1011,8 @@ jobs:
       - name: Terraform Plan
         run: |
           terraform plan -out=plan-tailscale.tfplan \
-            -var="tailscale_api_key=${{ secrets.TS_API_KEY }}"
+            -var="tailscale_oauth_client_id=${{ env.TS_OAUTH_CLIENT_ID }}" \
+            -var="tailscale_oauth_client_secret=${{ env.TS_OAUTH_SECRET }}"
 
       - name: Terraform Plan Summary
         uses: ./.github/actions/terraform-plan-summary

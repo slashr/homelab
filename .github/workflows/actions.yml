@@ -1,9 +1,14 @@
 ---
+name: CI/CD
+run-name: ${{ github.event.pull_request.title || github.event.head_commit.message || github.ref_name }}
+
 'on':
   push:
     branches: [main, staging]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6am UTC - full pipeline run to catch drift
   workflow_dispatch:
     inputs:
       run_firmware_upgrade:
@@ -36,6 +41,7 @@ env:
 jobs:
   # Detect which files changed to skip irrelevant jobs
   changes:
+    name: "Detect Changes"
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -47,7 +53,6 @@ jobs:
       ansible: ${{ steps.filter.outputs.ansible }}
       cloudflared: ${{ steps.filter.outputs.cloudflared }}
       tailscale: ${{ steps.filter.outputs.tailscale }}
-      docs-only: ${{ steps.filter.outputs.docs-only }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -82,79 +87,13 @@ jobs:
               - 'terraform/tailscale/**'
               - 'tailscale/**'
               - '.github/workflows/**'
-            docs-only:
-              - '**/*.md'
-              - 'LICENSE'
-              - 'AGENTS.md'
-
-  docs-lint:
-    needs: changes
-    name: "Docs Lint"
-    if: needs.changes.outputs.docs-only == 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-          cache: 'pip'
-          cache-dependency-path: .pre-commit-config.yaml
-
-      - name: Install pre-commit
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pre-commit
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-
-      - name: Run markdownlint on changed markdown files
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-
-          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            echo "No base SHA available (workflow_dispatch or initial push), using HEAD~1"
-            BASE_SHA="HEAD~1"
-          fi
-
-          CHANGED_MD=$(git diff --name-only --diff-filter=ACM "$BASE_SHA" "${{ github.sha }}" -- '*.md' 2>/dev/null || true)
-
-          if [ -n "$CHANGED_MD" ]; then
-            echo "Running markdownlint on changed markdown files:"
-            echo "$CHANGED_MD"
-            echo "$CHANGED_MD" | xargs pre-commit run markdownlint --files
-          else
-            echo "No markdown files changed, skipping markdownlint"
-          fi
-
-      - name: Docs lint summary
-        if: always()
-        run: |
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ Docs lint passed" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Docs lint failed" >> $GITHUB_STEP_SUMMARY
-          fi
 
   # Consolidated lint job - runs pre-commit checks once for all code
+  # (markdownlint included via pre-commit, no separate docs-lint needed)
   lint:
     needs: changes
     name: "Lint & Format Checks"
-    # Skip only for docs-only changes
-    if: needs.changes.outputs.docs-only != 'true' || github.event_name == 'push'
+    # Always run - pre-commit only checks changed files, so it's fast for small changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -238,227 +177,165 @@ jobs:
             echo "❌ Lint checks failed" >> $GITHUB_STEP_SUMMARY
           fi
 
-  gcp-setup:
+  Terraform-Infra:
     needs: [changes, lint]
-    name: "Terraform GCP"
-    if: |
-      github.ref != 'refs/heads/staging' &&
-      (needs.changes.outputs.gcp == 'true' || github.event_name == 'push')
+    name: "Terraform ${{ matrix.display_name }}"
+    if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Add timeout to prevent hanging jobs
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: [gcp, oracle]
+        include:
+          - workspace: gcp
+            display_name: GCP
+          - workspace: oracle
+            display_name: Oracle
     defaults:
       run:
-        working-directory: ./gcp
+        working-directory: ./${{ matrix.workspace }}
     env:
       TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
     steps:
+      - name: Check if workspace has changes
+        id: check
+        run: |
+          # Run on schedule/dispatch regardless of changes (drift detection)
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ matrix.workspace }}" == "gcp" ]]; then
+            echo "has_changes=${{ needs.changes.outputs.gcp == 'true' }}" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=${{ needs.changes.outputs.oracle == 'true' }}" >> $GITHUB_OUTPUT
+          fi
+        working-directory: .
+        shell: bash
+
+      - name: Skip if no changes
+        if: steps.check.outputs.has_changes != 'true'
+        run: echo "No changes for ${{ matrix.workspace }}, skipping" && exit 0
+        working-directory: .
+
       - name: Checkout
+        if: steps.check.outputs.has_changes == 'true'
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
+          fetch-depth: 0
 
       - name: Setup SOPS
+        if: steps.check.outputs.has_changes == 'true'
         uses: ./.github/actions/setup-sops
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
 
-      - name: Decrypt terraform secrets
+      - name: Decrypt GCP secrets
+        if: steps.check.outputs.has_changes == 'true' && matrix.workspace == 'gcp'
         run: |
           cd ${{ github.workspace }}
-          # Decrypt GCP credentials and compact to single-line JSON
           GOOGLE_CREDENTIALS="$(sops -d --extract '["gcp_credentials"]' secrets/terraform.yaml | jq -c '.')"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask sensitive values
           echo "::add-mask::$GOOGLE_CREDENTIALS"
           echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key_id // empty')"
           echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.private_key // empty')"
           echo "::add-mask::$(echo "$GOOGLE_CREDENTIALS" | jq -r '.client_id // empty')"
           echo "::add-mask::$TF_API_TOKEN"
-          # Write to GITHUB_ENV (compact JSON is single line)
           echo "GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS" >> $GITHUB_ENV
           echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
-          terraform_version: "1.9.6"  # Pin Terraform version
-
-      - name: Setup and Run Pre-commit
-        uses: ./.github/actions/setup-precommit
-
-      # Cache Terraform plugins and initialization files
-      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
-      # overwriting the tracked lock file with stale provider versions
-      - name: Cache Terraform
-        uses: actions/cache@v5
-        with:
-          path: |
-            /home/runner/.terraform.d/plugin-cache
-            gcp/.terraform
-          key: ${{ runner.os }}-terraform-gcp-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
-          restore-keys: |
-            ${{ runner.os }}-terraform-gcp-
-
-      - name: Create plugin cache directory
-        run: mkdir -p /home/runner/.terraform.d/plugin-cache
-
-      - name: Terraform Format
-        id: fmt
-        run: terraform fmt -check
-
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Validate
-        id: validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color -out=terraform.tfplan
-
-      # Save plan as artifact for review
-      - name: Save Terraform Plan
-        uses: actions/upload-artifact@v6
-        if: github.event_name == 'pull_request'
-        with:
-          name: gcp-terraform-plan
-          path: ./gcp/terraform.tfplan
-          retention-days: 1
-          compression-level: 9  # Maximum compression for faster uploads
-
-      - name: Terraform Apply
-        id: apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
-
-      - name: Terraform Apply Summary
-        if: always()
-        run: |
-          if [ "${{ steps.apply.outcome }}" = "success" ]; then
-            echo "Terraform apply succeeded." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Terraform Plan Summary
-        uses: ./.github/actions/terraform-plan-summary
-        with:
-          plan_file: 'terraform.tfplan'
-          job_name: 'GCP'
-
-  oracle-setup:
-    needs: [changes, lint]
-    name: "Terraform Oracle"
-    if: |
-      github.ref != 'refs/heads/staging' &&
-      (needs.changes.outputs.oracle == 'true' || github.event_name == 'push')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: ./oracle
-    env:
-      TF_PLUGIN_CACHE_DIR: /home/runner/.terraform.d/plugin-cache
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0  # Full history needed for pre-commit diffs (until PR #285 merges)
-
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
-
-      - name: Decrypt terraform secrets
+      - name: Decrypt Oracle secrets
+        if: steps.check.outputs.has_changes == 'true' && matrix.workspace == 'oracle'
         run: |
           cd ${{ github.workspace }}
-          # Decrypt secrets - use printf %b to convert \n to actual newlines
           OCI_PRIVATE_KEY_RAW="$(sops -d --extract '["oci_private_key"]' secrets/terraform.yaml)"
           OCI_PRIVATE_KEY="$(printf '%b' "$OCI_PRIVATE_KEY_RAW")"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
-          # Mask each line of multiline secrets
           while IFS= read -r line; do
             [ -n "$line" ] && echo "::add-mask::$line"
           done <<< "$OCI_PRIVATE_KEY"
           echo "::add-mask::$TF_API_TOKEN"
-          # Base64 encode the private key (Terraform expects base64)
           TF_VAR_oci_private_key="$(printf '%s' "$OCI_PRIVATE_KEY" | base64 -w 0)"
           echo "::add-mask::$TF_VAR_oci_private_key"
-          # Write to GITHUB_ENV
           echo "TF_VAR_oci_private_key=$TF_VAR_oci_private_key" >> $GITHUB_ENV
           echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
-          # Note: OCI identifiers (user_ocid, tenancy_ocid, etc.) come from oracle/terraform.tfvars
 
       - name: Setup Terraform
+        if: steps.check.outputs.has_changes == 'true'
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
-          terraform_version: "1.9.6"  # Pin Terraform version
+          terraform_version: "1.9.6"
 
       - name: Setup and Run Pre-commit
+        if: steps.check.outputs.has_changes == 'true'
         uses: ./.github/actions/setup-precommit
 
-      # Cache Terraform plugins and initialization files
-      # Note: .terraform.lock.hcl is excluded from cache to avoid restore-keys
-      # overwriting the tracked lock file with stale provider versions
       - name: Cache Terraform
+        if: steps.check.outputs.has_changes == 'true'
         uses: actions/cache@v5
         with:
           path: |
             /home/runner/.terraform.d/plugin-cache
-            oracle/.terraform
-          key: ${{ runner.os }}-terraform-oracle-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
+            ${{ matrix.workspace }}/.terraform
+          key: ${{ runner.os }}-terraform-${{ matrix.workspace }}-${{ hashFiles('**/*.tf', '**/.terraform.lock.hcl') }}
           restore-keys: |
-            ${{ runner.os }}-terraform-oracle-
+            ${{ runner.os }}-terraform-${{ matrix.workspace }}-
 
       - name: Create plugin cache directory
+        if: steps.check.outputs.has_changes == 'true'
         run: mkdir -p /home/runner/.terraform.d/plugin-cache
 
       - name: Terraform Format
-        id: fmt
+        if: steps.check.outputs.has_changes == 'true'
         run: terraform fmt -check
 
       - name: Terraform Init
+        if: steps.check.outputs.has_changes == 'true'
         run: terraform init
 
       - name: Terraform Validate
+        if: steps.check.outputs.has_changes == 'true'
         run: terraform validate
 
-      - name: "Terraform Plan"
-        id: plan
+      - name: Terraform Plan
+        if: steps.check.outputs.has_changes == 'true'
         run: terraform plan -no-color -out=plan.tfplan
 
+      - name: Save Terraform Plan
+        if: steps.check.outputs.has_changes == 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.workspace }}-terraform-plan
+          path: ./${{ matrix.workspace }}/plan.tfplan
+          retention-days: 1
+          compression-level: 9
+
       - name: Terraform Apply
-        id: apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: |
+          steps.check.outputs.has_changes == 'true' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' || github.event_name == 'schedule')
         run: terraform apply -auto-approve -input=false
 
-      - name: Terraform Apply Summary
-        if: always()
+      - name: Terraform Summary
+        if: always() && steps.check.outputs.has_changes == 'true'
         run: |
-          if [ "${{ steps.apply.outcome }}" = "success" ]; then
-            echo "Terraform apply succeeded." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Terraform apply failed." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## Terraform ${{ matrix.workspace }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Terraform Plan Summary
+        if: steps.check.outputs.has_changes == 'true'
         uses: ./.github/actions/terraform-plan-summary
         with:
           plan_file: 'plan.tfplan'
-          job_name: 'Oracle'
+          job_name: ${{ matrix.display_name }}
 
-  tailscale-setup:
+  Ansible-Tailscale:
     name: "Ansible Tailscale"
-    needs: [changes, oracle-setup, gcp-setup]
+    needs: [changes, Terraform-Infra]
     if: |
       !cancelled() &&
-      (needs.oracle-setup.result == 'success' || needs.oracle-setup.result == 'skipped') &&
-      (needs.gcp-setup.result == 'success' || needs.gcp-setup.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push')
+      (needs.Terraform-Infra.result == 'success' || needs.Terraform-Infra.result == 'skipped') &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -625,21 +502,14 @@ jobs:
             echo "❌ tailscale-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  pis-setup:
+  Ansible-Pis:
     name: "Ansible Pis"
-    needs: [changes, tailscale-setup]
+    needs: [changes, Ansible-Tailscale]
     if: |
       !cancelled() &&
-      (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
-      (
-        needs.changes.outputs.ansible == 'true' ||
-        github.event_name == 'push' ||
-        github.event_name == 'workflow_dispatch'
-      ) &&
-      (
-        github.event_name == 'workflow_dispatch' ||
-        (github.ref == 'refs/heads/main' && github.event_name == 'push')
-      )
+      (needs.Ansible-Tailscale.result == 'success' || needs.Ansible-Tailscale.result == 'skipped') &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -697,15 +567,14 @@ jobs:
             echo "❌ pis-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  security-setup:
-    name: "Ansible Security (Public Nodes)"
-    needs: [changes, tailscale-setup]
+  Ansible-Security:
+    name: "Ansible Security"
+    needs: [changes, Ansible-Tailscale]
     if: |
       !cancelled() &&
-      (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+      (needs.Ansible-Tailscale.result == 'success' || needs.Ansible-Tailscale.result == 'skipped') &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -754,15 +623,14 @@ jobs:
             echo "❌ security-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  k3s-setup:
+  Ansible-K3S:
     name: "Ansible K3S"
-    needs: [changes, pis-setup]
+    needs: [changes, Ansible-Pis]
     if: |
       !cancelled() &&
-      (needs.pis-setup.result == 'success' || needs.pis-setup.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+      (needs.Ansible-Pis.result == 'success' || needs.Ansible-Pis.result == 'skipped') &&
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -810,14 +678,14 @@ jobs:
             echo "k3s-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  run-k3s:
+  Terraform-K8S:
     name: "Terraform K8S"
-    needs: [changes, lint, k3s-setup]
+    needs: [changes, lint, Ansible-K3S]
     if: |
       !cancelled() &&
-      (needs.k3s-setup.result == 'success' || needs.k3s-setup.result == 'skipped') &&
+      (needs.Ansible-K3S.result == 'success' || needs.Ansible-K3S.result == 'skipped') &&
       github.ref != 'refs/heads/staging' &&
-      (needs.changes.outputs.kubernetes == 'true' || github.event_name == 'push')
+      (needs.changes.outputs.kubernetes == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -928,7 +796,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule')
         run: terraform apply -auto-approve -input=false
 
       - name: Terraform Apply Summary
@@ -979,12 +847,12 @@ jobs:
   # cloudflared-deploy job removed - cloudflared now runs in Kubernetes
   # See: homelab-deployments/src/cloudflared for the K8s Deployment
 
-  tailscale-apply:
-    name: "Terraform Tailscale ACL"
+  Terraform-Tailscale:
+    name: "Terraform Tailscale"
     needs: [changes, lint]
     if: |
       !cancelled() &&
-      (needs.changes.outputs.tailscale == 'true' || github.event_name == 'push')
+      (needs.changes.outputs.tailscale == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -1030,18 +898,18 @@ jobs:
         uses: ./.github/actions/terraform-plan-summary
         with:
           plan_file: 'plan-tailscale.tfplan'
-          job_name: 'Tailscale ACL'
+          job_name: 'Tailscale'
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule')
         run: |
           terraform apply -auto-approve plan-tailscale.tfplan
 
-      - name: Tailscale ACL Summary
+      - name: Tailscale Summary
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ Tailscale ACL apply succeeded." >> $GITHUB_STEP_SUMMARY
+            echo "✅ Tailscale apply succeeded." >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Tailscale ACL apply failed." >> $GITHUB_STEP_SUMMARY
+            echo "❌ Tailscale apply failed." >> $GITHUB_STEP_SUMMARY
           fi

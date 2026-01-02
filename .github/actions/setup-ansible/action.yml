@@ -8,9 +8,6 @@ inputs:
   tailscale_client_secret:
     description: 'Tailscale OAuth client secret'
     required: true
-  ansible_vault_password:
-    description: 'Ansible vault password for decrypting files'
-    required: true
 
 runs:
   using: 'composite'
@@ -59,5 +56,3 @@ runs:
 
     - name: Setup SSH
       uses: ./.github/actions/setup-ssh
-      with:
-        ansible_vault_password: ${{ inputs.ansible_vault_password }}

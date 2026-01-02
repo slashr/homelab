@@ -82,54 +82,27 @@ Reusable action that installs pre-commit, caches environments, and runs checks o
 
 ### `.github/actions/setup-ssh/`
 
-Configures SSH authentication with private key and disables strict host checking. Optionally sets up Ansible Vault password file when provided.
-
-**Inputs:**
-
-* `ssh_private_key` (required) — SSH private key for server authentication
-* `ansible_vault_password` (optional) — Vault password for decrypting encrypted Ansible files
+Configures SSH for Tailscale SSH connections. Verifies Tailscale is connected and sets up SSH config for host key checking bypass.
 
 ## Secrets and Environment Requirements
 
 ### GitHub Actions Secrets (Required)
 
-**Terraform Cloud:**
+* `SOPS_AGE_SECRET_KEY` — AGE private key for decrypting SOPS-encrypted secrets
+* `TAILSCALE_JOIN_KEY` — Auth key for node registration (used by Ansible k3s playbook)
 
-* `TF_API_TOKEN` — Terraform Cloud API token for workspace management
+### SOPS-Encrypted Secrets
 
-**Oracle Cloud Infrastructure:**
+Most secrets are stored in SOPS-encrypted files in `secrets/` directory. These are decrypted at runtime using the `SOPS_AGE_SECRET_KEY`.
 
-* `TF_USER_OCID` — Oracle user OCID
-* `TF_TENANCY_OCID` — Oracle tenancy OCID
-* `TF_OCI_PRIVATE_KEY` — Oracle API private key (PEM format)
-* `TF_FINGERPRINT` — Oracle API key fingerprint
-* `TF_COMPARTMENT_ID` — Oracle compartment ID
-* `TF_SSH_AUTHORIZED_KEYS` — Public SSH keys for instance access
+**`secrets/terraform.yaml`** contains:
 
-**Google Cloud Platform:**
-
-* `GCP_CREDENTIALS` — GCP service account credentials (JSON format)
-
-**Kubernetes:**
-
-* `TF_KUBE_CLIENT_CERT` — Base64-encoded kubeconfig client certificate
-* `TF_KUBE_CLIENT_KEY` — Base64-encoded kubeconfig client key
-* `TF_KUBE_CLUSTER_CA_CERT` — Base64-encoded kubeconfig cluster CA certificate
-
-**Cloudflare:**
-
-* `TF_CLOUDFLARE_API_TOKEN` — API token with DNS permissions for cert-manager and external-dns
-
-**Tailscale VPN:**
-
-* `TAILSCALE_CLIENT_ID` — OAuth client ID for GitHub Actions runner
-* `TAILSCALE_CLIENT_SECRET` — OAuth client secret for GitHub Actions runner
-* `TAILSCALE_JOIN_KEY` — Auth key for node registration (used by Ansible)
-
-**Ansible:**
-
-* `SSH_AUTH_PRIVATE_KEY` — SSH private key for accessing all managed nodes
-* `ANSIBLE_VAULT_PASSWORD` — Password for decrypting vault-encrypted configuration files
+* Oracle Cloud credentials (user OCID, tenancy OCID, private key, fingerprint, compartment ID, SSH keys)
+* GCP service account credentials
+* Kubernetes kubeconfig certificates
+* Cloudflare API token
+* Tailscale OAuth client credentials
+* Terraform Cloud API token
 
 ### Terraform Cloud Workspaces
 
@@ -155,25 +128,11 @@ The `ansible/hosts.ini` defines host groups:
 
 Variables are managed in `ansible/group_vars/all.yml` and define cluster-wide settings like k3s version and master node details.
 
-### Vault-Encrypted Files
+### Archived Vault-Encrypted Files
 
-Files in `ansible/confs/` are encrypted with ansible-vault (password stored in Bitwarden and GitHub Secrets). These contain sensitive firewall rules and network configuration.
-
-**Encryption/Decryption Workflow:**
-
-```bash
-# Decrypt
-ansible-vault decrypt confs/iptables.conf
-
-# Make changes
-vim confs/iptables.conf
-
-# Re-encrypt
-ansible-vault encrypt confs/iptables.conf
-```
-
-**Important:** Always re-encrypt files before committing. Update `ANSIBLE_VAULT_PASSWORD` secret if changing the vault
-password.
+Legacy vault-encrypted files exist in `archive/ansible/confs/` (old WireGuard configs, iptables rules).
+These are no longer actively used — the infrastructure now uses Tailscale for networking.
+The vault password is stored in Bitwarden if access is ever needed.
 
 ### Playbook Execution
 

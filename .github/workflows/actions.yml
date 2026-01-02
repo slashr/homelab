@@ -339,7 +339,7 @@ jobs:
           plan_file: 'plan.tfplan'
           job_name: ${{ matrix.display_name }}
 
-  tailscale-setup:
+  Ansible-Tailscale:
     name: "Ansible Tailscale"
     needs: [changes, Terraform-Infra]
     if: |
@@ -512,12 +512,12 @@ jobs:
             echo "❌ tailscale-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  pis-setup:
+  Ansible-Pis:
     name: "Ansible Pis"
-    needs: [changes, tailscale-setup]
+    needs: [changes, Ansible-Tailscale]
     if: |
       !cancelled() &&
-      (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
+      (needs.Ansible-Tailscale.result == 'success' || needs.Ansible-Tailscale.result == 'skipped') &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -577,12 +577,12 @@ jobs:
             echo "❌ pis-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  security-setup:
+  Ansible-Security:
     name: "Ansible Security"
-    needs: [changes, tailscale-setup]
+    needs: [changes, Ansible-Tailscale]
     if: |
       !cancelled() &&
-      (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
+      (needs.Ansible-Tailscale.result == 'success' || needs.Ansible-Tailscale.result == 'skipped') &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -633,12 +633,12 @@ jobs:
             echo "❌ security-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  k3s-setup:
+  Ansible-K3S:
     name: "Ansible K3S"
-    needs: [changes, pis-setup]
+    needs: [changes, Ansible-Pis]
     if: |
       !cancelled() &&
-      (needs.pis-setup.result == 'success' || needs.pis-setup.result == 'skipped') &&
+      (needs.Ansible-Pis.result == 'success' || needs.Ansible-Pis.result == 'skipped') &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -688,12 +688,12 @@ jobs:
             echo "k3s-playbook failed." >> $GITHUB_STEP_SUMMARY
           fi
 
-  run-k3s:
+  Terraform-K8S:
     name: "Terraform K8S"
-    needs: [changes, lint, k3s-setup]
+    needs: [changes, lint, Ansible-K3S]
     if: |
       !cancelled() &&
-      (needs.k3s-setup.result == 'success' || needs.k3s-setup.result == 'skipped') &&
+      (needs.Ansible-K3S.result == 'success' || needs.Ansible-K3S.result == 'skipped') &&
       github.ref != 'refs/heads/staging' &&
       (needs.changes.outputs.kubernetes == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
@@ -857,8 +857,8 @@ jobs:
   # cloudflared-deploy job removed - cloudflared now runs in Kubernetes
   # See: homelab-deployments/src/cloudflared for the K8s Deployment
 
-  tailscale-apply:
-    name: "Terraform Tailscale ACL"
+  Terraform-Tailscale:
+    name: "Terraform Tailscale"
     needs: [changes, lint]
     if: |
       !cancelled() &&
@@ -908,18 +908,18 @@ jobs:
         uses: ./.github/actions/terraform-plan-summary
         with:
           plan_file: 'plan-tailscale.tfplan'
-          job_name: 'Tailscale ACL'
+          job_name: 'Tailscale'
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule')
         run: |
           terraform apply -auto-approve plan-tailscale.tfplan
 
-      - name: Tailscale ACL Summary
+      - name: Tailscale Summary
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ Tailscale ACL apply succeeded." >> $GITHUB_STEP_SUMMARY
+            echo "✅ Tailscale apply succeeded." >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Tailscale ACL apply failed." >> $GITHUB_STEP_SUMMARY
+            echo "❌ Tailscale apply failed." >> $GITHUB_STEP_SUMMARY
           fi

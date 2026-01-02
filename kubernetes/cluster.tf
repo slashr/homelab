@@ -27,19 +27,11 @@ module "cloudflare-tunnel" {
 }
 
 # Kubernetes secret for cloudflared running in-cluster
-resource "kubernetes_namespace_v1" "cloudflared" {
-  metadata {
-    name = "cloudflared"
-    labels = {
-      name = "cloudflared"
-    }
-  }
-}
-
-resource "kubernetes_secret" "cloudflared_tunnel" {
+# Namespace is created by ArgoCD (CreateNamespace=true in homelab-deployments)
+resource "kubernetes_secret_v1" "cloudflared_tunnel" {
   metadata {
     name      = "cloudflared-tunnel"
-    namespace = kubernetes_namespace_v1.cloudflared.metadata[0].name
+    namespace = "cloudflared"
   }
 
   data = {

@@ -8,6 +8,6 @@ k3s_master_port: "6443"
 # Cloud nodes use Tailscale IPs so metrics-server can reach kubelet
 cloud_node_tailscale_ips:
   pam-amd1: "100.100.2.100"
-  angela-amd2: "100.100.2.101"
+  angela-amd2: "100.100.2.102"
   stanley-arm1: "100.100.2.103"
   toby-gcp1: "100.100.2.104"

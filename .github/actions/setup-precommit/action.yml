@@ -54,7 +54,7 @@ runs:
         fi
 
         if [ -n "$CHANGED_FILES" ]; then
-          SKIP=$SKIP_HOOKS pre-commit run --files "$CHANGED_FILES" --hook-stage manual
+          SKIP=$SKIP_HOOKS pre-commit run --files $CHANGED_FILES --hook-stage manual
         else
-          pre-commit run --hook-stage manual --hook-id terraform_fmt terraform_validate
+          echo "No changed files to check, skipping pre-commit"
         fi

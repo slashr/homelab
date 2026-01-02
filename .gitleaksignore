@@ -4,8 +4,4 @@
 
 # Tailscale OAuth client ID (non-sensitive, like a username)
 kubernetes/terraform.tfvars:generic-api-key:3
-.github/workflows/actions.yml:generic-api-key:473
-.github/workflows/actions.yml:generic-api-key:656
-.github/workflows/actions.yml:generic-api-key:718
-.github/workflows/actions.yml:generic-api-key:776
-.github/workflows/actions.yml:generic-api-key:832
+.github/workflows/actions.yml:generic-api-key:23

@@ -7,6 +7,8 @@ run-name: ${{ github.event.pull_request.title || github.event.head_commit.messag
     branches: [main, staging]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6am UTC - full pipeline run to catch drift
   workflow_dispatch:
     inputs:
       run_firmware_upgrade:
@@ -97,7 +99,11 @@ jobs:
     needs: changes
     name: "Lint & Format Checks"
     # Skip only for docs-only changes
-    if: needs.changes.outputs.docs-only != 'true' || github.event_name == 'push'
+    # Run unless docs-only changes (but always run on schedule/dispatch for drift detection)
+    if: |
+      needs.changes.outputs.docs-only != 'true' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -205,10 +211,13 @@ jobs:
       - name: Check if workspace has changes
         id: check
         run: |
-          if [[ "${{ matrix.workspace }}" == "gcp" ]]; then
-            echo "has_changes=${{ needs.changes.outputs.gcp == 'true' || github.event_name == 'push' }}" >> $GITHUB_OUTPUT
+          # Run on schedule/dispatch regardless of changes (drift detection)
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ matrix.workspace }}" == "gcp" ]]; then
+            echo "has_changes=${{ needs.changes.outputs.gcp == 'true' }}" >> $GITHUB_OUTPUT
           else
-            echo "has_changes=${{ needs.changes.outputs.oracle == 'true' || github.event_name == 'push' }}" >> $GITHUB_OUTPUT
+            echo "has_changes=${{ needs.changes.outputs.oracle == 'true' }}" >> $GITHUB_OUTPUT
           fi
         working-directory: .
         shell: bash
@@ -312,7 +321,10 @@ jobs:
           compression-level: 9
 
       - name: Terraform Apply
-        if: steps.check.outputs.has_changes == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: |
+          steps.check.outputs.has_changes == 'true' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' || github.event_name == 'schedule')
         run: terraform apply -auto-approve -input=false
 
       - name: Terraform Summary
@@ -333,7 +345,7 @@ jobs:
     if: |
       !cancelled() &&
       (needs.Terraform-Infra.result == 'success' || needs.Terraform-Infra.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push')
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -506,15 +518,8 @@ jobs:
     if: |
       !cancelled() &&
       (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
-      (
-        needs.changes.outputs.ansible == 'true' ||
-        github.event_name == 'push' ||
-        github.event_name == 'workflow_dispatch'
-      ) &&
-      (
-        github.event_name == 'workflow_dispatch' ||
-        (github.ref == 'refs/heads/main' && github.event_name == 'push')
-      )
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -578,9 +583,8 @@ jobs:
     if: |
       !cancelled() &&
       (needs.tailscale-setup.result == 'success' || needs.tailscale-setup.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -635,9 +639,8 @@ jobs:
     if: |
       !cancelled() &&
       (needs.pis-setup.result == 'success' || needs.pis-setup.result == 'skipped') &&
-      (needs.changes.outputs.ansible == 'true' || github.event_name == 'push') &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+      (needs.changes.outputs.ansible == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -692,7 +695,7 @@ jobs:
       !cancelled() &&
       (needs.k3s-setup.result == 'success' || needs.k3s-setup.result == 'skipped') &&
       github.ref != 'refs/heads/staging' &&
-      (needs.changes.outputs.kubernetes == 'true' || github.event_name == 'push')
+      (needs.changes.outputs.kubernetes == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -803,7 +806,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule')
         run: terraform apply -auto-approve -input=false
 
       - name: Terraform Apply Summary
@@ -859,7 +862,7 @@ jobs:
     needs: [changes, lint]
     if: |
       !cancelled() &&
-      (needs.changes.outputs.tailscale == 'true' || github.event_name == 'push')
+      (needs.changes.outputs.tailscale == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -908,7 +911,7 @@ jobs:
           job_name: 'Tailscale ACL'
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule')
         run: |
           terraform apply -auto-approve plan-tailscale.tfplan
 

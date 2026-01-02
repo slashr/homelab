@@ -4,7 +4,18 @@
     branches: [main, staging]
   pull_request:
     branches: [main]
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      run_firmware_upgrade:
+        description: 'Run Pi firmware checks (slow, usually skip)'
+        required: false
+        default: 'false'
+        type: boolean
+      run_debian_upgrade:
+        description: 'Run Debian upgrade checks'
+        required: false
+        default: 'false'
+        type: boolean
 
 permissions:
   contents: read
@@ -667,8 +678,13 @@ jobs:
           (github.event_name == 'workflow_dispatch')
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
+          # Skip slow upgrade checks by default, enable via workflow_dispatch inputs
+          FIRMWARE_UPGRADE: ${{ github.event.inputs.run_firmware_upgrade || 'false' }}
+          DEBIAN_UPGRADE: ${{ github.event.inputs.run_debian_upgrade || 'false' }}
         run: |
-          ansible-playbook -i hosts.ini playbooks/pis.yml
+          ansible-playbook -i hosts.ini playbooks/pis.yml \
+            -e "firmware_upgrade_enabled=$FIRMWARE_UPGRADE" \
+            -e "debian_upgrade_enabled=$DEBIAN_UPGRADE"
 
       - name: pis-playbook Summary
         if: always()

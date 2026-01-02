@@ -1,2 +1,2 @@
 ---
-tailscale_accept_routes: true
+tailscale_ssh_accept_routes: false

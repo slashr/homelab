@@ -460,18 +460,18 @@ jobs:
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
 
-      - name: Decrypt Tailscale secret
+      - name: Decrypt Tailscale OAuth secret
         run: |
           cd ${{ github.workspace }}
           TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           echo "::add-mask::$TS_SECRET"
-          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+          echo "TAILSCALE_OAUTH_SECRET=$TS_SECRET" >> $GITHUB_ENV
 
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
-          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
+          tailscale_oauth_client_id: kwd6uysYz621CNTRL
+          tailscale_oauth_client_secret: ${{ env.TAILSCALE_OAUTH_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Dry-run check (PR only)
@@ -643,18 +643,18 @@ jobs:
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
 
-      - name: Decrypt Tailscale secret
+      - name: Decrypt Tailscale OAuth secret
         run: |
           cd ${{ github.workspace }}
           TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           echo "::add-mask::$TS_SECRET"
-          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+          echo "TAILSCALE_OAUTH_SECRET=$TS_SECRET" >> $GITHUB_ENV
 
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
-          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
+          tailscale_oauth_client_id: kwd6uysYz621CNTRL
+          tailscale_oauth_client_secret: ${{ env.TAILSCALE_OAUTH_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run pis-playbook
@@ -705,18 +705,18 @@ jobs:
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
 
-      - name: Decrypt Tailscale secret
+      - name: Decrypt Tailscale OAuth secret
         run: |
           cd ${{ github.workspace }}
           TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           echo "::add-mask::$TS_SECRET"
-          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+          echo "TAILSCALE_OAUTH_SECRET=$TS_SECRET" >> $GITHUB_ENV
 
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
-          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
+          tailscale_oauth_client_id: kwd6uysYz621CNTRL
+          tailscale_oauth_client_secret: ${{ env.TAILSCALE_OAUTH_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run security-playbook
@@ -763,18 +763,18 @@ jobs:
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
 
-      - name: Decrypt Tailscale secret
+      - name: Decrypt Tailscale OAuth secret
         run: |
           cd ${{ github.workspace }}
           TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           echo "::add-mask::$TS_SECRET"
-          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+          echo "TAILSCALE_OAUTH_SECRET=$TS_SECRET" >> $GITHUB_ENV
 
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: kwPnqSFLy811CNTRL
-          tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
+          tailscale_oauth_client_id: kwd6uysYz621CNTRL
+          tailscale_oauth_client_secret: ${{ env.TAILSCALE_OAUTH_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
       - name: Run k3s-playbook
@@ -819,18 +819,18 @@ jobs:
         with:
           age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
 
-      - name: Decrypt Tailscale secret for runner
+      - name: Decrypt Tailscale OAuth secret
         run: |
           cd ${{ github.workspace }}
           TS_SECRET="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           echo "::add-mask::$TS_SECRET"
-          echo "TAILSCALE_CLIENT_SECRET=$TS_SECRET" >> $GITHUB_ENV
+          echo "TAILSCALE_OAUTH_SECRET=$TS_SECRET" >> $GITHUB_ENV
 
       - name: Setup Tailscale
         uses: tailscale/github-action@v4.1.1
         with:
-          oauth-client-id: kwPnqSFLy811CNTRL
-          oauth-secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
+          oauth-client-id: kwd6uysYz621CNTRL
+          oauth-secret: ${{ env.TAILSCALE_OAUTH_SECRET }}
           tags: tag:k3s
 
       - name: Decrypt secrets

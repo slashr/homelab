@@ -2,10 +2,10 @@
 name: 'Setup Ansible Environment'
 description: 'Install and configure Ansible, Tailscale, and run linters'
 inputs:
-  tailscale_client_id:
+  tailscale_oauth_client_id:
     description: 'Tailscale OAuth client ID'
     required: true
-  tailscale_client_secret:
+  tailscale_oauth_client_secret:
     description: 'Tailscale OAuth client secret'
     required: true
   ansible_vault_password:
@@ -20,8 +20,8 @@ runs:
     - name: Tailscale
       uses: tailscale/github-action@v4.1.1
       with:
-        oauth-client-id: ${{ inputs.tailscale_client_id }}
-        oauth-secret: ${{ inputs.tailscale_client_secret }}
+        oauth-client-id: ${{ inputs.tailscale_oauth_client_id }}
+        oauth-secret: ${{ inputs.tailscale_oauth_client_secret }}
         tags: tag:k3s
 
     - name: Set up Python 3.x

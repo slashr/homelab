@@ -53,7 +53,6 @@ jobs:
       ansible: ${{ steps.filter.outputs.ansible }}
       cloudflared: ${{ steps.filter.outputs.cloudflared }}
       tailscale: ${{ steps.filter.outputs.tailscale }}
-      docs-only: ${{ steps.filter.outputs.docs-only }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -88,10 +87,6 @@ jobs:
               - 'terraform/tailscale/**'
               - 'tailscale/**'
               - '.github/workflows/**'
-            docs-only:
-              - '**/*.md'
-              - 'LICENSE'
-              - 'AGENTS.md'
 
   # Consolidated lint job - runs pre-commit checks once for all code
   # (markdownlint included via pre-commit, no separate docs-lint needed)

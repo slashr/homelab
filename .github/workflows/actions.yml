@@ -417,9 +417,9 @@ jobs:
             echo "Running dry-run on a sample node to verify Tailscale SSH works end-to-end..." >> $GITHUB_STEP_SUMMARY
             # Try to run a dry-run on a simple playbook or just test with a single node
             if [ -f playbooks/pis.yml ]; then
-              ansible-playbook -i hosts.ini playbooks/pis.yml --check --limit michael-pi 2>&1 | head -20 | tee e2e_test.log || true
+              ansible-playbook -i hosts.ini -f 20 playbooks/pis.yml --check --limit michael-pi 2>&1 | head -20 | tee e2e_test.log || true
             elif [ -f tailscale.yml ]; then
-              ansible-playbook -i hosts.ini tailscale.yml --check --limit pam-amd1 2>&1 | head -20 | tee e2e_test.log || true
+              ansible-playbook -i hosts.ini -f 20 tailscale.yml --check --limit pam-amd1 2>&1 | head -20 | tee e2e_test.log || true
             else
               echo "No playbooks found for end-to-end test" >> e2e_test.log
             fi
@@ -433,7 +433,7 @@ jobs:
             echo "### Pis Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook -i hosts.ini playbooks/pis.yml \
+            ansible-playbook -i hosts.ini -f 20 playbooks/pis.yml \
               --check 2>&1 | tee dry_run.log || true
             cat dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -447,7 +447,7 @@ jobs:
             echo "### Tailscale Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook -i hosts.ini tailscale.yml \
+            ansible-playbook -i hosts.ini -f 20 tailscale.yml \
               --check 2>&1 | tee tailscale_dry_run.log || true
             cat tailscale_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -462,7 +462,7 @@ jobs:
             echo "### k3s Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check only (--check without --diff to protect sensitive content)" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook -i hosts.ini k3s.yml --check 2>&1 | tee k3s_dry_run.log || true
+            ansible-playbook -i hosts.ini -f 20 k3s.yml --check 2>&1 | tee k3s_dry_run.log || true
             cat k3s_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           else
@@ -476,7 +476,7 @@ jobs:
             echo "### Security Playbook Check" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "Running syntax check for fail2ban and firewall deployment" >> $GITHUB_STEP_SUMMARY
-            ansible-playbook -i hosts.ini playbooks/security.yml \
+            ansible-playbook -i hosts.ini -f 20 playbooks/security.yml \
               --check 2>&1 | tee security_dry_run.log || true
             cat security_dry_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -489,7 +489,7 @@ jobs:
         id: tailscale_playbook
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ansible-playbook -i hosts.ini tailscale.yml
+          ansible-playbook -i hosts.ini -f 20 tailscale.yml
 
       - name: tailscale-playbook Summary
         if: always()
@@ -552,7 +552,7 @@ jobs:
           FIRMWARE_UPGRADE: ${{ github.event.inputs.run_firmware_upgrade || 'false' }}
           DEBIAN_UPGRADE: ${{ github.event.inputs.run_debian_upgrade || 'false' }}
         run: |
-          ansible-playbook -i hosts.ini playbooks/pis.yml \
+          ansible-playbook -i hosts.ini -f 20 playbooks/pis.yml \
             -e "firmware_upgrade_enabled=$FIRMWARE_UPGRADE" \
             -e "debian_upgrade_enabled=$DEBIAN_UPGRADE"
 
@@ -610,7 +610,7 @@ jobs:
         id: security_playbook
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ansible-playbook -i hosts.ini playbooks/security.yml
+          ansible-playbook -i hosts.ini -f 20 playbooks/security.yml
 
       - name: security-playbook Summary
         if: always()
@@ -667,7 +667,7 @@ jobs:
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          ansible-playbook -i hosts.ini k3s.yml
+          ansible-playbook -i hosts.ini -f 20 k3s.yml
 
       - name: k3s-playbook Summary
         if: always()

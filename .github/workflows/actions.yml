@@ -39,6 +39,7 @@ env:
 jobs:
   # Detect which files changed to skip irrelevant jobs
   changes:
+    name: "Detect Changes"
     runs-on: ubuntu-latest
     permissions:
       contents: read

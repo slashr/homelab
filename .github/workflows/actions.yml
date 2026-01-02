@@ -181,9 +181,9 @@ jobs:
             echo "❌ Lint checks failed" >> $GITHUB_STEP_SUMMARY
           fi
 
-  terraform-infra:
+  Terraform-Infra:
     needs: [changes, lint]
-    name: "Terraform Infra (${{ matrix.display_name }})"
+    name: "Terraform ${{ matrix.display_name }}"
     if: github.ref != 'refs/heads/staging'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -329,10 +329,10 @@ jobs:
 
   tailscale-setup:
     name: "Ansible Tailscale"
-    needs: [changes, terraform-infra]
+    needs: [changes, Terraform-Infra]
     if: |
       !cancelled() &&
-      (needs.terraform-infra.result == 'success' || needs.terraform-infra.result == 'skipped') &&
+      (needs.Terraform-Infra.result == 'success' || needs.Terraform-Infra.result == 'skipped') &&
       (needs.changes.outputs.ansible == 'true' || github.event_name == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 30

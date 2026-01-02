@@ -130,7 +130,9 @@ Variables are managed in `ansible/group_vars/all.yml` and define cluster-wide se
 
 ### Archived Vault-Encrypted Files
 
-Legacy vault-encrypted files exist in `archive/ansible/confs/` (old WireGuard configs, iptables rules). These are no longer actively used — the infrastructure now uses Tailscale for networking. The vault password is stored in Bitwarden if access is ever needed.
+Legacy vault-encrypted files exist in `archive/ansible/confs/` (old WireGuard configs, iptables rules).
+These are no longer actively used — the infrastructure now uses Tailscale for networking.
+The vault password is stored in Bitwarden if access is ever needed.
 
 ### Playbook Execution
 

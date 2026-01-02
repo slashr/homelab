@@ -40,3 +40,22 @@ resource "kubernetes_secret_v1" "cloudflared_tunnel" {
 
   type = "Opaque"
 }
+
+# Velero S3 credentials for OCI Object Storage backups
+# Namespace is created by ArgoCD (CreateNamespace=true in homelab-deployments)
+resource "kubernetes_secret_v1" "velero_credentials" {
+  metadata {
+    name      = "velero-s3-credentials"
+    namespace = "velero"
+  }
+
+  data = {
+    cloud = <<-EOF
+      [default]
+      aws_access_key_id=${var.velero_s3_access_key}
+      aws_secret_access_key=${var.velero_s3_secret_key}
+    EOF
+  }
+
+  type = "Opaque"
+}

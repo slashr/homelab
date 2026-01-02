@@ -69,3 +69,24 @@ variable "tailscale_oauth_client_secret" {
     error_message = "Tailscale OAuth client secret cannot be empty."
   }
 }
+
+# Velero backup variables (OCI Object Storage S3-compatible credentials)
+variable "velero_s3_access_key" {
+  description = "OCI S3 access key for Velero backups"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.velero_s3_access_key) > 0
+    error_message = "Velero S3 access key cannot be empty."
+  }
+}
+
+variable "velero_s3_secret_key" {
+  description = "OCI S3 secret key for Velero backups"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.velero_s3_secret_key) > 0
+    error_message = "Velero S3 secret key cannot be empty."
+  }
+}

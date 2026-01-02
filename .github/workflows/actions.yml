@@ -802,7 +802,7 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         run: terraform apply -auto-approve -input=false
 
       - name: Terraform Apply Summary

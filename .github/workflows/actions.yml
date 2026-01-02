@@ -924,10 +924,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          age_secret_key: ${{ secrets.SOPS_AGE_SECRET_KEY }}
+
+      - name: Decrypt terraform secrets
+        run: |
+          cd ${{ github.workspace }}
+          TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
+          echo "::add-mask::$TF_API_TOKEN"
+          echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
           terraform_version: "1.9.6"
 
       - name: Terraform Init

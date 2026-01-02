@@ -36,7 +36,7 @@ resource "kubernetes_namespace_v1" "cloudflared" {
   }
 }
 
-resource "kubernetes_secret" "cloudflared_tunnel" {
+resource "kubernetes_secret_v1" "cloudflared_tunnel" {
   metadata {
     name      = "cloudflared-tunnel"
     namespace = kubernetes_namespace_v1.cloudflared.metadata[0].name

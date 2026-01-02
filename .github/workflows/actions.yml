@@ -17,10 +17,10 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && github.run_id || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: false
 
-# Tailscale OAuth client ID (non-sensitive, like a username)
-# Secret is stored in SOPS and decrypted at runtime
+# Tailscale OAuth client ID for GitHub Actions (non-sensitive, like a username)
+# Named to avoid conflict with Tailscale Terraform provider's auto-discovery
 env:
-  TAILSCALE_OAUTH_CLIENT_ID: kwd6uysYz621CNTRL
+  TS_OAUTH_CLIENT_ID: kwd6uysYz621CNTRL
 
 jobs:
   # Detect which files changed to skip irrelevant jobs
@@ -475,7 +475,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -658,7 +658,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -720,7 +720,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -778,7 +778,7 @@ jobs:
       - name: Setup Ansible Environment
         uses: ./.github/actions/setup-ansible
         with:
-          tailscale_client_id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale_client_id: ${{ env.TS_OAUTH_CLIENT_ID }}
           tailscale_client_secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           ansible_vault_password: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
@@ -834,7 +834,7 @@ jobs:
       - name: Setup Tailscale
         uses: tailscale/github-action@v4.1.1
         with:
-          oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TAILSCALE_CLIENT_SECRET }}
           tags: tag:k3s
 

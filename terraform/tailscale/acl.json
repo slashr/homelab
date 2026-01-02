@@ -10,8 +10,23 @@
   "acls": [
     {
       "action": "accept",
-      "src": ["*"],
+      "src": ["group:slashr"],
       "dst": ["*:*"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:k3s"],
+      "dst": ["tag:k3s:*"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:k3s"],
+      "dst": ["tag:k8s:*"]
+    },
+    {
+      "action": "accept",
+      "src": ["autogroup:member"],
+      "dst": ["tag:k8s:80,443"]
     }
   ],
   "ssh": [

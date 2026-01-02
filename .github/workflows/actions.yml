@@ -701,7 +701,7 @@ jobs:
           fi
 
   security-setup:
-    name: "Ansible Security (Public Nodes)"
+    name: "Ansible Security"
     needs: [changes, tailscale-setup]
     if: |
       !cancelled() &&

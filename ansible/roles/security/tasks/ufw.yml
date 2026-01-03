@@ -3,12 +3,27 @@
 # Configures firewall rules to allow k3s, SSH, Tailscale, and Pi services
 # DNS/HTTP/HTTPS allowed from local network + Tailscale for flexibility
 
-- name: Install UFW
+- name: Check for ufw binary
+  ansible.builtin.command: command -v ufw
+  register: ufw_binary_check
+  changed_when: false
+  failed_when: false
+  become: true
+  tags: [firewall, ufw]
+
+- name: Install UFW (if missing)
   ansible.builtin.apt:
     name: ufw
     state: present
     update_cache: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
   become: true
+  register: ufw_install
+  retries: 3
+  delay: 5
+  until: ufw_install is success
+  when: ufw_binary_check.rc != 0
   tags: [firewall, ufw]
 
 - name: Preseed iptables-persistent to skip interactive prompts

@@ -16,6 +16,11 @@
         dpkg_options: "force-confdef,force-confold"
         force_apt_get: true
 
+    - name: Install WireGuard tools (for flannel wireguard-native backend)
+      ansible.builtin.apt:
+        name: wireguard-tools
+        state: present
+
     - name: Downloading k3s script
       ansible.builtin.get_url:
         url: https://get.k3s.io
@@ -60,10 +65,8 @@
       when: k3s_binary.stat.exists
 
     - name: Installing k3s
-      ansible.builtin.command: >
-        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
+      ansible.builtin.command: /tmp/k3s.sh
       environment:
-        TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
       register: k3s_install
       when: not k3s_binary.stat.exists or k3s_installed_version != k3s_version
@@ -115,7 +118,7 @@
       loop: "{{ groups['all'] }}"    # or restrict to the three worker groups
 
 
-- name: Install Tailscale-K3S on Nodes
+- name: Install K3S Agents
   hosts:
     - pi_workers
     - oracle_workers
@@ -124,21 +127,19 @@
   gather_facts: false
   strategy: free  # Parallel execution - install agents simultaneously
   tasks:
-    - name: Create /etc/rancher/k3s directory for cloud nodes
+    - name: Create /etc/rancher/k3s directory
       ansible.builtin.file:
         path: /etc/rancher/k3s
         state: directory
         mode: '0755'
-      when: inventory_hostname in cloud_node_tailscale_ips
 
     - name: Configure k3s agent to use Tailscale IP as node-ip
       ansible.builtin.copy:
         dest: /etc/rancher/k3s/config.yaml
         mode: '0644'
         content: |
-          # Cloud nodes use Tailscale IP so metrics-server can reach kubelet
-          node-ip: "{{ cloud_node_tailscale_ips[inventory_hostname] }}"
-      when: inventory_hostname in cloud_node_tailscale_ips
+          # All nodes use Tailscale IP for flannel WireGuard-native backend
+          node-ip: "{{ node_tailscale_ips[inventory_hostname] }}"
       register: k3s_agent_config
 
     - name: Check if k3s-agent is already installed
@@ -159,10 +160,8 @@
       when: k3s_agent_binary.stat.exists
 
     - name: Installing k3s agent
-      ansible.builtin.command: >
-        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
+      ansible.builtin.command: /tmp/k3s.sh
       environment:
-        TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ agent_token_fact }}"
         K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"

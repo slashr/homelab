@@ -4,10 +4,17 @@ k3s_version: "v1.35.0+k3s1"
 k3s_master_ip: "100.100.1.100"
 k3s_master_port: "6443"
 
-# Tailscale IPs for cloud nodes (used as k3s node-ip)
-# Cloud nodes use Tailscale IPs so metrics-server can reach kubelet
-cloud_node_tailscale_ips:
+# Tailscale IPs for all k3s nodes
+# Used as node-ip for flannel WireGuard-native backend
+# All nodes must use Tailscale IPs so flannel can route pod traffic
+node_tailscale_ips:
+  # Raspberry Pis (home network)
+  michael-pi: "100.100.1.100"
+  jim-pi: "100.100.1.101"
+  dwight-pi: "100.100.1.102"
+  # Oracle Cloud
   pam-amd1: "100.100.2.100"
   angela-amd2: "100.100.2.102"
   stanley-arm1: "100.100.2.103"
+  # GCP
   toby-gcp1: "100.100.2.104"

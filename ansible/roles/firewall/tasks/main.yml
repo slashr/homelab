@@ -27,7 +27,7 @@
 
 - name: Reset connection after UFW install to refresh PATH
   ansible.builtin.meta: reset_connection
-  when: ufw_install is changed
+  when: ufw_install is defined and ufw_install is changed
   tags: [firewall, ufw]
 
 - name: Wait for ufw binary to be available
@@ -35,7 +35,7 @@
     path: /usr/sbin/ufw
     state: present
     timeout: 10
-  when: ufw_install is changed
+  when: ufw_install is defined and ufw_install is changed
   become: true
   tags: [firewall, ufw]
 
@@ -44,7 +44,7 @@
   register: ufw_version_check
   changed_when: false
   failed_when: ufw_version_check.rc != 0
-  when: ufw_install is changed
+  when: ufw_install is defined and ufw_install is changed
   become: true
   tags: [firewall, ufw]
 

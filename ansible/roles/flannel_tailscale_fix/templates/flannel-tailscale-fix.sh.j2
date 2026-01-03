@@ -87,6 +87,13 @@ add_masquerade_rule() {
     log "Added MASQUERADE rule for $pod_subnet"
 }
 
+set_advertise_routes() {
+    local pod_subnet="$1"
+
+    log "Setting Tailscale advertise-routes to $pod_subnet..."
+    tailscale set --accept-routes --advertise-routes="$pod_subnet" >/dev/null 2>&1 || true
+}
+
 main() {
     log "Starting flannel Tailscale routing fix..."
 
@@ -106,6 +113,7 @@ main() {
 
     # Apply fixes
     remove_supernet_routes
+    set_advertise_routes "$POD_SUBNET"
     add_masquerade_rule "$POD_SUBNET"
 
     log "Flannel Tailscale routing fix completed successfully"

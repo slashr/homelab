@@ -91,7 +91,9 @@ set_advertise_routes() {
     local pod_subnet="$1"
 
     log "Setting Tailscale advertise-routes to $pod_subnet..."
-    tailscale set --accept-routes --advertise-routes="$pod_subnet" >/dev/null 2>&1 || true
+    if ! tailscale set --accept-routes --advertise-routes="$pod_subnet" >/dev/null 2>&1; then
+        log "WARNING: failed to set advertise-routes to $pod_subnet"
+    fi
 }
 
 main() {

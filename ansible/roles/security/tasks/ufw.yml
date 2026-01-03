@@ -26,6 +26,11 @@
   when: ufw_binary_check.rc != 0
   tags: [firewall, ufw]
 
+- name: Reset connection after UFW install to refresh PATH
+  ansible.builtin.meta: reset_connection
+  when: ufw_install is changed
+  tags: [firewall, ufw]
+
 - name: Preseed iptables-persistent to skip interactive prompts
   ansible.builtin.debconf:
     name: iptables-persistent

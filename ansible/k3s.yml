@@ -66,9 +66,8 @@
 
     - name: Installing k3s
       ansible.builtin.command: >
-        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
+        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
       environment:
-        TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"
       register: k3s_install
       when: not k3s_binary.stat.exists or k3s_installed_version != k3s_version
@@ -163,9 +162,8 @@
 
     - name: Installing k3s agent
       ansible.builtin.command: >
-        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey=$TAILSCALE_JOIN_KEY"
+        /tmp/k3s.sh --vpn-auth="name=tailscale,joinKey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
       environment:
-        TAILSCALE_JOIN_KEY: "{{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
         K3S_TOKEN: "{{ agent_token_fact }}"
         K3S_URL: "https://{{ k3s_master_ip }}:{{ k3s_master_port }}"
         INSTALL_K3S_VERSION: "{{ k3s_version }}"

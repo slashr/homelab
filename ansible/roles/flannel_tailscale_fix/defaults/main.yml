@@ -1,0 +1,5 @@
+---
+# Flannel Tailscale fix role defaults
+
+# Enable/disable the fix (set to false if switching to different flannel backend)
+flannel_tailscale_fix_enabled: true

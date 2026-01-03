@@ -1,2 +1,7 @@
+# K3s server configuration
+# Using WireGuard-native backend for flannel (encrypted pod traffic)
+# All nodes communicate via Tailscale IPs
+
 advertise-address: 100.100.1.100
+node-ip: 100.100.1.100
 flannel-backend: tailscale

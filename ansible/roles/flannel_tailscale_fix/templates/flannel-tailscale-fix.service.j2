@@ -1,0 +1,25 @@
+# Flannel Tailscale routing fix service
+# Managed by Ansible - do not edit manually
+#
+# Fixes routing issues when using flannel with the Tailscale backend.
+# Runs after k3s starts to remove conflicting supernet routes and
+# add MASQUERADE rules for cross-node pod traffic.
+
+[Unit]
+Description=Flannel Tailscale Routing Fix
+After=k3s.service k3s-agent.service tailscaled.service
+Wants=k3s.service k3s-agent.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/flannel-tailscale-fix.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+# Retry on failure (flannel might not be ready immediately)
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

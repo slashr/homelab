@@ -1,2 +1,2 @@
 ---
-tailscale_ssh_accept_routes: false
+tailscale_ssh_accept_routes: true  # Required for flannel Tailscale backend

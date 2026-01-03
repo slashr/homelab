@@ -1,0 +1,3 @@
+---
+# Set true to reset UFW (non-idempotent); keep false for stable runs.
+ufw_reset: false

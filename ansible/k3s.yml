@@ -42,6 +42,7 @@
         src: ./k3s-master-config.yaml
         dest: /etc/rancher/k3s/config.yaml
         mode: '0644'
+      notify: Restart k3s
     - name: Install Traefik HelmChart config
       ansible.builtin.copy:
         src: ./traefik-helmchart.yaml
@@ -101,6 +102,26 @@
         dest: /var/lib/rancher/k3s/server/manifests/traefik-helmchart.yaml
         mode: '0644'
 
+  handlers:
+    - name: Restart k3s
+      ansible.builtin.systemd:
+        name: k3s
+        state: restarted
+      listen: Restart k3s
+      register: k3s_restart
+      retries: 3
+      delay: 10
+      until: k3s_restart is success
+
+    - name: Wait for k3s after restart
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+      register: k3s_after_restart
+      until: k3s_after_restart.status.ActiveState == "active"
+      retries: 5
+      delay: 10
+      listen: Restart k3s
 - name: Get Agent Token
   become: true
   hosts: michael-pi

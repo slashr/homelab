@@ -11,6 +11,15 @@
   become: true
   tags: [firewall, ufw]
 
+- name: Install iptables-persistent
+  ansible.builtin.apt:
+    name: iptables-persistent
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  become: true
+  tags: [firewall, ufw]
+
 - name: Reset UFW to default state
   community.general.ufw:
     state: reset
@@ -90,12 +99,32 @@
   become: true
   tags: [firewall, ufw]
 
-- name: Allow k3s flannel WireGuard (51820/udp) from Tailscale network
+# Allow pod/service CIDRs so cross-node traffic isn't blocked by ufw-not-local
+- name: Allow pod network (10.42.0.0/16) from cluster
   community.general.ufw:
     rule: allow
-    port: '51820'
-    proto: udp
-    from_ip: "{{ tailscale_network_cidr }}"
+    from_ip: "{{ pod_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow pod network (10.42.0.0/16) to cluster
+  community.general.ufw:
+    rule: allow
+    to_ip: "{{ pod_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow service network (10.43.0.0/16) from cluster
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ service_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow service network (10.43.0.0/16) to cluster
+  community.general.ufw:
+    rule: allow
+    to_ip: "{{ service_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 
@@ -168,6 +197,116 @@
     state: enabled
   become: true
   tags: [firewall, ufw]
+
+- name: Check for flannel subnet file
+  ansible.builtin.stat:
+    path: /run/flannel/subnet.env
+  register: flannel_subnet_file
+  changed_when: false
+  become: true
+  tags: [firewall, ufw, tailscale]
+
+- name: Read flannel subnet
+  ansible.builtin.shell: . /run/flannel/subnet.env && echo "${FLANNEL_SUBNET}"
+  register: flannel_subnet
+  changed_when: false
+  become: true
+  when: flannel_subnet_file.stat.exists
+  tags: [firewall, ufw, tailscale]
+
+- name: Check MASQUERADE for pod subnet over tailscale0
+  ansible.builtin.command: iptables -t nat -C POSTROUTING -s {{ flannel_subnet.stdout }} ! -d {{ flannel_subnet.stdout }} -o tailscale0 -j MASQUERADE
+  register: tailscale_masq_check
+  changed_when: false
+  failed_when: false
+  become: true
+  when: flannel_subnet_file.stat.exists
+  tags: [firewall, ufw, tailscale]
+
+- name: Add MASQUERADE for pod subnet over tailscale0
+  ansible.builtin.command: iptables -t nat -I POSTROUTING 1 -s {{ flannel_subnet.stdout }} ! -d {{ flannel_subnet.stdout }} -o tailscale0 -j MASQUERADE
+  become: true
+  register: tailscale_masq_add
+  changed_when: true
+  when:
+    - flannel_subnet_file.stat.exists
+    - tailscale_masq_check.rc != 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Check for Tailscale interface
+  ansible.builtin.command: ip link show tailscale0
+  register: tailscale0_check
+  changed_when: false
+  failed_when: false
+  become: true
+  tags: [firewall, ufw, tailscale]
+
+- name: Check TCPMSS set on tailscale0 output
+  ansible.builtin.command: iptables -t mangle -C OUTPUT -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ tailscale_mss }}
+  register: tailscale_mss_set_check
+  changed_when: false
+  failed_when: false
+  become: true
+  when: tailscale0_check.rc == 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Set TCPMSS on tailscale0 output
+  ansible.builtin.command: iptables -t mangle -I OUTPUT 1 -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ tailscale_mss }}
+  become: true
+  register: tailscale_mss_set_add
+  changed_when: true
+  when:
+    - tailscale0_check.rc == 0
+    - tailscale_mss_set_check.rc != 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Check TCPMSS clamp on tailscale0 egress
+  ansible.builtin.command: iptables -t mangle -C FORWARD -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+  register: tailscale_mss_out_check
+  changed_when: false
+  failed_when: false
+  become: true
+  when: tailscale0_check.rc == 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Add TCPMSS clamp on tailscale0 egress
+  ansible.builtin.command: iptables -t mangle -I FORWARD 1 -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+  become: true
+  register: tailscale_mss_out_add
+  changed_when: true
+  when:
+    - tailscale0_check.rc == 0
+    - tailscale_mss_out_check.rc != 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Check TCPMSS clamp on tailscale0 ingress
+  ansible.builtin.command: iptables -t mangle -C FORWARD -i tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+  register: tailscale_mss_in_check
+  changed_when: false
+  failed_when: false
+  become: true
+  when: tailscale0_check.rc == 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Add TCPMSS clamp on tailscale0 ingress
+  ansible.builtin.command: iptables -t mangle -I FORWARD 1 -i tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+  become: true
+  register: tailscale_mss_in_add
+  changed_when: true
+  when:
+    - tailscale0_check.rc == 0
+    - tailscale_mss_in_check.rc != 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Persist iptables rules
+  ansible.builtin.command: netfilter-persistent save
+  become: true
+  when: >-
+    (tailscale_masq_add is defined and tailscale_masq_add.changed) or
+    (tailscale_mss_set_add is defined and tailscale_mss_set_add.changed) or
+    (tailscale_mss_out_add is defined and tailscale_mss_out_add.changed) or
+    (tailscale_mss_in_add is defined and tailscale_mss_in_add.changed)
+  tags: [firewall, ufw, tailscale]
 
 - name: Verify UFW is active
   ansible.builtin.command: ufw status verbose

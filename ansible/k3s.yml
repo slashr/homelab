@@ -91,6 +91,32 @@
       until: k3s_service.status.ActiveState == "active"
       retries: 5
       delay: 5
+    - name: Check for stale flannel-wg interface
+      ansible.builtin.command: ip link show flannel-wg
+      register: flannel_wg_check
+      changed_when: false
+      failed_when: false
+    - name: Remove stale flannel-wg route
+      ansible.builtin.command: ip route del 10.42.0.0/16 dev flannel-wg
+      when: flannel_wg_check.rc == 0
+      failed_when: false
+    - name: Delete stale flannel-wg interface
+      ansible.builtin.command: ip link del flannel-wg
+      when: flannel_wg_check.rc == 0
+      failed_when: false
+    - name: Check for flannel subnet file
+      ansible.builtin.stat:
+        path: /run/flannel/subnet.env
+      register: flannel_subnet_file
+      changed_when: false
+    - name: Read flannel subnet
+      ansible.builtin.shell: . /run/flannel/subnet.env && echo "${FLANNEL_SUBNET}"
+      register: flannel_subnet
+      changed_when: false
+      when: flannel_subnet_file.stat.exists
+    - name: Ensure Tailscale advertises only node pod subnet
+      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet.stdout }}
+      when: flannel_subnet_file.stat.exists
     - name: Ensure k3s manifests directory exists
       ansible.builtin.file:
         path: /var/lib/rancher/k3s/server/manifests
@@ -185,6 +211,32 @@
       until: k3s_agent_service.status.ActiveState == "active"
       retries: 5
       delay: 5
+    - name: Check for stale flannel-wg interface
+      ansible.builtin.command: ip link show flannel-wg
+      register: flannel_wg_check
+      changed_when: false
+      failed_when: false
+    - name: Remove stale flannel-wg route
+      ansible.builtin.command: ip route del 10.42.0.0/16 dev flannel-wg
+      when: flannel_wg_check.rc == 0
+      failed_when: false
+    - name: Delete stale flannel-wg interface
+      ansible.builtin.command: ip link del flannel-wg
+      when: flannel_wg_check.rc == 0
+      failed_when: false
+    - name: Check for flannel subnet file
+      ansible.builtin.stat:
+        path: /run/flannel/subnet.env
+      register: flannel_subnet_file
+      changed_when: false
+    - name: Read flannel subnet
+      ansible.builtin.shell: . /run/flannel/subnet.env && echo "${FLANNEL_SUBNET}"
+      register: flannel_subnet
+      changed_when: false
+      when: flannel_subnet_file.stat.exists
+    - name: Ensure Tailscale advertises only node pod subnet
+      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet.stdout }}
+      when: flannel_subnet_file.stat.exists
 
     - name: Remove old kubelet certs if node-ip config changed
       ansible.builtin.file:

@@ -11,6 +11,15 @@
   become: true
   tags: [firewall, ufw]
 
+- name: Install iptables-persistent
+  ansible.builtin.apt:
+    name: iptables-persistent
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  become: true
+  tags: [firewall, ufw]
+
 - name: Reset UFW to default state
   community.general.ufw:
     state: reset
@@ -217,6 +226,8 @@
 - name: Add MASQUERADE for pod subnet over tailscale0
   ansible.builtin.command: iptables -t nat -I POSTROUTING 1 -s {{ flannel_subnet.stdout }} ! -d {{ flannel_subnet.stdout }} -o tailscale0 -j MASQUERADE
   become: true
+  register: tailscale_masq_add
+  changed_when: true
   when:
     - flannel_subnet_file.stat.exists
     - tailscale_masq_check.rc != 0
@@ -242,6 +253,8 @@
 - name: Set TCPMSS on tailscale0 output
   ansible.builtin.command: iptables -t mangle -I OUTPUT 1 -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ tailscale_mss }}
   become: true
+  register: tailscale_mss_set_add
+  changed_when: true
   when:
     - tailscale0_check.rc == 0
     - tailscale_mss_set_check.rc != 0
@@ -259,6 +272,8 @@
 - name: Add TCPMSS clamp on tailscale0 egress
   ansible.builtin.command: iptables -t mangle -I FORWARD 1 -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
   become: true
+  register: tailscale_mss_out_add
+  changed_when: true
   when:
     - tailscale0_check.rc == 0
     - tailscale_mss_out_check.rc != 0
@@ -276,9 +291,21 @@
 - name: Add TCPMSS clamp on tailscale0 ingress
   ansible.builtin.command: iptables -t mangle -I FORWARD 1 -i tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
   become: true
+  register: tailscale_mss_in_add
+  changed_when: true
   when:
     - tailscale0_check.rc == 0
     - tailscale_mss_in_check.rc != 0
+  tags: [firewall, ufw, tailscale]
+
+- name: Persist iptables rules
+  ansible.builtin.command: netfilter-persistent save
+  become: true
+  when: >-
+    (tailscale_masq_add is defined and tailscale_masq_add.changed) or
+    (tailscale_mss_set_add is defined and tailscale_mss_set_add.changed) or
+    (tailscale_mss_out_add is defined and tailscale_mss_out_add.changed) or
+    (tailscale_mss_in_add is defined and tailscale_mss_in_add.changed)
   tags: [firewall, ufw, tailscale]
 
 - name: Verify UFW is active

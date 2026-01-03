@@ -11,6 +11,18 @@
   become: true
   tags: [firewall, ufw]
 
+- name: Preseed iptables-persistent to skip interactive prompts
+  ansible.builtin.debconf:
+    name: iptables-persistent
+    question: "{{ item }}"
+    value: "false"
+    vtype: boolean
+  loop:
+    - iptables-persistent/autosave_v4
+    - iptables-persistent/autosave_v6
+  become: true
+  tags: [firewall, ufw]
+
 - name: Install iptables-persistent
   ansible.builtin.apt:
     name: iptables-persistent

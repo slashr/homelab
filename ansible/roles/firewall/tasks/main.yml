@@ -25,29 +25,7 @@
   when: ufw_binary_check.rc != 0
   tags: [firewall, ufw]
 
-- name: Reset connection after UFW install to refresh PATH
-  ansible.builtin.meta: reset_connection
-  when: ufw_install is defined and ufw_install is changed
-  tags: [firewall, ufw]
-
-- name: Wait for ufw binary to be available
-  ansible.builtin.wait_for:
-    path: /usr/sbin/ufw
-    state: present
-    timeout: 10
-  when: ufw_install is defined and ufw_install is changed
-  become: true
-  tags: [firewall, ufw]
-
-- name: Verify ufw binary works
-  ansible.builtin.command: /usr/sbin/ufw --version
-  register: ufw_version_check
-  changed_when: false
-  failed_when: ufw_version_check.rc != 0
-  when: ufw_install is defined and ufw_install is changed
-  become: true
-  tags: [firewall, ufw]
-
+# iptables-persistent conflicts with UFW on Debian Trixie - skip on Trixie
 - name: Preseed iptables-persistent to skip interactive prompts
   ansible.builtin.debconf:
     name: iptables-persistent
@@ -58,15 +36,18 @@
     - iptables-persistent/autosave_v4
     - iptables-persistent/autosave_v6
   become: true
+  when: not (ansible_distribution == "Debian" and ansible_distribution_release == "trixie")
   tags: [firewall, ufw]
 
-- name: Install iptables-persistent
+- name: Install iptables-persistent (not on Debian Trixie - conflicts with UFW)
   ansible.builtin.apt:
     name: iptables-persistent
     state: present
   environment:
     DEBIAN_FRONTEND: noninteractive
   become: true
+  register: iptables_persistent_install
+  when: not (ansible_distribution == "Debian" and ansible_distribution_release == "trixie")
   tags: [firewall, ufw]
 
 - name: Reset UFW to default state
@@ -183,6 +164,8 @@
   become: true
   tags: [firewall, ufw]
 
+# Tailscale iptables rules for cross-node pod traffic
+# Also handled by flannel_tailscale_fix at boot for persistence
 - name: Check for flannel subnet file
   ansible.builtin.stat:
     path: /run/flannel/subnet.env
@@ -283,14 +266,17 @@
     - tailscale_mss_in_check.rc != 0
   tags: [firewall, ufw, tailscale]
 
-- name: Persist iptables rules
+- name: Persist iptables rules (only when iptables-persistent is installed)
   ansible.builtin.command: netfilter-persistent save
   become: true
-  when: >-
-    (tailscale_masq_add is defined and tailscale_masq_add.changed) or
-    (tailscale_mss_set_add is defined and tailscale_mss_set_add.changed) or
-    (tailscale_mss_out_add is defined and tailscale_mss_out_add.changed) or
-    (tailscale_mss_in_add is defined and tailscale_mss_in_add.changed)
+  when:
+    - iptables_persistent_install is defined
+    - iptables_persistent_install is not skipped
+    - >-
+      (tailscale_masq_add is defined and tailscale_masq_add.changed) or
+      (tailscale_mss_set_add is defined and tailscale_mss_set_add.changed) or
+      (tailscale_mss_out_add is defined and tailscale_mss_out_add.changed) or
+      (tailscale_mss_in_add is defined and tailscale_mss_in_add.changed)
   tags: [firewall, ufw, tailscale]
 
 - name: Verify UFW is active

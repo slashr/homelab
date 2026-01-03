@@ -6,11 +6,11 @@
 # Each node runs tasks independently without waiting for others
 #
 # Performance optimizations:
-# - gather_facts: false - roles don't use Ansible facts (saves ~4-5s per host)
 # - strategy: free - hosts proceed independently (saves ~30-50% total time)
+# Note: gather_facts required for OS detection (iptables-persistent/UFW conflict on Debian Trixie)
 - name: Deploy security hardening to public nodes
   hosts: public_nodes
-  gather_facts: false
+  gather_facts: true
   become: true
   strategy: free
   roles:

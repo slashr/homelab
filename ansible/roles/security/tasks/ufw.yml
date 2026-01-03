@@ -31,6 +31,24 @@
   when: ufw_install is changed
   tags: [firewall, ufw]
 
+- name: Wait for ufw binary to be available
+  ansible.builtin.wait_for:
+    path: /usr/sbin/ufw
+    state: present
+    timeout: 10
+  when: ufw_install is changed
+  become: true
+  tags: [firewall, ufw]
+
+- name: Verify ufw binary works
+  ansible.builtin.command: /usr/sbin/ufw --version
+  register: ufw_version_check
+  changed_when: false
+  failed_when: ufw_version_check.rc != 0
+  when: ufw_install is changed
+  become: true
+  tags: [firewall, ufw]
+
 - name: Preseed iptables-persistent to skip interactive prompts
   ansible.builtin.debconf:
     name: iptables-persistent

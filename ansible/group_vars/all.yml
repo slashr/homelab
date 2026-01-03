@@ -11,3 +11,13 @@ cloud_node_tailscale_ips:
   angela-amd2: "100.100.2.102"
   stanley-arm1: "100.100.2.103"
   toby-gcp1: "100.100.2.104"
+
+# Tailscale IPs for all k3s nodes (used as k3s node-ip)
+node_tailscale_ips:
+  michael-pi: "100.100.1.100"
+  jim-pi: "100.100.1.101"
+  dwight-pi: "100.100.1.102"
+  pam-amd1: "100.100.2.100"
+  angela-amd2: "100.100.2.102"
+  stanley-arm1: "100.100.2.103"
+  toby-gcp1: "100.100.2.104"

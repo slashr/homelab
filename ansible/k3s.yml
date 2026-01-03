@@ -255,3 +255,15 @@
         - node: toby-gcp1
           location: cloud
           name: toby
+
+- name: Apply flannel Tailscale routing fix
+  hosts:
+    - michael-pi
+    - pi_workers
+    - oracle_workers
+    - gcp_workers
+  become: true
+  gather_facts: false
+  strategy: free
+  roles:
+    - flannel_tailscale_fix

@@ -1,2 +1,1 @@
 ---
-tailscale_ssh_advertise_routes: "10.42.2.0/24"

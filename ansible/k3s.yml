@@ -106,7 +106,9 @@
       when: flannel_subnet_file.stat.exists
     - name: Ensure Tailscale advertises only node pod subnet
       ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet_cidr.stdout }}
-      when: flannel_subnet_file.stat.exists
+      when:
+        - flannel_subnet_file.stat.exists
+        - flannel_tailscale_fix_enabled | default(true) | bool
     - name: Ensure k3s manifests directory exists
       ansible.builtin.file:
         path: /var/lib/rancher/k3s/server/manifests
@@ -221,7 +223,9 @@
       when: flannel_subnet_file.stat.exists
     - name: Ensure Tailscale advertises only node pod subnet
       ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet_cidr.stdout }}
-      when: flannel_subnet_file.stat.exists
+      when:
+        - flannel_subnet_file.stat.exists
+        - flannel_tailscale_fix_enabled | default(true) | bool
 
     - name: Remove old kubelet certs if node-ip config changed
       ansible.builtin.file:

@@ -1,0 +1,183 @@
+#!/bin/bash
+# Flannel Tailscale routing fix
+# Managed by Ansible - do not edit manually
+#
+# This script fixes routing issues when using flannel with the Tailscale backend.
+# The problem: michael-pi advertises 10.42.0.0/16 and 10.43.0.0/16 supernets via
+# Tailscale. When other nodes accept these routes, they end up in table 52 and
+# override the local cni0 routes, breaking local pod delivery.
+#
+# The fix:
+# 1. Remove /16 supernet routes from table 52 (so local pods use cni0)
+# 2. Add MASQUERADE for cross-node pod traffic going via tailscale0
+# 3. Add TCPMSS rules to clamp MSS for TCP over tailscale0 (avoids TLS timeouts)
+
+set -euo pipefail
+
+LOG_TAG="flannel-tailscale-fix"
+
+log() {
+    logger -t "$LOG_TAG" "$1"
+    echo "$1"
+}
+
+# Wait for flannel to be ready (cni0 interface exists)
+wait_for_flannel() {
+    local max_attempts=60
+    local attempt=0
+
+    while ! ip link show cni0 &>/dev/null; do
+        attempt=$((attempt + 1))
+        if [ $attempt -ge $max_attempts ]; then
+            log "ERROR: Timeout waiting for cni0 interface"
+            exit 1
+        fi
+        sleep 2
+    done
+    log "cni0 interface is ready"
+}
+
+# Get this node's pod subnet from cni0
+get_pod_subnet() {
+    ip route | grep "dev cni0" | grep -v "default" | awk '{print $1}' | head -1
+}
+
+# Remove /16 supernet advertise-routes from flannel's net-conf.json
+sanitize_flannel_netconf() {
+    local netconf="/var/lib/rancher/k3s/agent/etc/flannel/net-conf.json"
+    local pod_cidr="{{ pod_network_cidr }}"
+    local svc_cidr="{{ service_network_cidr }}"
+
+    if [ ! -f "$netconf" ]; then
+        return 0
+    fi
+
+    if grep -q "${pod_cidr},${svc_cidr}" "$netconf"; then
+        log "Sanitizing flannel net-conf.json PostStartupCommand..."
+        # escape dots and slashes for sed
+        local pod_esc=${pod_cidr//./\\.}
+        pod_esc=${pod_esc//\//\\/}
+        local svc_esc=${svc_cidr//./\\.}
+        svc_esc=${svc_esc//\//\\/}
+        sed -i.bak "s/,${pod_esc},${svc_esc}//g" "$netconf"
+        log "Removed /16 advertise-routes from flannel net-conf.json"
+    fi
+}
+
+# Remove supernet routes from table 52
+remove_supernet_routes() {
+    log "Removing supernet routes from table 52..."
+
+    # Remove 10.42.0.0/16 if it exists
+    if ip route show table 52 | grep -q "^10.42.0.0/16"; then
+        ip route del 10.42.0.0/16 dev tailscale0 table 52 2>/dev/null || true
+        log "Removed 10.42.0.0/16 from table 52"
+    fi
+
+    # Remove 10.43.0.0/16 if it exists
+    if ip route show table 52 | grep -q "^10.43.0.0/16"; then
+        ip route del 10.43.0.0/16 dev tailscale0 table 52 2>/dev/null || true
+        log "Removed 10.43.0.0/16 from table 52"
+    fi
+}
+
+# Add MASQUERADE rule for cross-node pod traffic
+add_masquerade_rule() {
+    local pod_subnet="$1"
+    local comment="flannel tailscale cross-node"
+
+    log "Adding MASQUERADE rule for $pod_subnet..."
+
+    # Check if rule already exists
+    if iptables -t nat -C FLANNEL-POSTRTG -s "$pod_subnet" ! -d "$pod_subnet" -o tailscale0 -j MASQUERADE -m comment --comment "$comment" 2>/dev/null; then
+        log "MASQUERADE rule already exists"
+        return 0
+    fi
+
+    # Check if FLANNEL-POSTRTG chain exists
+    if ! iptables -t nat -L FLANNEL-POSTRTG &>/dev/null; then
+        log "WARNING: FLANNEL-POSTRTG chain does not exist yet, skipping"
+        return 0
+    fi
+
+    # Add rule at position 2 (after the mark check rule)
+    iptables -t nat -I FLANNEL-POSTRTG 2 \
+        -s "$pod_subnet" ! -d "$pod_subnet" \
+        -o tailscale0 \
+        -j MASQUERADE \
+        -m comment --comment "$comment"
+
+    log "Added MASQUERADE rule for $pod_subnet"
+}
+
+set_advertise_routes() {
+    local pod_subnet="$1"
+
+    log "Setting Tailscale advertise-routes to $pod_subnet..."
+    if ! tailscale set --accept-routes --advertise-routes="$pod_subnet" >/dev/null 2>&1; then
+        log "WARNING: failed to set advertise-routes to $pod_subnet"
+    fi
+}
+
+# Add TCPMSS rules to clamp MSS for TCP over tailscale0
+# This prevents TLS handshake timeouts on Tailscale's 1280 MTU
+add_tcpmss_rules() {
+    local mss="{{ tailscale_mss | default(1200) }}"
+
+    log "Adding TCPMSS rules (MSS=$mss)..."
+
+    # Check if tailscale0 interface exists
+    if ! ip link show tailscale0 &>/dev/null; then
+        log "WARNING: tailscale0 interface not found, skipping TCPMSS rules"
+        return 0
+    fi
+
+    # Set MSS on OUTPUT for tailscale0
+    if ! iptables -t mangle -C OUTPUT -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss "$mss" 2>/dev/null; then
+        iptables -t mangle -I OUTPUT 1 -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss "$mss"
+        log "Added TCPMSS set-mss rule on OUTPUT"
+    fi
+
+    # Clamp MSS on FORWARD egress for tailscale0
+    if ! iptables -t mangle -C FORWARD -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
+        iptables -t mangle -I FORWARD 1 -o tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+        log "Added TCPMSS clamp rule on FORWARD egress"
+    fi
+
+    # Clamp MSS on FORWARD ingress for tailscale0
+    if ! iptables -t mangle -C FORWARD -i tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
+        iptables -t mangle -I FORWARD 1 -i tailscale0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+        log "Added TCPMSS clamp rule on FORWARD ingress"
+    fi
+
+    log "TCPMSS rules configured"
+}
+
+main() {
+    log "Starting flannel Tailscale routing fix..."
+
+    # Wait for flannel to initialize
+    wait_for_flannel
+
+    # Small delay to ensure routes are populated
+    sleep 5
+
+    # Get this node's pod subnet
+    POD_SUBNET=$(get_pod_subnet)
+    if [ -z "$POD_SUBNET" ]; then
+        log "ERROR: Could not determine pod subnet"
+        exit 1
+    fi
+    log "Node pod subnet: $POD_SUBNET"
+
+    # Apply fixes
+    sanitize_flannel_netconf
+    remove_supernet_routes
+    set_advertise_routes "$POD_SUBNET"
+    add_masquerade_rule "$POD_SUBNET"
+    add_tcpmss_rules
+
+    log "Flannel Tailscale routing fix completed successfully"
+}
+
+main "$@"

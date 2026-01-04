@@ -188,7 +188,7 @@
       register: k3s_agent_install
       when: >-
         not k3s_agent_binary.stat.exists or
-        (k3s_agent_current_version.stdout | default('')) is not search(k3s_version)
+        k3s_version not in (k3s_agent_current_version.stdout | default(''))
       failed_when:
         - k3s_agent_install.rc != 0
         - '"already installed" not in k3s_agent_install.stderr'

@@ -14,9 +14,9 @@ task items.
 * `oracle/` — Terraform stack that stands up Oracle Cloud networking and compute. Relies on sensitive tenancy
   credentials and provisions both the network (VCN, security lists, reserved IP) and worker nodes.
 * `gcp/` — Terraform configuration for a small GCP worker VM with customizable SSH metadata.
-* `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, external-dns, Argo CD) via
+* `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, Argo CD, tailscale-operator, cloudflare-tunnel) via
   the shared Helm modules in `terraform-modules/`. Requires base64-encoded kubeconfig material and Cloudflare secrets.
-* `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, external-dns, Argo CD, ingress-nginx, MetalLB).
+* `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, Argo CD, tailscale-operator, cloudflare-tunnel, ingress-nginx, MetalLB).
   Each module manages its own namespace and supporting secrets.
 * `.github/workflows/` — CI/CD workflows for infrastructure deployment (`actions.yml`) and security scanning (`security.yml`).
 * `.github/actions/` — Reusable composite actions for common workflow tasks (SSH setup, pre-commit).
@@ -119,12 +119,12 @@ Terraform stacks depend on Terraform Cloud workspaces keyed off tags (`oracle`, 
 
 The `ansible/hosts.ini` defines host groups:
 
-* `vpn` — Oracle VPN gateway (pam-amd1)
 * `pi_workers` — Raspberry Pi worker nodes (jim-pi, dwight-pi)
-* `oracle_workers` — Oracle worker nodes (pam-amd2, pam-arm1, pam-arm2)
-* `gcp_workers` — GCP worker nodes
-* `pihole_worker` — Pi-hole DNS server (dwight-pi)
-* `michael-pi` — k3s master node
+* `oracle_workers` — Oracle worker nodes (pam-amd1, angela-amd2, stanley-arm1)
+* `gcp_workers` — GCP worker nodes (toby-gcp1)
+* `pis` — All Raspberry Pi nodes (michael-pi, jim-pi, dwight-pi)
+* `public_nodes` — All public cloud nodes (pam-amd1, angela-amd2, stanley-arm1, toby-gcp1)
+* `micro_nodes` — Low-memory nodes requiring swap (pam-amd1, angela-amd2, toby-gcp1)
 
 Variables are managed in `ansible/group_vars/all.yml` and define cluster-wide settings like k3s version and master node details.
 
@@ -136,7 +136,7 @@ The vault password is stored in Bitwarden if access is ever needed.
 
 ### Playbook Execution
 
-**vpn.yml** — Configures Tailscale mesh VPN across all nodes and sets up iptables forwarding on VPN gateway. Runs on
+**tailscale.yml** — Configures Tailscale mesh VPN across all nodes. Runs on
 every push after infrastructure provisioning.
 
 **k3s.yml** — Deploys k3s master on `michael-pi` and joins worker nodes from Oracle, GCP, and remaining Raspberry Pis.
@@ -152,12 +152,10 @@ Terraform modules in `kubernetes/cluster.tf` have explicit dependency ordering:
 ```text
 cert-manager (first)
     ↓
-external-dns (depends on cert-manager)
-    ↓
-argo-cd (depends on cert-manager + external-dns)
+argo-cd (depends on cert-manager)
 ```
 
-This ensures certificate management is ready before DNS automation and GitOps tooling.
+This ensures certificate management is ready before GitOps tooling.
 
 ### Provider Configuration
 
@@ -168,8 +166,9 @@ client certificates.
 ### Add-on Modules
 
 * **cert-manager** — Automates TLS certificate provisioning with Let's Encrypt
-* **external-dns** — Syncs Kubernetes services/ingresses to Cloudflare DNS
 * **argo-cd** — GitOps continuous delivery with app-of-apps pattern
+* **tailscale-operator** — Manages Tailscale connectivity for pods
+* **cloudflare-tunnel** — HA tunnel for public ingress via Cloudflare (replaces external-dns)
 * **ingress-nginx** — HTTP(S) ingress controller (optional, Traefik used by default)
 * **metallb** — Bare-metal load balancer (optional)
 
@@ -242,7 +241,7 @@ clean. Double-check handlers that reload iptables to ensure they align with any 
 
 ### Module Deployment Order
 
-Maintain the orchestrated deployment order: cert-manager → external-dns → Argo CD, matching the dependency chain
+Maintain the orchestrated deployment order: cert-manager → Argo CD, matching the dependency chain
 encoded in Terraform modules and root stack. Update dependencies if module relationships change.
 
 ### Workflow Debugging
@@ -374,232 +373,3 @@ pod-to-pod networking across cloud providers and on-premises Raspberry Pis.
 * **Keep dependencies updated** — Review and merge Renovate PRs weekly
 
 ---
-
-## Autonomous Execution Protocol (AXP)
-
-### Local tools and CLIs
-
-You have access to these local tools:
-
-* `kubectl`
-* `aws`
-* `terraform`
-* `ansible-*` (`ansible-playbook`, `ansible-lint`, `ansible-vault`, and similar)
-* `tailscale`
-* `cloudflared`
-* `gh`.
-
-Rules for using them:
-
-* Prefer read only commands:
-  * `kubectl get`, `kubectl describe`, `kubectl logs`
-  * `aws` list, describe, get style commands
-  * `terraform plan`
-  * `ansible-lint` and `ansible-playbook --check`
-* Treat any command that creates, updates, deletes, or scales resources as write capable. Use extra caution and clear justification before running those.
-* Use dry run or check modes whenever possible before real changes:
-  * `kubectl apply --server-dry-run`
-  * `terraform plan` before `terraform apply`
-  * `ansible-playbook --check` before a real run
-* Avoid write or delete operations that have a risk of irreversible damage, potential downtime, or data loss, unless:
-  * The repository documentation explicitly expects that action, and  
-  * You are operating inside an AXP task that clearly requires it.
-* When in doubt about the impact of a CLI command, treat it as unsafe and choose a read only alternative.
-
----
-
-### When to use AXP
-
-AXP is an autonomous workflow for completing tasks without user intervention.
-
-Follow AXP when:
-
-1. The user explicitly mentions AXP in the prompt. For example:  
-   * "Please add a day/night mode to the website using AXP."  
-   * "Add network monitoring metrics. Follow AXP."
-2. The task in `TASKS.md` is tagged with AXP.
-
-If the user explicitly instructs you not to use AXP, do not follow AXP even if the task is tagged in `TASKS.md`.
-
-When following AXP, your goal is to keep working on the task until it is fully done, and only stop when a STOP condition is met.
-
----
-
-### AXP basic workflow
-
-For each AXP task:
-
-1. **Select the task**
-   * Receive the task from the user prompt or select an AXP tagged task from `TASKS.md`.
-   * Do not start another AXP task while one is in progress.
-
-2. **Create a plan**
-   * Create a temporary planning file named `<task-slug>-plan.md`.
-   * Use it to sketch the steps, affected files, and tests you plan to run.
-   * Do not commit this planning file unless the repository explicitly expects planning documents.
-
-3. **Sync and branch**
-   * Pull the latest changes from `main` (or the primary branch defined by the repo).
-   * Create a new branch for this task, using a predictable naming convention such as:
-     * `axp/<short-task-id>` or
-     * `feature/<short-task-id>`
-   * Work exclusively in this branch for the current task.
-
-4. **Implement changes**
-   * Make the necessary code or configuration changes as described in the plan.
-   * Keep commits small and focused.
-   * Ensure any pre commit hooks or checks pass locally.
-
-5. **Run local checks**
-   * Run available local checks such as:
-     * Linting (pre-commit run --all-files)
-     * Unit tests
-     * Formatting
-   * If no tests exist, you may add simple, reusable tests when appropriate.
-
-6. **Create a PR**
-   * Push the branch.
-   * Use `gh` CLI to create a pull request.
-   * Make sure the PR description clearly references the task from `TASKS.md` and briefly describes the change.
-
----
-
-### Codex Reviewer Bot interaction
-
-Once the PR is open, Codex Reviewer Bot will automatically start reviewing it.
-
-Its behavior:
-
-* It first adds an "eyes" emoji to the PR description as a reaction to indicate it is reviewing.
-* When done, it either:
-  * Removes the "eyes" emoji and adds a "thumbs up" emoji to indicate that the PR is OK to merge, or
-  * Leaves a main template comment and then replies inline with specific review comments.
-
-Your responsibilities:
-
-1. **Monitor for Codex signals**
-   * Poll the PR for:
-     * Reactions on the PR description (eyes, thumbs up), and
-     * New comments or review threads from Codex Reviewer Bot.
-   * Use a reasonable polling interval and back off if needed.
-   * If no Codex reaction or comment appears after a predefined number of polling attempts, treat the task as blocked on Codex Reviewer Bot and trigger a STOP condition for this task.
-
-2. **Handle review comments**
-   * If Codex leaves review comments:
-     * Address each comment by either:
-       * Making the required code or config changes, or
-       * Replying inline to explain why a change is not needed.
-   * Do not reply as a new top level comment. Always reply inline to the specific Codex comment thread to keep context tidy.
-
-3. **Re request review**
-   * After you have addressed all review threads and pushed fixes, re request a Codex review by adding an inline comment containing:
-     * `@codex review again`
-   * Do not request `@codex review` again while a previous review is still in progress or when you have not yet addressed all existing threads.
-
-4. **Determine approval**
-   * Consider the PR approved by Codex Reviewer Bot when one of the following is true:
-     * Codex removes the "eyes" emoji and adds a "thumbs up" emoji to the PR description, or
-     * Codex leaves a main comment that clearly indicates approval, such as "Did not see any major issues".
-
----
-
-### Merge gate and release workflow
-
-You must continuously monitor the PR and merge when all of the following are true:
-
-1. All required checks and GitHub Actions workflows for the PR are passing.
-2. Codex Reviewer Bot has indicated approval as defined above.
-3. The PR has no unresolved review threads that require action.
-
-**AXP merge gate checklist (one PR per task, do not stop early):**
-
-* Create exactly one PR per TASKS.md entry—do not combine tasks in a single PR.
-* Poll PR checks until all required jobs are green.
-* Poll for Codex approval (thumbs-up or explicit approval comment); keep polling until received or a STOP condition applies.
-* After approval and green checks, merge the PR.
-* After merge, monitor the post-merge Actions run until it succeeds; stop only on success or an AXP STOP condition.
-
-Once these conditions are met:
-
-1. Commit an update that moves the corresponding task entry from `TASKS.md` to `COMPLETED.md`.
-2. Merge the PR using the `gh` CLI.
-3. Monitor the post merge Actions or Release workflow:
-   * Use `gh run` commands to watch the status.
-   * If the run fails, inspect the logs and annotations.
-
-If a post merge Actions run fails:
-
-* Inspect the run immediately. If no job logs are present, open the run's Annotations or use `gh run view <run-id> --summary` to capture the exact workflow or YAML error.
-* Create a new branch and PR to fix the issue, then follow the same AXP steps (planning, changes, tests, PR, Codex review, merge).
-
----
-
-### Things to remember during AXP
-
-* **Do not stop early**  
-  Keep going on the current task until a STOP condition is met.
-
-* **Merge gate**  
-  Continuously monitor the PR and only merge when:
-  * All required checks are passing, and
-  * Codex Reviewer Bot has explicitly approved the PR.
-
-* **Act, do not wait for user nudges**  
-  Use local CLIs, read only queries, plans, and tests proactively. Do not wait for the user to prompt the next step.
-
-* **Finish the loop before switching tasks**  
-  Do not start any new task or PR until the current task:
-  * Has passing checks,
-  * Has Codex approval,
-  * Has been merged, and
-  * Its post merge Actions or Release workflow has completed successfully.
-
-* **Read workflow annotations immediately**  
-  When a GitHub Actions run fails before any job starts, open the run's Annotations or use `gh run view <run-id> --summary` to capture the root cause before editing workflows.
-
-* **Be conservative with dangerous changes**  
-  For infrastructure or workflow files that you do not fully understand, prefer stopping with a clear blocked reason rather than speculative edits that might break environments.
-
-* **Always create one PR per task**
-  When picking a task from TASKS.md, always create one PR per task and never combine multiple tasks into one PR
-
----
-
-### STOP conditions for AXP
-
-Stop AXP for the current task, and do not proceed to a new AXP task, when any of the following is true:
-
-1. There are no remaining AXP tagged tasks in `TASKS.md`.
-2. A post merge Actions or Release workflow fails three times across three separate PRs for this task or related fixes, and further automated attempts are unlikely to help.
-3. A hard blocking error occurs, such as:
-   * Authentication repeatedly fails, or
-   * Required permissions or secrets are missing and cannot be fixed locally.
-4. Codex Reviewer Bot does not react or respond to the PR after repeated polling attempts within a reasonable time window.
-5. The repository or CI configuration is in a state that appears unsafe to modify automatically, for example repeated
-   merge conflicts in core workflow files that you cannot safely resolve.
-
-When a STOP condition is hit, leave a clear note in the relevant place (for example `TASKS.md`, a status file, or a
-log file) describing why AXP stopped for this task.
-
-### Command Safety Rules
-
-Never execute commands that can cause irreversible or destructive changes to systems, repositories, or infrastructure.
-Before running any shell command, you should scan the command string and compare it against this banned/restricted list.
-
-Banned Commands (Hard Stop)
-
-If any of these exact commands or dangerous variants appear (even with flags or parameters), immediately abort
-execution and log an entry in .axp/TRACE.md.
-
-* **System Destruction:** `rm -rf /`, `sudo rm -rf /`, `rm -rf *`, `rm -rf .*`, `rm --no-preserve-root` — irrecoverable
-  file deletion
-* **Privilege Escalation:** `sudo` (unless in a safe script explicitly whitelisted) — prevent privilege escalation
-* **Terraform:** `terraform destroy`, `terraform apply -target=*`, `terraform apply -replace=*` — avoid unintended
-  deletions or partial applies
-* **Kubernetes:** `kubectl delete namespace`, `kubectl delete node`, `kubectl delete pvc --all`, `kubectl delete
-  --force --grace-period=0` — cluster/data destruction risk
-* **AWS / Cloud:** `aws iam delete-*`, `aws ec2 terminate-instances --all`, `aws s3 rm --recursive s3://*` — cloud
-  resource deletion risk
-* **Git / Repo:** `git rebase -i origin/main`, `git reset --hard origin/main` — avoid losing commit history or
-  overwriting branches
-* **Shell / System:** `shutdown`, `reboot`, `halt`, `kill -9 1` — system stability risk

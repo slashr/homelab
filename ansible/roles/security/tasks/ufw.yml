@@ -221,7 +221,6 @@
   tags: [firewall, ufw]
 
 # Tailscale iptables rules for cross-node pod traffic
-# Also handled by flannel_tailscale_fix at boot for persistence
 - name: Check for flannel subnet file
   ansible.builtin.stat:
     path: /run/flannel/subnet.env

@@ -254,6 +254,7 @@
         - node: toby-gcp1
           location: cloud
           name: toby
+          node_size: micro
 
 - name: Apply flannel Tailscale routing fix
   hosts:

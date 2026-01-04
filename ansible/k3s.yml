@@ -56,6 +56,7 @@
 
     - name: Set installed k3s version fact
       ansible.builtin.set_fact:
+        # Expected format: "k3s version vX.Y.Z+k3sN (…)"
         k3s_installed_version: >-
           {{ k3s_current_version.stdout | regex_search('v\\d+\\.\\d+\\.\\d+\\+k3s\\d+') | default('') }}
       when: k3s_binary.stat.exists
@@ -172,6 +173,7 @@
 
     - name: Set installed k3s agent version fact
       ansible.builtin.set_fact:
+        # Expected format: "k3s agent version vX.Y.Z+k3sN (…)"
         k3s_agent_installed_version: >-
           {{ k3s_agent_current_version.stdout | regex_search('v\\d+\\.\\d+\\.\\d+\\+k3s\\d+') | default('') }}
       when: k3s_agent_binary.stat.exists

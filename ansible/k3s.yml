@@ -96,8 +96,14 @@
       register: flannel_subnet
       changed_when: false
       when: flannel_subnet_file.stat.exists
+    - name: Normalize flannel subnet CIDR
+      ansible.builtin.command: >
+        python3 -c "import ipaddress,sys; print(ipaddress.ip_network(sys.argv[1], strict=False))" {{ flannel_subnet.stdout }}
+      register: flannel_subnet_cidr
+      changed_when: false
+      when: flannel_subnet_file.stat.exists
     - name: Ensure Tailscale advertises only node pod subnet
-      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet.stdout }}
+      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet_cidr.stdout }}
       when: flannel_subnet_file.stat.exists
     - name: Ensure k3s manifests directory exists
       ansible.builtin.file:
@@ -203,8 +209,14 @@
       register: flannel_subnet
       changed_when: false
       when: flannel_subnet_file.stat.exists
+    - name: Normalize flannel subnet CIDR
+      ansible.builtin.command: >
+        python3 -c "import ipaddress,sys; print(ipaddress.ip_network(sys.argv[1], strict=False))" {{ flannel_subnet.stdout }}
+      register: flannel_subnet_cidr
+      changed_when: false
+      when: flannel_subnet_file.stat.exists
     - name: Ensure Tailscale advertises only node pod subnet
-      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet.stdout }}
+      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet_cidr.stdout }}
       when: flannel_subnet_file.stat.exists
 
     - name: Remove old kubelet certs if node-ip config changed

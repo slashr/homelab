@@ -16,11 +16,6 @@
         dpkg_options: "force-confdef,force-confold"
         force_apt_get: true
 
-    - name: Install WireGuard tools (required by Tailscale)
-      ansible.builtin.apt:
-        name: wireguard-tools
-        state: present
-
     - name: Downloading k3s script
       ansible.builtin.get_url:
         url: https://get.k3s.io

@@ -88,25 +88,6 @@
       until: k3s_service.status.ActiveState == "active"
       retries: 5
       delay: 5
-    - name: Check for flannel subnet file
-      ansible.builtin.stat:
-        path: /run/flannel/subnet.env
-      register: flannel_subnet_file
-      changed_when: false
-    - name: Read flannel subnet
-      ansible.builtin.shell: . /run/flannel/subnet.env && echo "${FLANNEL_SUBNET}"
-      register: flannel_subnet
-      changed_when: false
-      when: flannel_subnet_file.stat.exists
-    - name: Normalize flannel subnet CIDR
-      ansible.builtin.command: >
-        python3 -c "import ipaddress,sys; print(ipaddress.ip_network(sys.argv[1], strict=False))" {{ flannel_subnet.stdout }}
-      register: flannel_subnet_cidr
-      changed_when: false
-      when: flannel_subnet_file.stat.exists
-    - name: Ensure Tailscale advertises only node pod subnet
-      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet_cidr.stdout }}
-      when: flannel_subnet_file.stat.exists
     - name: Ensure k3s manifests directory exists
       ansible.builtin.file:
         path: /var/lib/rancher/k3s/server/manifests
@@ -203,26 +184,6 @@
       until: k3s_agent_service.status.ActiveState == "active"
       retries: 5
       delay: 5
-    - name: Check for flannel subnet file
-      ansible.builtin.stat:
-        path: /run/flannel/subnet.env
-      register: flannel_subnet_file
-      changed_when: false
-    - name: Read flannel subnet
-      ansible.builtin.shell: . /run/flannel/subnet.env && echo "${FLANNEL_SUBNET}"
-      register: flannel_subnet
-      changed_when: false
-      when: flannel_subnet_file.stat.exists
-    - name: Normalize flannel subnet CIDR
-      ansible.builtin.command: >
-        python3 -c "import ipaddress,sys; print(ipaddress.ip_network(sys.argv[1], strict=False))" {{ flannel_subnet.stdout }}
-      register: flannel_subnet_cidr
-      changed_when: false
-      when: flannel_subnet_file.stat.exists
-    - name: Ensure Tailscale advertises only node pod subnet
-      ansible.builtin.command: tailscale set --accept-routes=true --advertise-routes={{ flannel_subnet_cidr.stdout }}
-      when: flannel_subnet_file.stat.exists
-
     - name: Remove old kubelet certs if node-ip config changed
       ansible.builtin.file:
         path: "{{ item }}"
@@ -303,5 +264,3 @@
   become: true
   gather_facts: false
   strategy: free
-  roles:
-    - flannel_tailscale_fix

@@ -34,16 +34,6 @@ resource "oci_core_default_security_list" "default_security_list" {
     source      = "10.0.0.0/16"
   }
 
-  ingress_security_rules {
-    protocol    = "17"
-    description = "Allow Wireguard traffic"
-    udp_options {
-      min = 51820
-      max = 51820
-    }
-    source = "0.0.0.0/0"
-  }
-
   dynamic "ingress_security_rules" {
     for_each = local.tcp_rules
     content {

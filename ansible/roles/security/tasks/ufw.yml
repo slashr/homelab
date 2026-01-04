@@ -121,15 +121,6 @@
   become: true
   tags: [firewall, ufw]
 
-- name: Allow k3s flannel VXLAN (8472/udp) from Tailscale network
-  community.general.ufw:
-    rule: allow
-    port: '8472'
-    proto: udp
-    from_ip: "{{ tailscale_network_cidr }}"
-  become: true
-  tags: [firewall, ufw]
-
 # Allow pod/service CIDRs so cross-node traffic isn't blocked by ufw-not-local
 - name: Allow pod network (10.42.0.0/16) from cluster
   community.general.ufw:

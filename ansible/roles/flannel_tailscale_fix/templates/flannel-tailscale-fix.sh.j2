@@ -54,9 +54,11 @@ sanitize_flannel_netconf() {
 
     if grep -q "${pod_cidr},${svc_cidr}" "$netconf"; then
         log "Sanitizing flannel net-conf.json PostStartupCommand..."
-        # escape slashes for sed
-        local pod_esc=${pod_cidr//\//\\/}
-        local svc_esc=${svc_cidr//\//\\/}
+        # escape dots and slashes for sed
+        local pod_esc=${pod_cidr//./\\.}
+        pod_esc=${pod_esc//\//\\/}
+        local svc_esc=${svc_cidr//./\\.}
+        svc_esc=${svc_esc//\//\\/}
         sed -i.bak "s/,${pod_esc},${svc_esc}//g" "$netconf"
         log "Removed /16 advertise-routes from flannel net-conf.json"
     fi

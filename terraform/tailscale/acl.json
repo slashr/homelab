@@ -1,63 +1,68 @@
 {
-  "groups": {
-    "group:slashr": ["slashr@github"]
-  },
-  "hosts": {},
-  "tagOwners": {
-    "tag:k3s": ["group:slashr", "tag:k3s"],
-    "tag:k8s": ["group:slashr", "tag:k8s"]
-  },
-  "acls": [
-    {
-      "action": "accept",
-      "src": ["group:slashr"],
-      "dst": ["*:*"]
-    },
-    {
-      "action": "accept",
-      "src": ["tag:k3s"],
-      "dst": ["tag:k3s:*"]
-    },
-    {
-      "action": "accept",
-      "src": ["tag:k3s"],
-      "dst": ["tag:k8s:*"]
-    },
-    {
-      "action": "accept",
-      "src": ["autogroup:member"],
-      "dst": ["tag:k8s:80,443"]
-    }
-  ],
-  "ssh": [
-    {
-      "action": "accept",
-      "src": ["autogroup:admin", "tag:k3s"],
-      "dst": ["tag:k3s"],
-      "users": ["autogroup:nonroot", "root"]
-    },
-    {
-      "action": "check",
-      "src": ["autogroup:member"],
-      "dst": ["autogroup:self"],
-      "users": ["autogroup:nonroot", "root"]
-    }
-  ],
-  "autoApprovers": {
-    "routes": {
-      "10.42.0.0/16": ["slashr@github", "tag:k3s"],
-      "10.43.0.0/16": ["slashr@github", "tag:k3s"],
-      "2001:cafe:42::/56": ["slashr@github", "tag:k3s"]
-    }
-  },
-  "nodeAttrs": [
-    {
-      "target": ["autogroup:admin"],
-      "ipPool": ["100.64.0.0/16"]
-    },
-    {
-      "target": ["group:slashr", "tag:k3s"],
-      "ipPool": ["100.100.0.0/16"]
-    }
-  ]
+	"groups": {
+		"group:slashr": ["slashr@github"]
+	},
+	"hosts": {},
+	"tagOwners": {
+		"tag:k3s": ["group:slashr", "tag:k3s"],
+		"tag:k8s": ["group:slashr", "tag:k8s"]
+	},
+	"acls": [
+		{
+			"action": "accept",
+			"src":    ["group:slashr"],
+			"dst":    ["*:*"]
+		},
+		{
+			"action": "accept",
+			"src":    ["tag:k3s"],
+			"dst":    ["tag:k3s:*"]
+		},
+		{
+			"action": "accept",
+			"src":    ["tag:k3s"],
+			"dst":    ["tag:k8s:*"]
+		},
+		{
+			"action": "accept",
+			"src":    ["autogroup:member"],
+			"dst":    ["tag:k8s:80,443"]
+		},
+		{
+			"action": "accept",
+			"src":    ["tag:k3s"],
+			"dst":    ["10.42.0.0/16:*", "10.43.0.0/16:*"]
+		}
+	],
+	"ssh": [
+		{
+			"action": "accept",
+			"src":    ["autogroup:admin", "tag:k3s"],
+			"dst":    ["tag:k3s"],
+			"users":  ["autogroup:nonroot", "root"]
+		},
+		{
+			"action": "check",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:self"],
+			"users":  ["autogroup:nonroot", "root"]
+		}
+	],
+	"autoApprovers": {
+		"routes": {
+			"10.42.0.0/16":      ["slashr@github", "tag:k3s"],
+			"10.43.0.0/16":      ["slashr@github", "tag:k3s"],
+			"2001:cafe:42::/56": ["slashr@github", "tag:k3s"]
+		}
+	},
+	"nodeAttrs": [
+		{
+			"target": ["autogroup:admin"],
+			"ipPool": ["100.64.0.0/16"]
+		},
+		{
+			"target": ["group:slashr", "tag:k3s"],
+			"ipPool": ["100.100.0.0/16"]
+		}
+	]
 }

@@ -14,5 +14,6 @@
   become: true
   strategy: free
   roles:
+    - role: ../roles/tailscale_ssh
     - role: ../roles/fail2ban
     - role: ../roles/firewall

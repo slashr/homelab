@@ -42,6 +42,21 @@ get_pod_subnet() {
     ip route | grep "dev cni0" | grep -v "default" | awk '{print $1}' | head -1
 }
 
+# Remove /16 supernet advertise-routes from flannel's net-conf.json
+sanitize_flannel_netconf() {
+    local netconf="/var/lib/rancher/k3s/agent/etc/flannel/net-conf.json"
+
+    if [ ! -f "$netconf" ]; then
+        return 0
+    fi
+
+    if grep -q "10.42.0.0/16,10.43.0.0/16" "$netconf"; then
+        log "Sanitizing flannel net-conf.json PostStartupCommand..."
+        sed -i.bak 's/,10\\.42\\.0\\.0\\/16,10\\.43\\.0\\.0\\/16//g' "$netconf"
+        log "Removed /16 advertise-routes from flannel net-conf.json"
+    fi
+}
+
 # Remove supernet routes from table 52
 remove_supernet_routes() {
     log "Removing supernet routes from table 52..."
@@ -149,6 +164,7 @@ main() {
     log "Node pod subnet: $POD_SUBNET"
 
     # Apply fixes
+    sanitize_flannel_netconf
     remove_supernet_routes
     set_advertise_routes "$POD_SUBNET"
     add_masquerade_rule "$POD_SUBNET"

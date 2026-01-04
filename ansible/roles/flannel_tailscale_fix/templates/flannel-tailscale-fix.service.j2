@@ -7,13 +7,13 @@
 
 [Unit]
 Description=Flannel Tailscale Routing Fix
-After=k3s.service k3s-agent.service tailscaled.service
-Wants=k3s.service k3s-agent.service
+After=network-online.target tailscaled.service k3s.service k3s-agent.service
+Wants=network-online.target tailscaled.service k3s.service k3s-agent.service
+PartOf=tailscaled.service k3s.service k3s-agent.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/flannel-tailscale-fix.sh
-RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal
 
@@ -22,4 +22,4 @@ Restart=on-failure
 RestartSec=10
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target k3s.service k3s-agent.service tailscaled.service

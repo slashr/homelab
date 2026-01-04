@@ -17,9 +17,5 @@ ExecStart=/usr/local/bin/flannel-tailscale-fix.sh
 StandardOutput=journal
 StandardError=journal
 
-# Retry on failure (flannel might not be ready immediately)
-Restart=on-failure
-RestartSec=10
-
 [Install]
 WantedBy=multi-user.target k3s.service k3s-agent.service tailscaled.service

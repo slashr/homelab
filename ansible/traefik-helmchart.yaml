@@ -20,6 +20,9 @@ spec:
         publishedService:
           enabled: true
         allowExternalNameServices: true
+    additionalArguments:
+      - "--providers.kubernetesingress.allowExternalNameServices=true"
+      - "--providers.kubernetescrd.allowExternalNameServices=true"
     priorityClassName: "system-cluster-critical"
     image:
       repository: "rancher/mirrored-library-traefik"

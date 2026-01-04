@@ -5,7 +5,6 @@
 # Tailscale SSH configuration
 tailscale_ssh_enabled: true
 tailscale_ssh_tag: "tag:k3s"
-tailscale_accept_routes: true
 
 # fail2ban configuration - protect against SSH brute force attacks
 fail2ban_enabled: true

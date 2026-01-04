@@ -45,14 +45,21 @@ get_pod_subnet() {
 # Remove /16 supernet advertise-routes from flannel's net-conf.json
 sanitize_flannel_netconf() {
     local netconf="/var/lib/rancher/k3s/agent/etc/flannel/net-conf.json"
+    local pod_cidr="{{ pod_network_cidr }}"
+    local svc_cidr="{{ service_network_cidr }}"
 
     if [ ! -f "$netconf" ]; then
         return 0
     fi
 
-    if grep -q "10.42.0.0/16,10.43.0.0/16" "$netconf"; then
+    if grep -q "${pod_cidr},${svc_cidr}" "$netconf"; then
         log "Sanitizing flannel net-conf.json PostStartupCommand..."
-        sed -i.bak 's/,10\\.42\\.0\\.0\\/16,10\\.43\\.0\\.0\\/16//g' "$netconf"
+        # escape dots and slashes for sed
+        local pod_esc=${pod_cidr//./\\.}
+        pod_esc=${pod_esc//\//\\/}
+        local svc_esc=${svc_cidr//./\\.}
+        svc_esc=${svc_esc//\//\\/}
+        sed -i.bak "s/,${pod_esc},${svc_esc}//g" "$netconf"
         log "Removed /16 advertise-routes from flannel net-conf.json"
     fi
 }

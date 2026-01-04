@@ -1,20 +1,26 @@
 # Ansible
 
-## Raspberry Pi GitOps Migration
-
-**See:** `../RPI_GITOPS_PLAN.md` for the comprehensive plan to bring all Raspberry Pi configuration under GitOps management.
-
-**Status:** Planning complete - ready for implementation via sequential PRs.
-
 ## Playbooks
 
 ### k3s.yml
 
 Deploys k3s master on michael-pi and joins worker nodes from Oracle Cloud, GCP, and Raspberry Pis.
 
-### pis.yml (Coming Soon)
+### pis.yml
 
-Configures all Raspberry Pi nodes with common settings, security hardening, network stability fixes, and k3s prerequisites.
+Configures all Raspberry Pi nodes with common settings, security hardening, network stability fixes, and k3s prerequisites. Uses parallel execution strategy for efficient deployment across all Pis.
+
+### tailscale.yml
+
+Installs and configures Tailscale on all nodes (Pis, Oracle workers, GCP workers). Enables Tailscale SSH and authenticates nodes using the `TAILSCALE_JOIN_KEY` environment variable.
+
+### security.yml
+
+Deploys security hardening (fail2ban and UFW firewall) to public cloud nodes. Uses staged rollout for safe deployment.
+
+### swap.yml
+
+Configures swap on low-memory nodes (micro_nodes group) to prevent OOM kills.
 
 ## Debian Release Upgrades
 

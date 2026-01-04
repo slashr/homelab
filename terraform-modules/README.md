@@ -7,6 +7,7 @@
 | Cert-Manager | Issue TLS certs via Let's Encrypt with Cloudflare DNS01 | `terraform-modules/cert-manager` |
 | Argo CD | GitOps controller and app-of-apps bootstrap | `terraform-modules/argo-cd` |
 | Cloudflare Tunnel | HA tunnel for public ingress via Cloudflare | `terraform-modules/cloudflare-tunnel` |
+| Tailscale Operator | Manages Tailscale connectivity for pods | `terraform-modules/tailscale-operator` |
 | Ingress-Nginx | Optional ingress controller for HTTP(S) | `terraform-modules/ingress-nginx` |
 | MetalLB | Optional bare-metal load balancer | `terraform-modules/metallb` |
 

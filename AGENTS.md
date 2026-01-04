@@ -14,9 +14,9 @@ task items.
 * `oracle/` — Terraform stack that stands up Oracle Cloud networking and compute. Relies on sensitive tenancy
   credentials and provisions both the network (VCN, security lists, reserved IP) and worker nodes.
 * `gcp/` — Terraform configuration for a small GCP worker VM with customizable SSH metadata.
-* `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, external-dns, Argo CD) via
+* `kubernetes/` — Terraform Cloud workspace that installs cluster add-ons (cert-manager, Argo CD, tailscale-operator, cloudflare-tunnel) via
   the shared Helm modules in `terraform-modules/`. Requires base64-encoded kubeconfig material and Cloudflare secrets.
-* `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, external-dns, Argo CD, ingress-nginx, MetalLB).
+* `terraform-modules/` — Reusable Helm-based add-ons (cert-manager, Argo CD, tailscale-operator, cloudflare-tunnel, ingress-nginx, MetalLB).
   Each module manages its own namespace and supporting secrets.
 * `.github/workflows/` — CI/CD workflows for infrastructure deployment (`actions.yml`) and security scanning (`security.yml`).
 * `.github/actions/` — Reusable composite actions for common workflow tasks (SSH setup, pre-commit).
@@ -119,12 +119,12 @@ Terraform stacks depend on Terraform Cloud workspaces keyed off tags (`oracle`, 
 
 The `ansible/hosts.ini` defines host groups:
 
-* `vpn` — Oracle VPN gateway (pam-amd1)
 * `pi_workers` — Raspberry Pi worker nodes (jim-pi, dwight-pi)
-* `oracle_workers` — Oracle worker nodes (pam-amd2, pam-arm1, pam-arm2)
-* `gcp_workers` — GCP worker nodes
-* `pihole_worker` — Pi-hole DNS server (dwight-pi)
-* `michael-pi` — k3s master node
+* `oracle_workers` — Oracle worker nodes (pam-amd1, angela-amd2, stanley-arm1)
+* `gcp_workers` — GCP worker nodes (toby-gcp1)
+* `pis` — All Raspberry Pi nodes (michael-pi, jim-pi, dwight-pi)
+* `public_nodes` — All public cloud nodes (pam-amd1, angela-amd2, stanley-arm1, toby-gcp1)
+* `micro_nodes` — Low-memory nodes requiring swap (pam-amd1, angela-amd2, toby-gcp1)
 
 Variables are managed in `ansible/group_vars/all.yml` and define cluster-wide settings like k3s version and master node details.
 
@@ -136,7 +136,7 @@ The vault password is stored in Bitwarden if access is ever needed.
 
 ### Playbook Execution
 
-**vpn.yml** — Configures Tailscale mesh VPN across all nodes and sets up iptables forwarding on VPN gateway. Runs on
+**tailscale.yml** — Configures Tailscale mesh VPN across all nodes. Runs on
 every push after infrastructure provisioning.
 
 **k3s.yml** — Deploys k3s master on `michael-pi` and joins worker nodes from Oracle, GCP, and remaining Raspberry Pis.
@@ -152,12 +152,10 @@ Terraform modules in `kubernetes/cluster.tf` have explicit dependency ordering:
 ```text
 cert-manager (first)
     ↓
-external-dns (depends on cert-manager)
-    ↓
-argo-cd (depends on cert-manager + external-dns)
+argo-cd (depends on cert-manager)
 ```
 
-This ensures certificate management is ready before DNS automation and GitOps tooling.
+This ensures certificate management is ready before GitOps tooling.
 
 ### Provider Configuration
 
@@ -168,8 +166,9 @@ client certificates.
 ### Add-on Modules
 
 * **cert-manager** — Automates TLS certificate provisioning with Let's Encrypt
-* **external-dns** — Syncs Kubernetes services/ingresses to Cloudflare DNS
 * **argo-cd** — GitOps continuous delivery with app-of-apps pattern
+* **tailscale-operator** — Manages Tailscale connectivity for pods
+* **cloudflare-tunnel** — HA tunnel for public ingress via Cloudflare (replaces external-dns)
 * **ingress-nginx** — HTTP(S) ingress controller (optional, Traefik used by default)
 * **metallb** — Bare-metal load balancer (optional)
 
@@ -242,7 +241,7 @@ clean. Double-check handlers that reload iptables to ensure they align with any 
 
 ### Module Deployment Order
 
-Maintain the orchestrated deployment order: cert-manager → external-dns → Argo CD, matching the dependency chain
+Maintain the orchestrated deployment order: cert-manager → Argo CD, matching the dependency chain
 encoded in Terraform modules and root stack. Update dependencies if module relationships change.
 
 ### Workflow Debugging

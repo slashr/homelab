@@ -14,14 +14,14 @@ This Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a G
 
 ## Terraform Oracle Job
 
-* Creates 4 Free Tier servers
-* amd1 is used for Tailscale VPN setup between Pi and Oracle
-* amd2, arm1, arm2 are created in order to be added as worker K8S Nodes
+* Creates 3 Free Tier servers
+* pam-amd1 is used for Tailscale VPN setup between Pi and Oracle
+* angela-amd2 and stanley-arm1 are created as worker K8S Nodes
 
 ## Ansible Job
 
-* Sets up a Tailscale tunnel between Pi and amd1
-* Setup up K3S Agent on amd2, arm1 and arm2 and adds them to the K8S cluster
+* Sets up a Tailscale tunnel between Pi and pam-amd1
+* Sets up K3S Agent on angela-amd2 and stanley-arm1 and adds them to the K8S cluster
 
 ## Terraform Kubernetes Job
 
@@ -47,8 +47,8 @@ This Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a G
 
 ### Oracle Free Tier
 
-* 2 AMD Instances 1 CPU/1GB RAM/50GB Boot Volume each: VM.Standard.E2.1.Micro
-* 4 ARM Instances 1 OCPU/6GB RAM/50GB Boot Volume each: VM.Standard.A1.Flex
+* 2 AMD Instances 1 CPU/1GB RAM/47GB Boot Volume each: VM.Standard.E2.1.Micro (pam-amd1, angela-amd2)
+* 1 ARM Instance 4 OCPU/24GB RAM/93GB Boot Volume: VM.Standard.A1.Flex (stanley-arm1)
 * ARM instances will not have always free tag as they are flexible shape.
 * ARM instances will be deleted after one-month trial. They have to be then recreated
 

@@ -46,29 +46,16 @@ All planned PRs are listed below in logical execution order.
    * Add a short module index/table to `terraform-modules/README.md` linking to each submodule.
    * **Test:** `pre-commit run markdownlint --files terraform-modules/README.md terraform-modules/*/README.md`.
 
-5. **Standardize Oracle Server Naming Convention** 🏷️  
-   * **Priority:** Medium  
-   * Update `oracle/servers.tf`: Rename `amd1/amd2/arm1/arm2` → `pam-amd1/angela-amd2/stanley-arm1/phyllis-arm2`
-   * Update `moved` blocks to preserve Terraform state
-   * Align with Ansible inventory and k3s labels (consistency across all tools)
-   * **Test:** `terraform plan` shows only renaming (no destroy/recreate)
-
-6. **Standardize UFW Variable Names Across Groups** 🔧  
+5. **Standardize UFW Variable Names Across Groups** 🔧  
    * **Priority:** Low  
    * Move common variables to `ansible/group_vars/all.yml`:
-     * `tailscale_network_cidr: "100.100.0.0/16"`
-     * `vpn_gateway_ip: "100.100.1.100"`
+   * `tailscale_network_cidr: "100.100.0.0/16"`
+   * `vpn_gateway_ip: "100.100.1.100"`
    * Keep group-specific in respective files (e.g., `local_network_cidr` in pis.yml only)
    * Remove duplicate definitions
    * **Test:** Run both playbooks, verify no variable resolution errors
 
-7. **Add Docs-Only Lint Job to CI** 🧪  
-   * **Priority:** Low  
-   * Add a lightweight workflow/job to run `pre-commit run markdownlint --all-files` on PRs, including doc-only changes.
-   * Ensure it skips heavy infra steps and reports status in PR checks.
-   * **Test:** Open a doc-only PR and confirm the docs lint job runs and passes.
-
-8. **Add Health Checks and Status Dashboard** 📊  
+6. **Add Health Checks and Status Dashboard** 📊
    * **Priority:** Medium  
    * Create `ansible/playbooks/health-check.yml`:
      * UFW status, fail2ban banned IPs, Tailscale connectivity
@@ -77,7 +64,7 @@ All planned PRs are listed below in logical execution order.
    * Add `scripts/cluster-status.sh` wrapper with traffic light status
    * **Test:** Run on healthy cluster → all green; simulate issues → warnings
 
-9. **Add Tailscale VPN Status Monitoring** 🔍  
+7. **Add Tailscale VPN Status Monitoring** 🔍  
    * **Priority:** Medium  
    * Create `ansible/roles/monitoring/tasks/tailscale-check.yml`
    * Script: `/usr/local/bin/tailscale-health-check.sh`
@@ -87,7 +74,7 @@ All planned PRs are listed below in logical execution order.
    * Deploy via `ansible/playbooks/monitoring.yml`
    * **Test:** Stop Tailscale → health check logs error
 
-10. **Add Terraform State Backup Automation** 💾  
+8. **Add Terraform State Backup Automation** 💾  
     * **Priority:** High  
     * Create `.github/workflows/backup-terraform-state.yml`
     * Weekly backup (Sundays 3 AM UTC) of all TF Cloud workspaces
@@ -95,8 +82,6 @@ All planned PRs are listed below in logical execution order.
     * Commit to private backup branch
     * Create `docs/TERRAFORM_STATE_RECOVERY.md` with restore procedure
     * **Test:** Manual trigger → verify encrypted state files created
-
-11. *No active tasks (Raspberry Pi maintenance).*
 
 ---
 
@@ -126,8 +111,8 @@ ansible-playbook -i ansible/hosts.ini ansible/playbooks/pis.yml --check --diff
 
 ## Summary Statistics
 
-**Active PRs:** 10  
-**Completed PRs:** 19 (see [COMPLETED.md](COMPLETED.md))
+**Active PRs:** 8  
+**Completed PRs:** 21 (see [COMPLETED.md](COMPLETED.md))
 
 **Breakdown by Category:**
 

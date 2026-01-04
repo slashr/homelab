@@ -159,13 +159,13 @@
           node-ip: "{{ node_tailscale_ips[inventory_hostname] }}"
       register: k3s_agent_config
 
-    - name: Check if k3s-agent is already installed
+    - name: Check if k3s binary is already installed (agent)
       ansible.builtin.stat:
-        path: /usr/local/bin/k3s-agent
+        path: /usr/local/bin/k3s
       register: k3s_agent_binary
 
     - name: Get current k3s agent version
-      ansible.builtin.command: /usr/local/bin/k3s-agent --version
+      ansible.builtin.command: /usr/local/bin/k3s --version
       register: k3s_agent_current_version
       changed_when: false
       failed_when: false

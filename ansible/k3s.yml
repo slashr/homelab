@@ -91,19 +91,6 @@
       until: k3s_service.status.ActiveState == "active"
       retries: 5
       delay: 5
-    - name: Check for stale flannel-wg interface
-      ansible.builtin.command: ip link show flannel-wg
-      register: flannel_wg_check
-      changed_when: false
-      failed_when: false
-    - name: Remove stale flannel-wg route
-      ansible.builtin.command: ip route del 10.42.0.0/16 dev flannel-wg
-      when: flannel_wg_check.rc == 0
-      failed_when: false
-    - name: Delete stale flannel-wg interface
-      ansible.builtin.command: ip link del flannel-wg
-      when: flannel_wg_check.rc == 0
-      failed_when: false
     - name: Check for flannel subnet file
       ansible.builtin.stat:
         path: /run/flannel/subnet.env
@@ -211,19 +198,6 @@
       until: k3s_agent_service.status.ActiveState == "active"
       retries: 5
       delay: 5
-    - name: Check for stale flannel-wg interface
-      ansible.builtin.command: ip link show flannel-wg
-      register: flannel_wg_check
-      changed_when: false
-      failed_when: false
-    - name: Remove stale flannel-wg route
-      ansible.builtin.command: ip route del 10.42.0.0/16 dev flannel-wg
-      when: flannel_wg_check.rc == 0
-      failed_when: false
-    - name: Delete stale flannel-wg interface
-      ansible.builtin.command: ip link del flannel-wg
-      when: flannel_wg_check.rc == 0
-      failed_when: false
     - name: Check for flannel subnet file
       ansible.builtin.stat:
         path: /run/flannel/subnet.env

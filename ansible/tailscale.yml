@@ -79,6 +79,11 @@
       register: tailscale_set_ssh
       changed_when: "'aborted' not in tailscale_set_ssh.stderr and tailscale_set_ssh.rc == 0"
 
+    - name: Hold tailscale package to prevent apt upgrade interrupting SSH
+      ansible.builtin.dpkg_selections:
+        name: tailscale
+        selection: hold
+
     - name: Check Tailscale status
       ansible.builtin.command: tailscale status
       register: tailscale_status

@@ -90,3 +90,14 @@ variable "velero_s3_secret_key" {
     error_message = "Velero S3 secret key cannot be empty."
   }
 }
+
+# OpenAI API key (for homelab-map AI features)
+variable "openai_api_key" {
+  description = "OpenAI API key for homelab-map AI features"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.openai_api_key) > 0
+    error_message = "OpenAI API key cannot be empty."
+  }
+}

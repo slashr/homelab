@@ -60,7 +60,7 @@ resource "kubernetes_secret_v1" "velero_credentials" {
   type = "Opaque"
 }
 
-# OpenAI API key for homelab-map AI features
+# Secrets for homelab-map AI features
 # Namespace is created by ArgoCD (homelab-deployments/src/homelab-map/namespace.yaml)
 resource "kubernetes_secret_v1" "homelab_map_openai" {
   metadata {
@@ -69,7 +69,8 @@ resource "kubernetes_secret_v1" "homelab_map_openai" {
   }
 
   data = {
-    OPENAI_API_KEY = var.openai_api_key
+    OPENAI_API_KEY       = var.openai_api_key
+    INTERACTIVE_PASSWORD = var.homelab_map_interactive_password
   }
 
   type = "Opaque"

@@ -101,3 +101,14 @@ variable "openai_api_key" {
     error_message = "OpenAI API key cannot be empty."
   }
 }
+
+# Interactive password for homelab-map AI quote feature
+variable "homelab_map_interactive_password" {
+  description = "Password for interactive AI quote mode in homelab-map"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.homelab_map_interactive_password) > 0
+    error_message = "Interactive password cannot be empty."
+  }
+}

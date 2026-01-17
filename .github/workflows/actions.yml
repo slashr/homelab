@@ -732,6 +732,7 @@ jobs:
           TF_VAR_tailscale_oauth_client_secret="$(sops -d --extract '["tailscale_oauth_client_secret"]' secrets/terraform.yaml)"
           TF_VAR_velero_s3_access_key="$(sops -d --extract '["velero_s3_access_key"]' secrets/terraform.yaml)"
           TF_VAR_velero_s3_secret_key="$(sops -d --extract '["velero_s3_secret_key"]' secrets/terraform.yaml)"
+          TF_VAR_openai_api_key="$(sops -d --extract '["openai_api_key"]' secrets/terraform.yaml)"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
           # Mask each line of multiline secrets
           for secret in "$TF_VAR_kube_client_cert" "$TF_VAR_kube_client_key" "$TF_VAR_kube_cluster_ca_cert"; do
@@ -743,6 +744,7 @@ jobs:
           echo "::add-mask::$TF_VAR_tailscale_oauth_client_secret"
           echo "::add-mask::$TF_VAR_velero_s3_access_key"
           echo "::add-mask::$TF_VAR_velero_s3_secret_key"
+          echo "::add-mask::$TF_VAR_openai_api_key"
           echo "::add-mask::$TF_API_TOKEN"
           # Write to GITHUB_ENV
           echo "TF_VAR_kube_client_cert<<EOFCERT" >> $GITHUB_ENV
@@ -758,6 +760,7 @@ jobs:
           echo "TF_VAR_tailscale_oauth_client_secret=$TF_VAR_tailscale_oauth_client_secret" >> $GITHUB_ENV
           echo "TF_VAR_velero_s3_access_key=$TF_VAR_velero_s3_access_key" >> $GITHUB_ENV
           echo "TF_VAR_velero_s3_secret_key=$TF_VAR_velero_s3_secret_key" >> $GITHUB_ENV
+          echo "TF_VAR_openai_api_key=$TF_VAR_openai_api_key" >> $GITHUB_ENV
           echo "TF_API_TOKEN=$TF_API_TOKEN" >> $GITHUB_ENV
           # Note: tailscale_oauth_client_id comes from kubernetes/terraform.tfvars
 

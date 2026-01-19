@@ -132,6 +132,24 @@ jobs:
       - name: Install Ansible collections
         run: ansible-galaxy collection install -r ansible/requirements.yml --force
 
+      - name: Ansible syntax check
+        run: |
+          set -euo pipefail
+          export ANSIBLE_CONFIG=ansible/ansible.cfg
+          playbooks=(
+            ansible/tailscale.yml
+            ansible/k3s.yml
+            ansible/playbooks/pis.yml
+            ansible/playbooks/security.yml
+            ansible/playbooks/swap.yml
+          )
+          for playbook in "${playbooks[@]}"; do
+            if [ -f "$playbook" ]; then
+              echo "Syntax check: $playbook"
+              ansible-playbook --syntax-check -i ansible/hosts.ini "$playbook"
+            fi
+          done
+
       - name: Cache pre-commit environments
         uses: actions/cache@v5
         with:

@@ -14,3 +14,4 @@
     - role: ../roles/network
     - role: ../roles/k3s_prereqs
     - role: ../roles/security
+    - role: ../roles/os_tuning

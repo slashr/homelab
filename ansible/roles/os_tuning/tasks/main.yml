@@ -1,0 +1,94 @@
+---
+- name: Install OS tuning packages
+  ansible.builtin.apt:
+    name: "{{ os_tuning_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  tags: [os_tuning]
+
+- name: Build sysctl map
+  ansible.builtin.set_fact:
+    os_tuning_sysctl: "{{ os_tuning_sysctl_defaults | combine(os_tuning_sysctl_overrides, recursive=True) }}"
+  tags: [os_tuning]
+
+- name: Apply sysctl tuning
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-os-tuning.conf
+    state: present
+    reload: true
+  become: true
+  loop: "{{ os_tuning_sysctl | dict2items }}"
+  tags: [os_tuning]
+
+- name: Configure journald storage policy
+  community.general.ini_file:
+    path: /etc/systemd/journald.conf
+    section: Journal
+    option: Storage
+    value: "{{ os_tuning_journald_storage }}"
+    no_extra_spaces: true
+  become: true
+  notify: Restart systemd-journald
+  tags: [os_tuning]
+
+- name: Configure journald size cap
+  community.general.ini_file:
+    path: /etc/systemd/journald.conf
+    section: Journal
+    option: SystemMaxUse
+    value: "{{ os_tuning_journald_system_max_use }}"
+    no_extra_spaces: true
+  become: true
+  when: os_tuning_journald_system_max_use | length > 0
+  notify: Restart systemd-journald
+  tags: [os_tuning]
+
+- name: Vacuum journal to configured size
+  ansible.builtin.command: "journalctl --vacuum-size={{ os_tuning_journald_vacuum_size }}"
+  become: true
+  when: os_tuning_journald_vacuum_size | length > 0
+  register: journald_vacuum
+  changed_when: "'Deleted archived journals' in journald_vacuum.stdout"
+  tags: [os_tuning]
+
+- name: Ensure fstrim timer is enabled and running
+  ansible.builtin.systemd:
+    name: fstrim.timer
+    state: started
+    enabled: true
+  become: true
+  failed_when: false
+  tags: [os_tuning]
+
+- name: Check dphys-swapfile config
+  ansible.builtin.stat:
+    path: /etc/dphys-swapfile
+  register: dphys_swapfile
+  tags: [os_tuning]
+
+- name: Configure dphys-swapfile size
+  ansible.builtin.lineinfile:
+    path: /etc/dphys-swapfile
+    regexp: '^CONF_SWAPSIZE='
+    line: "CONF_SWAPSIZE={{ os_tuning_dphys_swap_size_mb }}"
+    create: false
+  become: true
+  when:
+    - dphys_swapfile.stat.exists
+    - os_tuning_dphys_swap_size_mb | length > 0
+  notify: Restart dphys-swapfile
+  tags: [os_tuning]
+
+- name: Ensure swapfile exists on non-Pi nodes
+  ansible.builtin.include_role:
+    name: swap
+  vars:
+    swap_size: "{{ os_tuning_swapfile_size }}"
+  when:
+    - os_tuning_swapfile_enabled | bool
+    - "'pis' not in group_names"
+  tags: [os_tuning]

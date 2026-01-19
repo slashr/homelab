@@ -1,2 +1,6 @@
 ---
 tailscale_ssh_advertise_routes: "10.42.14.0/24"
+os_tuning_swapfile_enabled: true
+os_tuning_swapfile_size: "1G"
+os_tuning_journald_system_max_use: "200M"
+os_tuning_journald_vacuum_size: "200M"

@@ -489,7 +489,29 @@ jobs:
         id: tailscale_playbook
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ansible-playbook -i hosts.ini tailscale.yml
+          set -euo pipefail
+          export ANSIBLE_RETRY_FILES_ENABLED=1
+          export ANSIBLE_RETRY_FILES_SAVE_PATH=.ansible-retry
+          mkdir -p .ansible-retry
+          attempts=3
+          delay=30
+          for attempt in $(seq 1 $attempts); do
+            echo "tailscale-playbook attempt ${attempt}/${attempts}"
+            if ansible-playbook -i hosts.ini tailscale.yml; then
+              exit 0
+            fi
+            if [ -f .ansible-retry/tailscale.retry ]; then
+              echo "Retrying failed hosts from .ansible-retry/tailscale.retry"
+              if ansible-playbook -i hosts.ini tailscale.yml --limit @.ansible-retry/tailscale.retry; then
+                exit 0
+              fi
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Retrying full playbook in ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+          exit 1
 
       - name: tailscale-playbook Summary
         if: always()
@@ -552,9 +574,34 @@ jobs:
           FIRMWARE_UPGRADE: ${{ github.event.inputs.run_firmware_upgrade || 'false' }}
           DEBIAN_UPGRADE: ${{ github.event.inputs.run_debian_upgrade || 'false' }}
         run: |
-          ansible-playbook -i hosts.ini playbooks/pis.yml \
-            -e "firmware_upgrade_enabled=$FIRMWARE_UPGRADE" \
-            -e "debian_upgrade_enabled=$DEBIAN_UPGRADE"
+          set -euo pipefail
+          export ANSIBLE_RETRY_FILES_ENABLED=1
+          export ANSIBLE_RETRY_FILES_SAVE_PATH=.ansible-retry
+          mkdir -p .ansible-retry
+          attempts=3
+          delay=30
+          for attempt in $(seq 1 $attempts); do
+            echo "pis-playbook attempt ${attempt}/${attempts}"
+            if ansible-playbook -i hosts.ini playbooks/pis.yml \
+              -e "firmware_upgrade_enabled=$FIRMWARE_UPGRADE" \
+              -e "debian_upgrade_enabled=$DEBIAN_UPGRADE"; then
+              exit 0
+            fi
+            if [ -f .ansible-retry/pis.retry ]; then
+              echo "Retrying failed hosts from .ansible-retry/pis.retry"
+              if ansible-playbook -i hosts.ini playbooks/pis.yml \
+                --limit @.ansible-retry/pis.retry \
+                -e "firmware_upgrade_enabled=$FIRMWARE_UPGRADE" \
+                -e "debian_upgrade_enabled=$DEBIAN_UPGRADE"; then
+                exit 0
+              fi
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Retrying full playbook in ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+          exit 1
 
       - name: pis-playbook Summary
         if: always()
@@ -610,7 +657,29 @@ jobs:
         id: security_playbook
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          ansible-playbook -i hosts.ini playbooks/security.yml
+          set -euo pipefail
+          export ANSIBLE_RETRY_FILES_ENABLED=1
+          export ANSIBLE_RETRY_FILES_SAVE_PATH=.ansible-retry
+          mkdir -p .ansible-retry
+          attempts=3
+          delay=30
+          for attempt in $(seq 1 $attempts); do
+            echo "security-playbook attempt ${attempt}/${attempts}"
+            if ansible-playbook -i hosts.ini playbooks/security.yml; then
+              exit 0
+            fi
+            if [ -f .ansible-retry/security.retry ]; then
+              echo "Retrying failed hosts from .ansible-retry/security.retry"
+              if ansible-playbook -i hosts.ini playbooks/security.yml --limit @.ansible-retry/security.retry; then
+                exit 0
+              fi
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Retrying full playbook in ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+          exit 1
 
       - name: security-playbook Summary
         if: always()
@@ -667,7 +736,29 @@ jobs:
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          ansible-playbook -i hosts.ini k3s.yml
+          set -euo pipefail
+          export ANSIBLE_RETRY_FILES_ENABLED=1
+          export ANSIBLE_RETRY_FILES_SAVE_PATH=.ansible-retry
+          mkdir -p .ansible-retry
+          attempts=3
+          delay=30
+          for attempt in $(seq 1 $attempts); do
+            echo "k3s-playbook attempt ${attempt}/${attempts}"
+            if ansible-playbook -i hosts.ini k3s.yml; then
+              exit 0
+            fi
+            if [ -f .ansible-retry/k3s.retry ]; then
+              echo "Retrying failed hosts from .ansible-retry/k3s.retry"
+              if ansible-playbook -i hosts.ini k3s.yml --limit @.ansible-retry/k3s.retry; then
+                exit 0
+              fi
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Retrying full playbook in ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+          exit 1
 
       - name: k3s-playbook Summary
         if: always()

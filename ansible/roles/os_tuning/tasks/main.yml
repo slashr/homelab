@@ -1,0 +1,159 @@
+---
+- name: Install OS tuning packages
+  ansible.builtin.apt:
+    name: "{{ os_tuning_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  tags: [os_tuning]
+
+- name: Build sysctl map
+  ansible.builtin.set_fact:
+    os_tuning_sysctl: "{{ os_tuning_sysctl_defaults | combine(os_tuning_sysctl_overrides, recursive=True) }}"
+  tags: [os_tuning]
+
+- name: Apply sysctl tuning
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-os-tuning.conf
+    state: present
+    reload: true
+  become: true
+  loop: "{{ os_tuning_sysctl | dict2items }}"
+  tags: [os_tuning]
+
+- name: Configure journald storage policy
+  community.general.ini_file:
+    path: /etc/systemd/journald.conf
+    section: Journal
+    option: Storage
+    value: "{{ os_tuning_journald_storage }}"
+    no_extra_spaces: true
+  become: true
+  notify: Restart systemd-journald
+  tags: [os_tuning]
+
+- name: Configure journald size cap
+  community.general.ini_file:
+    path: /etc/systemd/journald.conf
+    section: Journal
+    option: SystemMaxUse
+    value: "{{ os_tuning_journald_system_max_use }}"
+    no_extra_spaces: true
+  become: true
+  when: os_tuning_journald_system_max_use | length > 0
+  notify: Restart systemd-journald
+  tags: [os_tuning]
+
+- name: Configure journald compression
+  community.general.ini_file:
+    path: /etc/systemd/journald.conf
+    section: Journal
+    option: Compress
+    value: "yes"
+    no_extra_spaces: true
+  become: true
+  notify: Restart systemd-journald
+  tags: [os_tuning]
+
+- name: Vacuum journal to configured size
+  ansible.builtin.command: "journalctl --vacuum-size={{ os_tuning_journald_vacuum_size }}"
+  become: true
+  when: os_tuning_journald_vacuum_size | length > 0
+  register: journald_vacuum
+  changed_when: "'Deleted archived journals' in journald_vacuum.stdout"
+  tags: [os_tuning]
+
+- name: Ensure fstrim timer is enabled and running
+  ansible.builtin.systemd:
+    name: fstrim.timer
+    state: started
+    enabled: true
+  become: true
+  failed_when: false
+  register: fstrim_result
+  changed_when: fstrim_result.changed | default(false)
+  tags: [os_tuning]
+
+- name: Log fstrim timer failure
+  ansible.builtin.debug:
+    msg: "fstrim.timer could not be enabled/started: {{ fstrim_result }}"
+  when: fstrim_result is defined and fstrim_result.failed | default(false)
+  tags: [os_tuning]
+
+- name: Check dphys-swapfile config
+  ansible.builtin.stat:
+    path: /etc/dphys-swapfile
+  register: dphys_swapfile
+  tags: [os_tuning]
+
+- name: Read memory stats
+  ansible.builtin.slurp:
+    src: /proc/meminfo
+  register: meminfo
+  tags: [os_tuning]
+
+- name: Parse memory stats
+  ansible.builtin.set_fact:
+    os_tuning_meminfo: >-
+      {{
+        dict(meminfo.content | b64decode | splitlines
+        | map('regex_search', '^(\\w+):\\s+(\\d+)', '\\1,\\2')
+        | select('string')
+        | map('split', ','))
+      }}
+  tags: [os_tuning]
+
+- name: Determine if safe to restart swap
+  ansible.builtin.set_fact:
+    os_tuning_swap_restart_safe: >-
+      {{
+        (os_tuning_meminfo.MemAvailable | default('0') | int) > 262144
+        and (os_tuning_meminfo.SwapFree | default('0') | int) > 131072
+      }}
+  tags: [os_tuning]
+
+- name: Configure dphys-swapfile size
+  ansible.builtin.lineinfile:
+    path: /etc/dphys-swapfile
+    regexp: '^CONF_SWAPSIZE='
+    line: "CONF_SWAPSIZE={{ os_tuning_dphys_swap_size_mb }}"
+    create: false
+  become: true
+  when:
+    - dphys_swapfile.stat.exists
+    - os_tuning_dphys_swap_size_mb is not none
+  register: dphys_swapfile_config
+  tags: [os_tuning]
+
+- name: Restart dphys-swapfile when safe
+  ansible.builtin.systemd:
+    name: dphys-swapfile
+    state: restarted
+  become: true
+  when:
+    - dphys_swapfile_config is defined
+    - dphys_swapfile_config.changed
+    - os_tuning_swap_restart_safe | default(false)
+  tags: [os_tuning]
+
+- name: Warn when swap restart skipped
+  ansible.builtin.debug:
+    msg: "Skipping dphys-swapfile restart due to low memory/swap headroom."
+  when:
+    - dphys_swapfile_config is defined
+    - dphys_swapfile_config.changed
+    - not (os_tuning_swap_restart_safe | default(false))
+  tags: [os_tuning]
+
+- name: Ensure swapfile exists on non-Pi nodes
+  ansible.builtin.include_role:
+    name: swap
+  vars:
+    swap_size: "{{ os_tuning_swapfile_size }}"
+  when:
+    - os_tuning_swapfile_enabled | bool
+    - "'pis' not in group_names"
+  tags: [os_tuning]

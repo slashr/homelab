@@ -20,3 +20,7 @@ ufw_default_outgoing: allow
 ufw_ssh_rate_limit: true   # Rate limit SSH connections (6 per 30 seconds)
 tailscale_network_cidr: "100.100.0.0/16"   # Tailscale mesh network
 k3s_master_ip: "100.100.1.100"   # michael-pi (k3s master)
+
+# OS tuning defaults for cloud nodes
+os_tuning_journald_system_max_use: "1G"
+os_tuning_journald_vacuum_size: "1G"

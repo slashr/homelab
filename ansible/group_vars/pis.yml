@@ -62,3 +62,13 @@ base_packages:
   - iotop
   - git
   - tmux
+  - procps
+
+# OS tuning defaults for Pis
+os_tuning_sysctl_overrides:
+  vm.dirty_background_ratio: "5"
+  vm.dirty_ratio: "15"
+
+os_tuning_journald_system_max_use: "100M"
+os_tuning_journald_vacuum_size: "100M"
+os_tuning_dphys_swap_size_mb: "512"

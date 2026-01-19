@@ -3,8 +3,3 @@
   ansible.builtin.systemd:
     name: systemd-journald
     state: restarted
-
-- name: Restart dphys-swapfile
-  ansible.builtin.systemd:
-    name: dphys-swapfile
-    state: restarted

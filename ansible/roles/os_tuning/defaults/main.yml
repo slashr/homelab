@@ -16,7 +16,7 @@ os_tuning_journald_storage: "persistent"
 os_tuning_journald_system_max_use: "1G"
 os_tuning_journald_vacuum_size: "1G"
 
-os_tuning_dphys_swap_size_mb: ""
+os_tuning_dphys_swap_size_mb: null
 
 os_tuning_swapfile_enabled: false
 os_tuning_swapfile_size: "1G"

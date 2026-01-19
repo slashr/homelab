@@ -667,7 +667,29 @@ jobs:
         env:
           TAILSCALE_JOIN_KEY: ${{ secrets.TAILSCALE_JOIN_KEY }}
         run: |
-          ansible-playbook -i hosts.ini k3s.yml
+          set -euo pipefail
+          export ANSIBLE_RETRY_FILES_ENABLED=1
+          export ANSIBLE_RETRY_FILES_SAVE_PATH=.ansible-retry
+          mkdir -p .ansible-retry
+          attempts=3
+          delay=30
+          for attempt in $(seq 1 $attempts); do
+            echo "k3s-playbook attempt ${attempt}/${attempts}"
+            if ansible-playbook -i hosts.ini k3s.yml; then
+              exit 0
+            fi
+            if [ -f .ansible-retry/k3s.retry ]; then
+              echo "Retrying failed hosts from .ansible-retry/k3s.retry"
+              if ansible-playbook -i hosts.ini k3s.yml --limit @.ansible-retry/k3s.retry; then
+                exit 0
+              fi
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Retrying full playbook in ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+          exit 1
 
       - name: k3s-playbook Summary
         if: always()

@@ -99,10 +99,12 @@
   ansible.builtin.set_fact:
     os_tuning_meminfo: >-
       {{
-        dict(meminfo.content | b64decode | splitlines
-        | map('regex_search', '^(\\w+):\\s+(\\d+)', '\\1,\\2')
-        | select('string')
-        | map('split', ','))
+        dict(
+          meminfo.content | b64decode | split('\n')
+          | select('match', '^\\w+:')
+          | map('regex_replace', '^([A-Za-z_]+):\\s+(\\d+).*', '\\1,\\2')
+          | map('split', ',')
+        )
       }}
   tags: [os_tuning]
 

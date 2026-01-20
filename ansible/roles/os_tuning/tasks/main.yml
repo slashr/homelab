@@ -151,11 +151,39 @@
   tags: [os_tuning]
 
 - name: Ensure swapfile exists on non-Pi nodes
-  ansible.builtin.include_role:
-    name: swap
-  vars:
-    swap_size: "{{ os_tuning_swapfile_size }}"
   when:
     - os_tuning_swapfile_enabled | bool
     - "'pis' not in group_names"
   tags: [os_tuning]
+  block:
+    - name: Check if swap file exists
+      ansible.builtin.stat:
+        path: /swapfile
+      register: os_tuning_swap_file
+
+    - name: Create swap file
+      ansible.builtin.command: "fallocate -l {{ os_tuning_swapfile_size }} /swapfile"
+      when: not os_tuning_swap_file.stat.exists
+      changed_when: true
+
+    - name: Set swap file permissions
+      ansible.builtin.file:
+        path: /swapfile
+        mode: '0600'
+      when: not os_tuning_swap_file.stat.exists
+
+    - name: Format swap file
+      ansible.builtin.command: mkswap /swapfile
+      when: not os_tuning_swap_file.stat.exists
+      changed_when: true
+
+    - name: Enable swap file
+      ansible.builtin.command: swapon /swapfile
+      when: not os_tuning_swap_file.stat.exists
+      changed_when: true
+
+    - name: Add swap to fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: '/swapfile none swap sw 0 0'
+        state: present

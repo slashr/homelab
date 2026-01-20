@@ -155,42 +155,6 @@
   become: true
   tags: [firewall, ufw]
 
-# Tailscale iptables rules for cross-node pod traffic
-- name: Check for flannel subnet file
-  ansible.builtin.stat:
-    path: /run/flannel/subnet.env
-  register: flannel_subnet_file
-  changed_when: false
-  become: true
-  tags: [firewall, ufw, tailscale]
-
-- name: Read flannel subnet
-  ansible.builtin.shell: . /run/flannel/subnet.env && echo "${FLANNEL_SUBNET}"
-  register: flannel_subnet
-  changed_when: false
-  become: true
-  when: flannel_subnet_file.stat.exists
-  tags: [firewall, ufw, tailscale]
-
-- name: Check MASQUERADE for pod subnet over tailscale0
-  ansible.builtin.command: iptables -t nat -C POSTROUTING -s {{ flannel_subnet.stdout }} ! -d {{ flannel_subnet.stdout }} -o tailscale0 -j MASQUERADE
-  register: tailscale_masq_check
-  changed_when: false
-  failed_when: false
-  become: true
-  when: flannel_subnet_file.stat.exists
-  tags: [firewall, ufw, tailscale]
-
-- name: Add MASQUERADE for pod subnet over tailscale0
-  ansible.builtin.command: iptables -t nat -I POSTROUTING 1 -s {{ flannel_subnet.stdout }} ! -d {{ flannel_subnet.stdout }} -o tailscale0 -j MASQUERADE
-  become: true
-  register: tailscale_masq_add
-  changed_when: true
-  when:
-    - flannel_subnet_file.stat.exists
-    - tailscale_masq_check.rc != 0
-  tags: [firewall, ufw, tailscale]
-
 - name: Check for Tailscale interface
   ansible.builtin.command: ip link show tailscale0
   register: tailscale0_check
@@ -263,7 +227,6 @@
     - iptables_persistent_install is defined
     - iptables_persistent_install is not skipped
     - >-
-      (tailscale_masq_add is defined and tailscale_masq_add.changed) or
       (tailscale_mss_set_add is defined and tailscale_mss_set_add.changed) or
       (tailscale_mss_out_add is defined and tailscale_mss_out_add.changed) or
       (tailscale_mss_in_add is defined and tailscale_mss_in_add.changed)

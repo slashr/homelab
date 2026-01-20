@@ -152,7 +152,7 @@
 
 - name: Ensure swapfile exists on non-Pi nodes
   ansible.builtin.include_role:
-    name: swap
+    name: ../roles/swap
   vars:
     swap_size: "{{ os_tuning_swapfile_size }}"
   when:

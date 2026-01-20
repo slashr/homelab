@@ -120,35 +120,6 @@
   become: true
   tags: [firewall, ufw]
 
-# Allow pod/service CIDRs so cross-node traffic isn't blocked by ufw-not-local
-- name: Allow pod network (10.42.0.0/16) from cluster
-  community.general.ufw:
-    rule: allow
-    from_ip: "{{ pod_network_cidr }}"
-  become: true
-  tags: [firewall, ufw]
-
-- name: Allow pod network (10.42.0.0/16) to cluster
-  community.general.ufw:
-    rule: allow
-    to_ip: "{{ pod_network_cidr }}"
-  become: true
-  tags: [firewall, ufw]
-
-- name: Allow service network (10.43.0.0/16) from cluster
-  community.general.ufw:
-    rule: allow
-    from_ip: "{{ service_network_cidr }}"
-  become: true
-  tags: [firewall, ufw]
-
-- name: Allow service network (10.43.0.0/16) to cluster
-  community.general.ufw:
-    rule: allow
-    to_ip: "{{ service_network_cidr }}"
-  become: true
-  tags: [firewall, ufw]
-
 - name: Enable UFW (forced, non-interactive)
   community.general.ufw:
     state: enabled

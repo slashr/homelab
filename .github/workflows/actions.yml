@@ -69,6 +69,7 @@ jobs:
               - '.github/workflows/**'
             kubernetes:
               - 'kubernetes/**'
+              - 'terraform-modules/argo-cd/**'
               - '.github/workflows/**'
             ansible:
               - 'ansible/tailscale.yml'

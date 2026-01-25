@@ -132,13 +132,17 @@ jobs:
       - name: Install Ansible collections
         run: |
           set -euo pipefail
-          # Work around Galaxy metadata 500s for ansible.posix by installing from artifact URL.
+          # Work around Galaxy metadata 500s by installing from artifact URLs.
           ansible-galaxy collection install \
             "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/ansible-posix-2.1.0.tar.gz" \
+            --force
+          ansible-galaxy collection install \
+            "https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/community-general-12.2.0.tar.gz" \
             --force
           tmp_requirements="$(mktemp)"
           awk '
             $0 ~ /^  - name: ansible\.posix$/ {skip=1; next}
+            $0 ~ /^  - name: community\.general$/ {skip=1; next}
             skip && $0 ~ /^  - name:/ {skip=0}
             !skip {print}
           ' ansible/requirements.yml > "$tmp_requirements"

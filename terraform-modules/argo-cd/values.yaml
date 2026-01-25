@@ -62,6 +62,67 @@ repoServer:
     enabled: false
     minReplicas: 1
 
+  # argocd-vault-plugin with SOPS support
+  env:
+    - name: SOPS_AGE_KEY_FILE
+      value: /sops/age/keys.txt
+
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+    - name: sops-age
+      secret:
+        secretName: sops-age-key  # pragma: allowlist secret
+    - name: cmp-plugin
+      configMap:
+        name: argocd-cmp-cm
+
+  volumeMounts:
+    - name: custom-tools
+      mountPath: /usr/local/bin/argocd-vault-plugin
+      subPath: argocd-vault-plugin
+    - name: sops-age
+      mountPath: /sops/age
+
+  initContainers:
+    - name: download-avp
+      image: alpine:3.19
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          ARCH=$$(uname -m | sed 's/aarch64/arm64/' | sed 's/x86_64/amd64/')
+          AVP_VERSION=1.18.1
+          wget -O /custom-tools/argocd-vault-plugin \
+            "https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v$${AVP_VERSION}/argocd-vault-plugin_$${AVP_VERSION}_linux_$${ARCH}"
+          chmod +x /custom-tools/argocd-vault-plugin
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+
+  extraContainers:
+    - name: avp-sops
+      image: quay.io/argoproj/argocd:v2.14.8
+      command: ["/var/run/argocd/argocd-cmp-server"]
+      env:
+        - name: SOPS_AGE_KEY_FILE
+          value: /sops/age/keys.txt
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+      volumeMounts:
+        - name: var-files
+          mountPath: /var/run/argocd
+        - name: plugins
+          mountPath: /home/argocd/cmp-server/plugins
+        - name: cmp-plugin
+          mountPath: /home/argocd/cmp-server/config/plugin.yaml
+          subPath: avp-sops.yaml
+        - name: custom-tools
+          mountPath: /usr/local/bin/argocd-vault-plugin
+          subPath: argocd-vault-plugin
+        - name: sops-age
+          mountPath: /sops/age
+
 configs:
   params:
     # Disable TLS termination on ArgoCD server

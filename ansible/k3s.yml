@@ -130,6 +130,19 @@
   become: true
   gather_facts: false
   tasks:
+    # Fetch server token directly if not already set (handles retry scenarios)
+    - name: Fetch server token from primary master (retry fallback)
+      ansible.builtin.slurp:
+        path: /var/lib/rancher/k3s/server/token
+      register: server_token_retry
+      delegate_to: michael-pi
+      when: server_token_fact is not defined
+
+    - name: Set server token fact from retry fetch
+      ansible.builtin.set_fact:
+        server_token_fact: "{{ server_token_retry.content | b64decode | trim }}"
+      when: server_token_fact is not defined and server_token_retry is defined
+
     - name: Create /etc/rancher/k3s directory
       ansible.builtin.file:
         path: /etc/rancher/k3s
@@ -200,8 +213,8 @@
     - name: Wait for k3s server to be ready
       ansible.builtin.wait_for:
         path: /var/lib/rancher/k3s/server/node-token
-        timeout: 60
-        msg: "Timeout waiting for k3s secondary server to be ready"
+        timeout: 180
+        msg: "Timeout waiting for k3s secondary server to be ready (180s)"
 
     - name: Verify k3s service
       ansible.builtin.systemd:

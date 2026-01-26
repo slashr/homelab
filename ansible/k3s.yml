@@ -271,3 +271,5 @@
   become: true
   gather_facts: false
   strategy: free
+  roles:
+    - flannel_tailscale_fix

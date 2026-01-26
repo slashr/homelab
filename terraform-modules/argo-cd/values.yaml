@@ -1,11 +1,17 @@
 ---
 controller:
   enableStatefulSet: true
+  nodeSelector:
+    kubernetes.io/hostname: stanley-arm1
+    kubernetes.io/os: linux
 
 server:
   autoscaling:
     enabled: false
     minReplicas: 1
+  nodeSelector:
+    kubernetes.io/hostname: stanley-arm1
+    kubernetes.io/os: linux
   ingress:
     enabled: true
     annotations:
@@ -40,6 +46,9 @@ redis:
   enabled: true
   # -- Redis name
   name: redis
+  nodeSelector:
+    kubernetes.io/hostname: stanley-arm1
+    kubernetes.io/os: linux
 
   ## Redis image
   image:
@@ -61,6 +70,9 @@ repoServer:
   autoscaling:
     enabled: false
     minReplicas: 1
+  nodeSelector:
+    kubernetes.io/hostname: stanley-arm1
+    kubernetes.io/os: linux
 
   # argocd-vault-plugin with SOPS support
   env:

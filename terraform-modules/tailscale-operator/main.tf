@@ -24,6 +24,12 @@ resource "helm_release" "tailscale_operator" {
         clientId     = var.oauth_client_id
         clientSecret = var.oauth_client_secret
       }
+      operatorConfig = {
+        nodeSelector = {
+          "kubernetes.io/hostname" = "stanley-arm1"
+          "kubernetes.io/os"       = "linux"
+        }
+      }
     })
   ]
 

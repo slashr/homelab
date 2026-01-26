@@ -89,11 +89,13 @@
       retries: 5
       delay: 5
 
-    - name: Get pod subnet from cni0 interface (master)
+    - name: Wait for cni0 interface to be ready (master)
       ansible.builtin.shell: ip route | grep "dev cni0" | grep -v "default" | awk '{print $1}' | head -1
       register: pod_subnet
       changed_when: false
-      failed_when: false
+      until: pod_subnet.stdout != ""
+      retries: 30
+      delay: 5
 
     - name: Add MASQUERADE rule for cross-node pod traffic via tailscale0 (master)
       ansible.builtin.iptables:
@@ -209,11 +211,13 @@
       retries: 5
       delay: 5
 
-    - name: Get pod subnet from cni0 interface
+    - name: Wait for cni0 interface to be ready
       ansible.builtin.shell: ip route | grep "dev cni0" | grep -v "default" | awk '{print $1}' | head -1
       register: pod_subnet
       changed_when: false
-      failed_when: pod_subnet.stdout == ""
+      until: pod_subnet.stdout != ""
+      retries: 30
+      delay: 5
 
     - name: Add MASQUERADE rule for cross-node pod traffic via tailscale0
       ansible.builtin.iptables:
@@ -224,7 +228,7 @@
         out_interface: tailscale0
         jump: MASQUERADE
         comment: "flannel tailscale cross-node"
-      when: pod_subnet.stdout != ""
+      when: pod_subnet.stdout | default('') != ""
 
     - name: Remove old kubelet certs if node-ip config changed
       ansible.builtin.file:

@@ -145,6 +145,11 @@
         path: /usr/local/bin/k3s
       register: k3s_agent_binary
 
+    - name: Check if k3s-agent service file exists
+      ansible.builtin.stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service_file
+
     - name: Get current k3s agent version
       ansible.builtin.command: /usr/local/bin/k3s --version
       register: k3s_agent_current_version
@@ -169,6 +174,7 @@
       register: k3s_agent_install
       when: >-
         not k3s_agent_binary.stat.exists or
+        not k3s_agent_service_file.stat.exists or
         k3s_version not in (k3s_agent_current_version.stdout | default(''))
       failed_when:
         - k3s_agent_install.rc != 0

@@ -88,6 +88,24 @@
       until: k3s_service.status.ActiveState == "active"
       retries: 5
       delay: 5
+
+    - name: Get pod subnet from cni0 interface (master)
+      ansible.builtin.shell: ip route | grep "dev cni0" | grep -v "default" | awk '{print $1}' | head -1
+      register: pod_subnet
+      changed_when: false
+      failed_when: false
+
+    - name: Add MASQUERADE rule for cross-node pod traffic via tailscale0 (master)
+      ansible.builtin.iptables:
+        table: nat
+        chain: POSTROUTING
+        source: "{{ pod_subnet.stdout }}"
+        destination: "!{{ pod_subnet.stdout }}"
+        out_interface: tailscale0
+        jump: MASQUERADE
+        comment: "flannel tailscale cross-node"
+      when: pod_subnet.stdout | default('') != ""
+
     - name: Ensure k3s manifests directory exists
       ansible.builtin.file:
         path: /var/lib/rancher/k3s/server/manifests
@@ -190,6 +208,24 @@
       until: k3s_agent_service.status.ActiveState == "active"
       retries: 5
       delay: 5
+
+    - name: Get pod subnet from cni0 interface
+      ansible.builtin.shell: ip route | grep "dev cni0" | grep -v "default" | awk '{print $1}' | head -1
+      register: pod_subnet
+      changed_when: false
+      failed_when: pod_subnet.stdout == ""
+
+    - name: Add MASQUERADE rule for cross-node pod traffic via tailscale0
+      ansible.builtin.iptables:
+        table: nat
+        chain: POSTROUTING
+        source: "{{ pod_subnet.stdout }}"
+        destination: "!{{ pod_subnet.stdout }}"
+        out_interface: tailscale0
+        jump: MASQUERADE
+        comment: "flannel tailscale cross-node"
+      when: pod_subnet.stdout != ""
+
     - name: Remove old kubelet certs if node-ip config changed
       ansible.builtin.file:
         path: "{{ item }}"
@@ -262,12 +298,3 @@
           name: toby
           node_size: micro
 
-- name: Apply flannel Tailscale routing fix
-  hosts:
-    - michael-pi
-    - pi_workers
-    - oracle_workers
-    - gcp_workers
-  become: true
-  gather_facts: false
-  strategy: free

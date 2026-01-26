@@ -11,11 +11,31 @@ global:
 
 controller:
   enableStatefulSet: true
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
 
 server:
   autoscaling:
     enabled: false
     minReplicas: 1
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
   ingress:
     enabled: true
     annotations:
@@ -50,6 +70,16 @@ redis:
   enabled: true
   # -- Redis name
   name: redis
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
 
   ## Redis image
   image:
@@ -66,11 +96,31 @@ notifications:
 
 applicationSet:
   enabled: false
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
 
 repoServer:
   autoscaling:
     enabled: false
     minReplicas: 1
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
 
   # argocd-vault-plugin with SOPS support
   env:

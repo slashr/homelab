@@ -5,7 +5,6 @@
     - pis
     - oracle_workers
     - gcp_workers
-    - k3s_masters
   become: true
   gather_facts: false
   strategy: free  # Parallel execution - don't wait for slower hosts

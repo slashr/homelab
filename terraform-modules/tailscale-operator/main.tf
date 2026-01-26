@@ -24,6 +24,26 @@ resource "helm_release" "tailscale_operator" {
         clientId     = var.oauth_client_id
         clientSecret = var.oauth_client_secret
       }
+      operatorConfig = {
+        affinity = {
+          nodeAffinity = {
+            preferredDuringSchedulingIgnoredDuringExecution = [
+              {
+                weight = 100
+                preference = {
+                  matchExpressions = [
+                    {
+                      key      = "kubernetes.io/hostname"
+                      operator = "In"
+                      values   = ["stanley-arm1"]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
     })
   ]
 

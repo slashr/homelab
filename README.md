@@ -52,6 +52,21 @@ This Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a G
 * ARM instances will not have always free tag as they are flexible shape.
 * ARM instances will be deleted after one-month trial. They have to be then recreated
 
+### Velero PVC Restore (local-path)
+
+Use this when moving a stateful workload to a different node (local-path PVs are node-pinned).
+
+1. Ensure the workload is pinned to the target node in GitOps (nodeSelector/affinity).
+2. Pause Argo auto-sync (optional but avoids fighting changes).
+3. Create a Velero backup for the pod + PVC:
+   `velero backup create <name> --include-namespaces <ns> --include-resources pods,persistentvolumeclaims --selector <labels> --default-volumes-to-fs-backup`
+4. Scale the StatefulSet to 0 and wait for the pod to terminate.
+5. Delete the PVC and its PV (forces a new local-path PV on the target node).
+6. Restore with a resource modifier that removes `spec.volumeName` from the PVC and, if needed, adds a nodeSelector to the restored pod (see `RESTORE.md`).
+7. If the restored pod is stuck in `Init: restore-wait`, check the PodVolumeRestore status and, if needed, create the Velero restore completion file (see `RESTORE.md`).
+8. Delete the restored pod and scale the StatefulSet back to 1 to re-create it under normal control.
+9. Cleanup: delete Velero restore objects and PodVolumeRestores used for the migration.
+
 ## Diagram
 
 <https://excalidraw.com/#room=237f87c2f7158bc24c9d,ZXLWqey3dzOgnN3aM3h-oQ>

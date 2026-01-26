@@ -22,15 +22,22 @@ securityContext:
 containerSecurityContext: {}
 volumes: []
 volumeMounts: []
-nodeSelector:
-  kubernetes.io/hostname: stanley-arm1
-  kubernetes.io/os: linux
+nodeSelector: {}
 ingressShim: {}
 
 prometheus:
   enabled: false
 
-affinity: {}
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - stanley-arm1
 tolerations: []
 
 webhook:
@@ -54,10 +61,17 @@ webhook:
     periodSeconds: 5
     successThreshold: 1
     timeoutSeconds: 1
-  nodeSelector:
-    kubernetes.io/hostname: stanley-arm1
-    kubernetes.io/os: linux
-  affinity: {}
+  nodeSelector: {}
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
   tolerations: []
   podLabels: {}
   serviceLabels: {}
@@ -81,10 +95,17 @@ cainjector:
   containerSecurityContext: {}
   extraArgs: []
   resources: {}
-  nodeSelector:
-    kubernetes.io/hostname: stanley-arm1
-    kubernetes.io/os: linux
-  affinity: {}
+  nodeSelector: {}
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
   tolerations: []
   podLabels: {}
   image:

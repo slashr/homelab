@@ -1,10 +1,10 @@
 ---
 - name: Initialising cluster
   hosts:
+    - k3s_masters
     - pi_workers
     - oracle_workers
     - gcp_workers
-    - michael-pi
   become: true
   gather_facts: false
   strategy: free  # Parallel execution - update all nodes simultaneously
@@ -22,7 +22,7 @@
         dest: /tmp/k3s.sh
         mode: "0755"
 
-- name: Update K3S Master
+- name: Update K3S Primary Master (michael-pi)
   hosts: michael-pi
   become: true
   gather_facts: false
@@ -99,7 +99,7 @@
         dest: /var/lib/rancher/k3s/server/manifests/traefik-helmchart.yaml
         mode: '0644'
 
-- name: Get Agent Token
+- name: Get Tokens from Primary Master
   become: true
   hosts: michael-pi
   gather_facts: false
@@ -108,13 +108,110 @@
       ansible.builtin.slurp:
         path: /var/lib/rancher/k3s/server/agent-token
       register: agent_token
+    - name: Copy server token (for secondary masters)
+      ansible.builtin.slurp:
+        path: /var/lib/rancher/k3s/server/token
+      register: server_token
     - name: Share agent token with every host
       ansible.builtin.set_fact:
         agent_token_fact: "{{ agent_token.content | b64decode | trim }}"
       delegate_to: "{{ item }}"
-      delegate_facts: true          # store the fact on the delegated host
-      loop: "{{ groups['all'] }}"    # or restrict to the three worker groups
+      delegate_facts: true
+      loop: "{{ groups['all'] }}"
+    - name: Share server token with every host
+      ansible.builtin.set_fact:
+        server_token_fact: "{{ server_token.content | b64decode | trim }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['all'] }}"
 
+- name: Install K3S Secondary Master (stanley-arm1)
+  hosts: stanley-arm1
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Create /etc/rancher/k3s directory
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: '0755'
+
+    - name: Copy over secondary master config.yaml
+      ansible.builtin.copy:
+        src: ./k3s-secondary-master-config.yaml
+        dest: /etc/rancher/k3s/config.yaml
+        mode: '0644'
+
+    - name: Check if k3s is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Get current k3s version
+      ansible.builtin.command: /usr/local/bin/k3s --version
+      register: k3s_current_version
+      changed_when: false
+      failed_when: false
+      when: k3s_binary.stat.exists
+
+    - name: Set installed k3s version fact
+      ansible.builtin.set_fact:
+        k3s_installed_version: >-
+          {{ k3s_current_version.stdout | regex_search('v\\d+\\.\\d+\\.\\d+\\+k3s\\d+') | default('') }}
+      when: k3s_binary.stat.exists
+
+    - name: Check if running as agent (need to convert to server)
+      ansible.builtin.stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: k3s_agent_service_file
+
+    - name: Stop and disable k3s-agent if converting to server
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: stopped
+        enabled: false
+      when: k3s_agent_service_file.stat.exists
+      ignore_errors: true
+
+    - name: Remove k3s-agent service file if converting to server
+      ansible.builtin.file:
+        path: /etc/systemd/system/k3s-agent.service
+        state: absent
+      when: k3s_agent_service_file.stat.exists
+
+    - name: Reload systemd after removing agent service
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: k3s_agent_service_file.stat.exists
+
+    - name: Installing k3s as secondary server
+      ansible.builtin.command: >
+        /tmp/k3s.sh server --vpn-auth="name=tailscale,joinKey={{ lookup('env', 'TAILSCALE_JOIN_KEY') }}"
+      environment:
+        K3S_TOKEN: "{{ server_token_fact }}"
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+      register: k3s_install
+      when: not k3s_binary.stat.exists or k3s_installed_version != k3s_version or k3s_agent_service_file.stat.exists
+      failed_when:
+        - k3s_install.rc != 0
+        - '"already installed" not in k3s_install.stderr'
+      changed_when: k3s_install.rc == 0
+
+    - name: Wait for k3s server to be ready
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 60
+        msg: "Timeout waiting for k3s secondary server to be ready"
+
+    - name: Verify k3s service
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+        enabled: true
+      register: k3s_service
+      until: k3s_service.status.ActiveState == "active"
+      retries: 5
+      delay: 5
 
 - name: Install K3S Agents
   hosts:
@@ -227,6 +324,18 @@
     - name: Sleep for 10 seconds
       ansible.builtin.wait_for:
         timeout: 10
+    - name: Label master nodes
+      ansible.builtin.command: >
+        kubectl label node {{ item.node }} kubernetes.io/role=master
+        location={{ item.location }} name={{ item.name }} --overwrite
+      changed_when: false
+      with_items:
+        - node: michael-pi
+          location: home
+          name: michael
+        - node: stanley-arm1
+          location: cloud
+          name: stanley
     - name: Label worker nodes
       ansible.builtin.command: >
         kubectl label node {{ item.node }} kubernetes.io/role=worker
@@ -240,9 +349,6 @@
         - node: dwight-pi
           location: home
           name: dwight
-        - node: stanley-arm1
-          location: cloud
-          name: stanley
         - node: angela-amd2
           location: cloud
           name: angela
@@ -258,7 +364,7 @@
 
 - name: Apply flannel Tailscale routing fix
   hosts:
-    - michael-pi
+    - k3s_masters
     - pi_workers
     - oracle_workers
     - gcp_workers

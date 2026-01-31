@@ -22,6 +22,10 @@ Deploys security hardening (fail2ban and UFW firewall) to public cloud nodes. Us
 
 Configures swap on low-memory nodes (micro_nodes group) to prevent OOM kills.
 
+### playbooks/fix-stanley-flannel.yml
+
+One-time fix for stanley-arm1 flannel route mismatch. Removes hardcoded old route (10.42.14.0/24) from flannel config and regenerates it with the correct current pod CIDR.
+
 ## Debian Release Upgrades
 
 * The `roles/debian_upgrade` role rewrites APT sources, runs a dist-upgrade, cleans up packages, and reboots the node so we can move Pis between Debian releases via Ansible.

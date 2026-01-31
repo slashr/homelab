@@ -1,0 +1,93 @@
+---
+# One-time fix for stanley-arm1 flannel route mismatch
+#
+# Issue: stanley-arm1 has old route 10.42.14.0/24 hardcoded in flannel config
+# This playbook cleans up the flannel state and regenerates it with correct route
+#
+# Root cause:
+# /var/lib/rancher/k3s/agent/etc/flannel/net-conf.json contains:
+# "PostStartupCommand": "tailscale set --accept-routes --advertise-routes=$SUBNET,10.42.14.0/24"
+#
+# The old 10.42.14.0/24 route needs to be removed so only the current
+# pod CIDR (10.42.3.0/24) is advertised to Tailscale.
+
+- name: Fix flannel route on stanley-arm1
+  hosts: stanley-arm1
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Stop k3s-agent service
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: stopped
+
+    - name: Wait for k3s-agent to fully stop
+      ansible.builtin.wait_for:
+        timeout: 10
+
+    - name: Remove old flannel config with hardcoded route
+      ansible.builtin.file:
+        path: /var/lib/rancher/k3s/agent/etc/flannel/net-conf.json
+        state: absent
+
+    - name: Remove flannel state directory
+      ansible.builtin.file:
+        path: /var/lib/rancher/k3s/data/cni/flannel
+        state: absent
+
+    - name: Start k3s-agent service
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: started
+
+    - name: Wait for k3s-agent to be ready
+      ansible.builtin.systemd:
+        name: k3s-agent
+        state: started
+      register: k3s_agent_service
+      until: k3s_agent_service.status.ActiveState == "active"
+      retries: 10
+      delay: 5
+
+    - name: Wait for flannel to regenerate config
+      ansible.builtin.wait_for:
+        path: /var/lib/rancher/k3s/agent/etc/flannel/net-conf.json
+        timeout: 30
+
+    - name: Verify new flannel config (should not contain 10.42.14.0/24)
+      ansible.builtin.shell: cat /var/lib/rancher/k3s/agent/etc/flannel/net-conf.json | grep -o '10\.42\.[0-9]\+\.0/24' | sort -u
+      register: advertised_routes
+      changed_when: false
+
+    - name: Display advertised routes
+      ansible.builtin.debug:
+        msg: "Flannel is now advertising: {{ advertised_routes.stdout_lines }}"
+
+    - name: Fail if old route still present
+      ansible.builtin.fail:
+        msg: "ERROR: Old route 10.42.14.0/24 is still in flannel config!"
+      when: "'10.42.14.0/24' in advertised_routes.stdout"
+
+    - name: Wait for Tailscale routes to propagate
+      ansible.builtin.wait_for:
+        timeout: 15
+
+    - name: Verify Tailscale is advertising correct route
+      ansible.builtin.shell: tailscale debug prefs | grep -A 2 'AdvertiseRoutes' | grep -o '10\.42\.[0-9]\+\.0/24' | sort -u
+      register: tailscale_routes
+      changed_when: false
+
+    - name: Display Tailscale routes
+      ansible.builtin.debug:
+        msg: "Tailscale is advertising: {{ tailscale_routes.stdout_lines }}"
+
+    - name: Success message
+      ansible.builtin.debug:
+        msg: |
+          ✅ stanley-arm1 flannel route fixed!
+
+          Old behavior: advertised $SUBNET,10.42.14.0/24
+          New behavior: advertises $SUBNET only (10.42.3.0/24)
+
+          The flannel config has been regenerated and should now persist
+          across k3s-agent restarts.

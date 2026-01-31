@@ -78,11 +78,21 @@
   become: true
   tags: [firewall, ufw]
 
-- name: Allow SSH (22/tcp) - CRITICAL to avoid lockout
+- name: Allow SSH (22/tcp) from local network
   community.general.ufw:
     rule: allow
     port: '22'
     proto: tcp
+    from_ip: "{{ local_network_cidr }}"
+  become: true
+  tags: [firewall, ufw]
+
+- name: Allow SSH (22/tcp) from Tailscale network
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+    from_ip: "{{ tailscale_network_cidr }}"
   become: true
   tags: [firewall, ufw]
 

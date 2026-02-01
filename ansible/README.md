@@ -20,9 +20,9 @@ Deploys security hardening (fail2ban and UFW firewall) to public cloud nodes. Us
 
 **Prerequisites for cross-node pod networking:**
 
-- Tailscale must be configured with subnet route advertisement (each node advertises its pod CIDR)
-- k3s must be installed with `--vpn-auth` flag to enable Flannel Tailscale backend
-- UFW rules allow pod/service CIDRs (10.42.0.0/16, 10.43.0.0/16) for firewall traversal
+* Tailscale must be configured with subnet route advertisement (each node advertises its pod CIDR)
+* k3s must be installed with `--vpn-auth` flag to enable Flannel Tailscale backend
+* UFW rules allow pod/service CIDRs (10.42.0.0/16, 10.43.0.0/16) for firewall traversal
 
 Without proper Tailscale route advertisement, UFW rules alone will not enable cross-node communication. The security role depends on the Tailscale and k3s roles being properly configured.
 

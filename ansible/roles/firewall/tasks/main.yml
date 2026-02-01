@@ -2,6 +2,75 @@
 # UFW Firewall Configuration for Public Cloud Nodes
 # Adds rate limiting for SSH and restricts k3s traffic to Tailscale network
 
+# Validate Tailscale routing prerequisites for cross-node pod networking
+- name: Check for flannel subnet file
+  ansible.builtin.stat:
+    path: /run/flannel/subnet.env
+  register: flannel_subnet_file
+  changed_when: false
+  become: true
+  tags: [firewall, ufw, validation]
+
+- name: Read flannel subnet
+  ansible.builtin.shell: . /run/flannel/subnet.env && echo "${FLANNEL_SUBNET}"
+  register: flannel_subnet
+  changed_when: false
+  become: true
+  when: flannel_subnet_file.stat.exists
+  tags: [firewall, ufw, validation]
+
+- name: Check Tailscale route advertisement
+  ansible.builtin.shell: tailscale status --json | jq -r '.Self.PrimaryRoutes[]' | grep -F "{{ flannel_subnet.stdout | regex_replace('\\.\\d+/', '.0/') }}" || echo ""
+  register: tailscale_advertised_route
+  changed_when: false
+  when: flannel_subnet_file.stat.exists
+  tags: [firewall, ufw, validation]
+
+- name: Check Tailscale route acceptance
+  ansible.builtin.command: ip route show table 52
+  register: tailscale_route_table
+  changed_when: false
+  when: flannel_subnet_file.stat.exists
+  tags: [firewall, ufw, validation]
+
+- name: Assert Tailscale is advertising pod CIDR
+  ansible.builtin.assert:
+    that:
+      - flannel_subnet_file.stat.exists
+      - tailscale_advertised_route.stdout != ""
+    fail_msg: |
+      CRITICAL: This node is not advertising its pod CIDR to Tailscale!
+
+      Flannel subnet: {{ flannel_subnet.stdout | default('NOT FOUND') }}
+      Expected route: {{ flannel_subnet.stdout | default('N/A') | regex_replace('\\.\\d+/', '.0/') }}
+      Advertised routes: {{ tailscale_advertised_route.stdout | default('NONE') }}
+
+      Cross-node pod networking will NOT work without Tailscale route advertisement.
+
+      Fix: Ensure k3s is installed with --vpn-auth flag to enable Flannel Tailscale backend.
+      Then run: sudo tailscale set --advertise-routes={{ flannel_subnet.stdout | default('N/A') | regex_replace('\\.\\d+/', '.0/') }}
+    success_msg: "✓ Node is advertising pod CIDR {{ flannel_subnet.stdout | regex_replace('\\.\\d+/', '.0/') }} to Tailscale"
+  when: flannel_subnet_file.stat.exists
+  tags: [firewall, ufw, validation]
+
+- name: Assert Tailscale is accepting routes from other nodes
+  ansible.builtin.assert:
+    that:
+      - tailscale_route_table.stdout is search('10.42.')
+    fail_msg: |
+      CRITICAL: This node is not accepting pod CIDR routes from Tailscale!
+
+      Tailscale route table (table 52) does not contain any 10.42.x.x routes.
+      Cross-node pod networking will NOT work.
+
+      This usually means Tailscale is not properly configured or other nodes
+      are not advertising their routes.
+
+      Debug: ip route show table 52
+    success_msg: "✓ Node is accepting pod CIDR routes via Tailscale"
+  when: flannel_subnet_file.stat.exists
+  tags: [firewall, ufw, validation]
+
 - name: Check for ufw binary
   ansible.builtin.command: command -v ufw
   register: ufw_binary_check

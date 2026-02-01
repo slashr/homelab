@@ -25,6 +25,3 @@ node_tailscale_ips:
   angela-amd2: "100.100.2.102"
   stanley-arm1: "100.100.2.103"
   toby-gcp1: "100.100.2.104"
-
-# Clamp MSS for TCP over tailscale0 to avoid TLS handshake timeouts on 1280 MTU
-tailscale_mss: 1200

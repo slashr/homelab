@@ -28,7 +28,16 @@ ingressShim: {}
 prometheus:
   enabled: false
 
-affinity: {}
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - stanley-arm1
 tolerations: []
 
 webhook:
@@ -53,7 +62,16 @@ webhook:
     successThreshold: 1
     timeoutSeconds: 1
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
   tolerations: []
   podLabels: {}
   serviceLabels: {}
@@ -78,7 +96,16 @@ cainjector:
   extraArgs: []
   resources: {}
   nodeSelector: {}
-  affinity: {}
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - stanley-arm1
   tolerations: []
   podLabels: {}
   image:

@@ -19,9 +19,18 @@ runs:
       run: |
         if [ -f "${{ inputs.plan_file }}" ]; then
           echo "## ${{ inputs.job_name }} Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-          ADDED=$(terraform show -json "${{ inputs.plan_file }}" | jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length')
-          CHANGED=$(terraform show -json "${{ inputs.plan_file }}" | jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length')
-          DESTROYED=$(terraform show -json "${{ inputs.plan_file }}" | jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length')
+          plan_json="$(mktemp)"
+          plan_err="$(mktemp)"
+          if terraform show -json "${{ inputs.plan_file }}" > "$plan_json" 2> "$plan_err"; then
+            ADDED=$(jq '[.resource_changes[]? | select(.change.actions[]? == "create")] | length' "$plan_json")
+            CHANGED=$(jq '[.resource_changes[]? | select(.change.actions[]? == "update")] | length' "$plan_json")
+            DESTROYED=$(jq '[.resource_changes[]? | select(.change.actions[]? == "delete")] | length' "$plan_json")
+          else
+            echo "⚠️  Unable to render Terraform plan summary (terraform show failed)." >> $GITHUB_STEP_SUMMARY
+            rm -f "$plan_json" "$plan_err"
+            exit 0
+          fi
+          rm -f "$plan_json" "$plan_err"
           echo "* Resources to add: ${ADDED}" >> $GITHUB_STEP_SUMMARY
           echo "* Resources to change: ${CHANGED}" >> $GITHUB_STEP_SUMMARY
           echo "* Resources to destroy: ${DESTROYED}" >> $GITHUB_STEP_SUMMARY
@@ -29,4 +38,3 @@ runs:
           echo "## ${{ inputs.job_name }} Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
           echo "⚠️  No plan file found to summarize." >> $GITHUB_STEP_SUMMARY
         fi
-

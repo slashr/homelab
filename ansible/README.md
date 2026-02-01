@@ -19,6 +19,7 @@ Installs and configures Tailscale on all nodes (Pis, Oracle workers, GCP workers
 Deploys security hardening (fail2ban and UFW firewall) to public cloud nodes. Uses staged rollout for safe deployment.
 
 **Prerequisites for cross-node pod networking:**
+
 - Tailscale must be configured with subnet route advertisement (each node advertises its pod CIDR)
 - k3s must be installed with `--vpn-auth` flag to enable Flannel Tailscale backend
 - UFW rules allow pod/service CIDRs (10.42.0.0/16, 10.43.0.0/16) for firewall traversal

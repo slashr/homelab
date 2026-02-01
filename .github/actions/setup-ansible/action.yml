@@ -15,14 +15,14 @@ runs:
     # Setup Tailscale network on the Actions worker
     # Enables connection to nodes via Tailscale SSH (no SSH keys needed)
     - name: Tailscale
-      uses: tailscale/github-action@v4.1.1
+      uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9
       with:
         oauth-client-id: ${{ inputs.tailscale_client_id }}
         oauth-secret: ${{ inputs.tailscale_client_secret }}
         tags: tag:k3s
 
     - name: Set up Python 3.x
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
       with:
         python-version: '3.x'
         cache: 'pip'
@@ -37,7 +37,7 @@ runs:
         pip3 install 'ansible-core==2.20.0rc2' ansible-lint
 
     - name: Cache Ansible collections
-      uses: actions/cache@v5
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
       with:
         path: ~/.ansible/collections
         key: ${{ runner.os }}-ansible-collections-${{ hashFiles('ansible/requirements.yml') }}

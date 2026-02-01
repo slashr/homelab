@@ -23,7 +23,7 @@ concurrency:
 jobs:
   security-scan:
     name: Security Vulnerability Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Run comprehensive SARIF scans after merge to main (uploads to Security tab)
     permissions:
       security-events: write
@@ -31,12 +31,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@1f0aa582c8c8f5f7639610d6d38baddfea4fdcee
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -45,14 +45,14 @@ jobs:
           cache: true
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@439137e1b50c27ba9e2f9befc93e43091b449c34
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-filesystem'
 
       - name: Run Trivy for Terraform files
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@1f0aa582c8c8f5f7639610d6d38baddfea4fdcee
         with:
           scan-type: 'config'
           scan-ref: '.'
@@ -61,7 +61,7 @@ jobs:
           cache: true
 
       - name: Upload Trivy config scan results
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@439137e1b50c27ba9e2f9befc93e43091b449c34
         if: always()
         with:
           sarif_file: 'trivy-config-results.sarif'
@@ -69,19 +69,19 @@ jobs:
 
   secret-scan:
     name: Secret Detection
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           # Fetch full history for comprehensive scan
           fetch-depth: 0
 
       - name: Run TruffleHog OSS
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@116e7171542d2f1dad8810f00dcfacbe0b809183
         with:
           path: ./
           # Deep scan with full history, only report verified secrets
@@ -89,7 +89,7 @@ jobs:
 
   security-summary:
     name: Security Summary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions: {}
     needs: [security-scan, secret-scan]
     if: always()

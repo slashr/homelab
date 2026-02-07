@@ -221,11 +221,20 @@ Automated dependency updates are managed by Renovate (config: `renovate.json`). 
 * Python Dependencies
 * Pre-commit Hooks
 
-**Schedule:** Weekly on Mondays before 6 AM UTC  
-**Rate Limits:** 5 concurrent PRs, 2 PRs per hour  
+**Schedule:** Every weekday (UTC)  
+**Rate Limits:** 10 concurrent PRs, no hourly cap  
 **Commit Convention:** `chore(deps): ...` (semantic commits enabled)  
 **Vulnerability Alerts:** Enabled with `security` + `dependencies` labels  
 **Automerge:** Disabled (requires manual review)
+
+#### Troubleshooting: PR Edited (Blocked)
+
+If the Dependency Dashboard shows **PR Edited (Blocked)**, Renovate will stop updating that PR/branch until it is reset.
+
+* Avoid pushing commits directly to `renovate/*` branches (make changes via `renovate.json` instead).
+* Open the Dependency Dashboard issue.
+* Check the `rebase-branch=...` checkbox for the blocked branch.
+* Optionally check `manual job` to trigger a run immediately.
 
 ### Manual Updates
 

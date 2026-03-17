@@ -9,12 +9,25 @@
   gather_facts: false
   strategy: free  # Parallel execution - update all nodes simultaneously
   tasks:
+    - name: Wait for apt locks to be released
+      ansible.builtin.shell: |
+        while fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1; do
+          echo "Waiting for apt lock to be released..."
+          sleep 5
+        done
+      changed_when: false
+      timeout: 300
+
     - name: Updating instances
       ansible.builtin.apt:
         update_cache: true
         upgrade: dist
         dpkg_options: "force-confdef,force-confold"
         force_apt_get: true
+      retries: 3
+      delay: 30
+      register: apt_result
+      until: apt_result is success
 
     - name: Downloading k3s script
       ansible.builtin.get_url:

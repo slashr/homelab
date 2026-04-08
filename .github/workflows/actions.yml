@@ -334,7 +334,7 @@ jobs:
 
       - name: Terraform Plan
         if: steps.check.outputs.has_changes == 'true'
-        run: terraform plan -no-color -out=plan.tfplan
+        run: terraform plan -lock-timeout=5m -no-color -out=plan.tfplan
 
       - name: Save Terraform Plan
         if: steps.check.outputs.has_changes == 'true' && github.event_name == 'pull_request'
@@ -350,7 +350,7 @@ jobs:
           steps.check.outputs.has_changes == 'true' &&
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'push' || github.event_name == 'schedule')
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -lock-timeout=5m -auto-approve -input=false
 
       - name: Terraform Summary
         if: always() && steps.check.outputs.has_changes == 'true'
@@ -930,7 +930,7 @@ jobs:
 
       - name: "Terraform Plan"
         id: plan
-        run: terraform plan -no-color -out=plan.tfplan
+        run: terraform plan -lock-timeout=5m -no-color -out=plan.tfplan
 
       - name: Terraform Apply
         id: apply
@@ -958,9 +958,9 @@ jobs:
 
           trap cleanup EXIT
 
-          printf '%s\n' "$TF_VAR_kube_client_cert" > "$client_cert_file"
-          printf '%s\n' "$TF_VAR_kube_client_key" > "$client_key_file"
-          printf '%s\n' "$TF_VAR_kube_cluster_ca_cert" > "$cluster_ca_file"
+          printf '%s' "$TF_VAR_kube_client_cert" | base64 --decode > "$client_cert_file"
+          printf '%s' "$TF_VAR_kube_client_key" | base64 --decode > "$client_key_file"
+          printf '%s' "$TF_VAR_kube_cluster_ca_cert" | base64 --decode > "$cluster_ca_file"
 
           cat > "$kubeconfig_file" <<EOF
           apiVersion: v1
@@ -1004,7 +1004,7 @@ jobs:
             log_file="$(mktemp)"
 
             set +e
-            terraform apply -auto-approve -input=false 2>&1 | tee "$log_file"
+            terraform apply -lock-timeout=5m -auto-approve -input=false 2>&1 | tee "$log_file"
             exit_code=${PIPESTATUS[0]}
             set -e
 

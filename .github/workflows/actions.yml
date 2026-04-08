@@ -935,7 +935,98 @@ jobs:
       - name: Terraform Apply
         id: apply
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-        run: terraform apply -auto-approve -input=false
+        run: |
+          set -euo pipefail
+
+          max_attempts=3
+          retry_delay_seconds=20
+          webhook_timeout_pattern='failed calling webhook "webhook.cert-manager.io"'
+          deadline_exceeded_pattern='context deadline exceeded'
+          k8s_api_endpoint="$(awk -F'"' '/k8s_api_endpoint =/ {print $2}' provider.tf)"
+          client_cert_file="$(mktemp)"
+          client_key_file="$(mktemp)"
+          cluster_ca_file="$(mktemp)"
+          kubeconfig_file="$(mktemp)"
+          log_file=""
+
+          cleanup() {
+            rm -f "$client_cert_file" "$client_key_file" "$cluster_ca_file" "$kubeconfig_file"
+            if [ -n "$log_file" ]; then
+              rm -f "$log_file"
+            fi
+          }
+
+          trap cleanup EXIT
+
+          printf '%s\n' "$TF_VAR_kube_client_cert" > "$client_cert_file"
+          printf '%s\n' "$TF_VAR_kube_client_key" > "$client_key_file"
+          printf '%s\n' "$TF_VAR_kube_cluster_ca_cert" > "$cluster_ca_file"
+
+          cat > "$kubeconfig_file" <<EOF
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - name: homelab
+              cluster:
+                certificate-authority: $cluster_ca_file
+                server: $k8s_api_endpoint
+          users:
+            - name: github-actions
+              user:
+                client-certificate: $client_cert_file
+                client-key: $client_key_file
+          contexts:
+            - name: homelab
+              context:
+                cluster: homelab
+                user: github-actions
+          current-context: homelab
+          EOF
+
+          export KUBECONFIG="$kubeconfig_file"
+
+          ensure_cert_manager_webhook_ready() {
+            kubectl -n cert-manager rollout status deployment/cert-manager-webhook --timeout=120s
+          }
+
+          recover_cert_manager_webhook() {
+            echo "Restarting cert-manager-webhook deployment before retrying Terraform apply."
+            kubectl -n cert-manager rollout restart deployment/cert-manager-webhook
+            kubectl -n cert-manager rollout status deployment/cert-manager-webhook --timeout=180s
+          }
+
+          if ! ensure_cert_manager_webhook_ready; then
+            echo "cert-manager-webhook was not ready before Terraform apply."
+            recover_cert_manager_webhook
+          fi
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            log_file="$(mktemp)"
+
+            set +e
+            terraform apply -auto-approve -input=false 2>&1 | tee "$log_file"
+            exit_code=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$exit_code" -eq 0 ]; then
+              break
+            fi
+
+            if ! grep -Fq "$webhook_timeout_pattern" "$log_file" || ! grep -Fq "$deadline_exceeded_pattern" "$log_file"; then
+              exit "$exit_code"
+            fi
+
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "Terraform apply failed after $max_attempts attempts due to cert-manager webhook timeouts."
+              exit "$exit_code"
+            fi
+
+            recover_cert_manager_webhook
+            rm -f "$log_file"
+            log_file=""
+            echo "cert-manager webhook timed out during Terraform apply; retrying in ${retry_delay_seconds}s (attempt $((attempt + 1))/$max_attempts)."
+            sleep "$retry_delay_seconds"
+          done
 
       - name: Terraform Apply Summary
         if: always()

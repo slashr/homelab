@@ -935,7 +935,37 @@ jobs:
       - name: Terraform Apply
         id: apply
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-        run: terraform apply -auto-approve -input=false
+        run: |
+          set -euo pipefail
+
+          max_attempts=3
+          retry_delay_seconds=20
+          webhook_timeout_pattern='failed calling webhook "webhook.cert-manager.io"'
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            log_file="$(mktemp)"
+
+            set +e
+            terraform apply -auto-approve -input=false 2>&1 | tee "$log_file"
+            exit_code=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$exit_code" -eq 0 ]; then
+              break
+            fi
+
+            if ! grep -Fq "$webhook_timeout_pattern" "$log_file"; then
+              exit "$exit_code"
+            fi
+
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "Terraform apply failed after $max_attempts attempts due to cert-manager webhook timeouts."
+              exit "$exit_code"
+            fi
+
+            echo "cert-manager webhook timed out during Terraform apply; retrying in ${retry_delay_seconds}s (attempt $((attempt + 1))/$max_attempts)."
+            sleep "$retry_delay_seconds"
+          done
 
       - name: Terraform Apply Summary
         if: always()

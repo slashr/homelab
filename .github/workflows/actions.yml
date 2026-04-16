@@ -943,14 +943,11 @@ jobs:
           webhook_timeout_pattern='failed calling webhook "webhook.cert-manager.io"'
           deadline_exceeded_pattern='context deadline exceeded'
           k8s_api_endpoint="$(awk -F'"' '/k8s_api_endpoint =/ {print $2}' provider.tf)"
-          client_cert_file="$(mktemp)"
-          client_key_file="$(mktemp)"
-          cluster_ca_file="$(mktemp)"
           kubeconfig_file="$(mktemp)"
           log_file=""
 
           cleanup() {
-            rm -f "$client_cert_file" "$client_key_file" "$cluster_ca_file" "$kubeconfig_file"
+            rm -f "$kubeconfig_file"
             if [ -n "$log_file" ]; then
               rm -f "$log_file"
             fi
@@ -958,23 +955,19 @@ jobs:
 
           trap cleanup EXIT
 
-          printf '%s\n' "$TF_VAR_kube_client_cert" > "$client_cert_file"
-          printf '%s\n' "$TF_VAR_kube_client_key" > "$client_key_file"
-          printf '%s\n' "$TF_VAR_kube_cluster_ca_cert" > "$cluster_ca_file"
-
           cat > "$kubeconfig_file" <<EOF
           apiVersion: v1
           kind: Config
           clusters:
             - name: homelab
               cluster:
-                certificate-authority: $cluster_ca_file
+                certificate-authority-data: $TF_VAR_kube_cluster_ca_cert
                 server: $k8s_api_endpoint
           users:
             - name: github-actions
               user:
-                client-certificate: $client_cert_file
-                client-key: $client_key_file
+                client-certificate-data: $TF_VAR_kube_client_cert
+                client-key-data: $TF_VAR_kube_client_key
           contexts:
             - name: homelab
               context:

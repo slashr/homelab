@@ -12,12 +12,17 @@ runs:
     - name: Install age
       shell: bash
       run: |
-        curl -sSL https://github.com/FiloSottile/age/releases/download/v1.2.0/age-v1.2.0-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin --strip-components=1
+        curl -fSL --retry 5 --retry-all-errors --retry-delay 5 \
+          https://github.com/FiloSottile/age/releases/download/v1.2.0/age-v1.2.0-linux-amd64.tar.gz \
+          -o /tmp/age.tar.gz
+        sudo tar -xzf /tmp/age.tar.gz -C /usr/local/bin --strip-components=1
 
     - name: Install SOPS
       shell: bash
       run: |
-        curl -sSL https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64 -o /tmp/sops
+        curl -fSL --retry 5 --retry-all-errors --retry-delay 5 \
+          https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64 \
+          -o /tmp/sops
         chmod +x /tmp/sops
         sudo mv /tmp/sops /usr/local/bin/sops
 

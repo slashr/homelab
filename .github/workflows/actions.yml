@@ -1039,10 +1039,33 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.apply.outcome == 'success'
         run: |
           # plan exit codes: 0=no change, 1=error, 2=changes (drift)
-          set +e
-          terraform plan -detailed-exitcode -out=drift.tfplan
-          code=$?
-          set -e
+          attempts=3
+          delay=20
+          code=1
+          log_file="$(mktemp)"
+          trap 'rm -f "$log_file"' EXIT
+
+          for attempt in $(seq 1 "$attempts"); do
+            : > "$log_file"
+            set +e
+            terraform plan -detailed-exitcode -out=drift.tfplan 2>&1 | tee "$log_file"
+            code=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$code" -ne 1 ]; then
+              break
+            fi
+
+            if ! grep -Eq '504 Gateway Timeout|failed to fetch|Error locating chart' "$log_file"; then
+              break
+            fi
+
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Terraform drift plan hit a transient chart download error; retrying in ${delay}s (attempt $((attempt + 1))/${attempts})."
+              sleep "$delay"
+            fi
+          done
+
           if [ "$code" -eq 1 ]; then
             echo "Terraform plan encountered an error (exit 1)."
             exit 1

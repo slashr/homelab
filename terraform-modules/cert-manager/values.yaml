@@ -42,7 +42,7 @@ tolerations: []
 
 webhook:
   replicaCount: 1
-  timeoutSeconds: 10
+  timeoutSeconds: 30
   strategy: {}
   securityContext:
     runAsNonRoot: true
@@ -81,8 +81,8 @@ webhook:
   serviceAccount:
     create: true
     automountServiceAccountToken: true
-  securePort: 10250
-  hostNetwork: false
+  securePort: 10260
+  hostNetwork: true
   serviceType: ClusterIP
   url: {}
 

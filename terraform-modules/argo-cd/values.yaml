@@ -105,6 +105,11 @@ repoServer:
   autoscaling:
     enabled: false
     minReplicas: 1
+  readinessProbe:
+    timeoutSeconds: 5
+  livenessProbe:
+    failureThreshold: 6
+    timeoutSeconds: 5
   affinity:
     nodeAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:

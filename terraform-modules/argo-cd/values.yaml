@@ -41,7 +41,7 @@ server:
     annotations:
       # This lets cert-manager identify which Ingresses to generate a cert for
       cert-manager.io/cluster-issuer: letsencrypt-prod
-    hostname: "argo.shrub.dev"
+    hostname: "argo.vind.uk"
     tls: true
 
   certificate:

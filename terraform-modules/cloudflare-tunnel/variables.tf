@@ -18,6 +18,6 @@ variable "tunnel_hostnames" {
   description = "List of hostnames to route through the tunnel"
   type        = list(string)
   default = [
-    "argo.shrub.dev",
+    "argo.vind.uk",
   ]
 }

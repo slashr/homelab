@@ -70,6 +70,9 @@ jobs:
             kubernetes:
               - 'kubernetes/**'
               - 'terraform-modules/argo-cd/**'
+              - 'terraform-modules/cert-manager/**'
+              - 'terraform-modules/cloudflare-tunnel/**'
+              - 'terraform-modules/tailscale-operator/**'
               - '.github/workflows/**'
             ansible:
               - 'ansible/tailscale.yml'

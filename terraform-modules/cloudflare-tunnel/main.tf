@@ -52,7 +52,7 @@ resource "cloudflare_dns_record" "tunnel_cname" {
   for_each = toset(var.tunnel_hostnames)
 
   zone_id = var.cloudflare_zone_id
-  name    = split(".", each.value)[0] # Extract subdomain (e.g., "argo" from "argo.shrub.dev")
+  name    = split(".", each.value)[0] # Extract subdomain (e.g., "argo" from "argo.vind.uk")
   type    = "CNAME"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_ha.id}.cfargotunnel.com"
   proxied = true

@@ -1,4 +1,4 @@
-# ClusterIssuer for issuing certificates for shrub.dev via Let's Encrypt DNS-01 validation
+# ClusterIssuer for issuing certificates for vind.uk via Let's Encrypt DNS-01 validation
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -17,4 +17,4 @@ spec:
               key: api-token
         selector:
           dnsZones:
-            - shrub.dev
+            - vind.uk

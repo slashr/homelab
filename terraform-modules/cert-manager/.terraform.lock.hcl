@@ -5,6 +5,7 @@ provider "registry.terraform.io/gavinbunney/kubectl" {
   version     = "1.19.0"
   constraints = "~> 1.19.0"
   hashes = [
+    "h1:3E8E5zdLYTLsP9h+Ibvez8m+S0Qqa7QULHvcq8PcnWg=",
     "h1:9QkxPjp0x5FZFfJbE+B7hBOoads9gmdfj9aYu5N4Sfc=",
     "h1:quymfa/OKEfWI5JXFEwGbUY2aAy0vet3rA9JWJam+3k=",
     "zh:1dec8766336ac5b00b3d8f62e3fff6390f5f60699c9299920fc9861a76f00c71",
@@ -36,6 +37,7 @@ provider "registry.terraform.io/hashicorp/helm" {
     "h1:YKAGKlgApzvN0I6ybgmn9aID13+/RbXJQF8uWxZLUPY=",
     "h1:ZRqGnsyvDCNw+EUO6mdSQhbt58vFy99+uryd7xFd2DA=",
     "h1:ZVCiP1K43Y8SEBFJmXAu5WdUrFkiWWfzHdmw4Xv9EJE=",
+    "h1:ZtOD8lIxFRQcagksHdec1Unp/tMPCychrU7U8J0GgWI=",
     "h1:aeYsVAdJYzLZYeIu8MIPewY82Jf9/kVmCXcjj+S76NY=",
     "h1:lO5SCev/kIBweEe0+MZJ09huUFHf8tU/86ExeMUsF6M=",
     "h1:s68EnUScdj1dXoXrNBaH/AIk18R2ryKeHY5H0ETfUws=",

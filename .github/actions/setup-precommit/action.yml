@@ -54,6 +54,7 @@ runs:
         fi
 
         if [ -n "$CHANGED_FILES" ]; then
+          unset TF_PLUGIN_CACHE_DIR
           SKIP=$SKIP_HOOKS pre-commit run --files $CHANGED_FILES --hook-stage manual
         else
           echo "No changed files to check, skipping pre-commit"

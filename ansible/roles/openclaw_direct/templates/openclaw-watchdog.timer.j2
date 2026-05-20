@@ -1,0 +1,11 @@
+[Unit]
+Description=Run OpenClaw WhatsApp watchdog periodically
+
+[Timer]
+OnBootSec={{ openclaw_watchdog_on_boot }}
+OnUnitActiveSec={{ openclaw_watchdog_interval }}
+AccuracySec={{ openclaw_watchdog_accuracy }}
+Unit=openclaw-watchdog.service
+
+[Install]
+WantedBy=timers.target

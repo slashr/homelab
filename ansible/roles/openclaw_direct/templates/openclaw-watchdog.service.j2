@@ -1,0 +1,8 @@
+[Unit]
+Description=OpenClaw WhatsApp watchdog
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 {{ openclaw_watchdog_script }}

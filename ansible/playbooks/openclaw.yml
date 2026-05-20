@@ -1,0 +1,6 @@
+---
+- name: Configure OpenClaw direct server
+  hosts: openclaw_hosts
+  become: true
+  roles:
+    - role: ../roles/openclaw_direct

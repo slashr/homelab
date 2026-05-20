@@ -1,3 +1,4 @@
 ---
 tailscale_ssh_advertise_routes: "10.42.1.0/24"
 os_tuning_dphys_swap_size_mb: "1024"
+openclaw_enabled: true

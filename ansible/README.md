@@ -30,6 +30,12 @@ Without proper Tailscale route advertisement, UFW rules alone will not enable cr
 
 Configures swap on low-memory nodes (micro_nodes group) to prevent OOM kills.
 
+### openclaw.yml
+
+Configures the direct OpenClaw server on `jim-pi`. OpenClaw intentionally stays outside Kubernetes; Ansible manages the
+npm package, the user-level `openclaw-gateway.service`, and the WhatsApp watchdog timer while preserving runtime state
+and secrets in `~/.openclaw`.
+
 ## Debian Release Upgrades
 
 * The `roles/debian_upgrade` role rewrites APT sources, runs a dist-upgrade, cleans up packages, and reboots the node so we can move Pis between Debian releases via Ansible.

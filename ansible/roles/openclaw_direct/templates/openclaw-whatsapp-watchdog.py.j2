@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+from datetime import datetime, timezone
+
+OPENCLAW = "/usr/bin/openclaw"
+LOG_PATH = "{{ openclaw_watchdog_log_path }}"
+
+
+def ts() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def log(msg: str) -> None:
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    with open(LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(f"[{ts()}] {msg}\n")
+
+
+def run(cmd: list[str], timeout_s: int = 20) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, text=True, capture_output=True, timeout=timeout_s)
+
+
+def resolve(host: str) -> str:
+    try:
+        infos = socket.getaddrinfo(host, 443, proto=socket.IPPROTO_TCP)
+        addrs = sorted({i[4][0] for i in infos})
+        return "ok " + ",".join(addrs)
+    except Exception as e:
+        return f"error {type(e).__name__}: {e}"
+
+
+def parse_status_output(stdout: str) -> dict:
+    """OpenClaw can prepend notices before JSON; parse the final JSON object."""
+    try:
+        return json.loads(stdout)
+    except Exception:
+        pass
+
+    match = re.search(r"\{[\s\S]*\}\s*$", stdout)
+    if not match:
+        raise ValueError("no trailing JSON object in status output")
+    return json.loads(match.group(0))
+
+
+def main() -> int:
+    try:
+        p = run([OPENCLAW, "channels", "status", "--json", "--timeout", "10000"], timeout_s=15)
+    except subprocess.TimeoutExpired:
+        log("timeout: openclaw channels status")
+        return 1
+
+    if p.returncode != 0:
+        log(f"error: openclaw channels status rc={p.returncode} stderr={p.stderr.strip()}")
+        return 1
+
+    try:
+        data = parse_status_output(p.stdout)
+    except Exception as e:
+        preview = " ".join((p.stdout or "").splitlines()[:3]).strip()
+        log(f"error: parse status json: {type(e).__name__}: {e}; preview={preview!r}")
+        return 1
+
+    wa = (data.get("channels") or {}).get("whatsapp") or {}
+
+    configured = bool(wa.get("configured"))
+    linked = bool(wa.get("linked"))
+    running = bool(wa.get("running"))
+    connected = bool(wa.get("connected"))
+    last_error = wa.get("lastError")
+
+    if configured and linked and running and connected:
+        return 0
+
+    dns = resolve("web.whatsapp.com")
+    log(
+        "unhealthy: whatsapp "
+        + f"configured={configured} linked={linked} running={running} connected={connected} "
+        + f"dns=({dns}) lastError={json.dumps(last_error)}"
+    )
+
+    try:
+        r = run([OPENCLAW, "gateway", "restart"], timeout_s=30)
+        if r.returncode == 0:
+            log("action: gateway restart ok")
+            return 0
+        log(f"action: gateway restart failed rc={r.returncode} stderr={r.stderr.strip()}")
+        return 2
+    except subprocess.TimeoutExpired:
+        log("action: gateway restart timed out")
+        return 2
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception as e:
+        log(f"fatal: {type(e).__name__}: {e}")
+        sys.exit(3)

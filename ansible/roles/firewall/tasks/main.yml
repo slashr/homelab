@@ -50,6 +50,61 @@
   when: not (ansible_distribution == "Debian" and ansible_distribution_release == "trixie")
   tags: [firewall, ufw]
 
+- name: Check whether UFW IPv6 is enabled
+  ansible.builtin.command: grep -qs ^IPV6=yes /etc/default/ufw
+  register: ufw_ipv6_enabled_check
+  changed_when: false
+  failed_when: false
+  become: true
+  tags: [firewall, ufw]
+
+- name: Define UFW IPv6 secondary chains
+  ansible.builtin.set_fact:
+    ufw_ipv6_secondary_chains:
+      - ufw6-logging-deny
+      - ufw6-logging-allow
+      - ufw6-not-local
+      - ufw6-user-logging-input
+      - ufw6-user-logging-output
+      - ufw6-user-logging-forward
+      - ufw6-user-limit-accept
+      - ufw6-user-limit
+      - ufw6-user-input
+      - ufw6-user-forward
+      - ufw6-user-output
+      - ufw6-skip-to-policy-input
+      - ufw6-skip-to-policy-output
+      - ufw6-skip-to-policy-forward
+  when: ufw_ipv6_enabled_check.rc == 0
+  tags: [firewall, ufw]
+
+- name: Check UFW IPv6 secondary chains before reset
+  ansible.builtin.command: "ip6tables -L {{ item }} -n"
+  register: ufw_ipv6_secondary_chain_checks
+  changed_when: false
+  failed_when: false
+  become: true
+  loop: "{{ ufw_ipv6_secondary_chains }}"
+  when: ufw_ipv6_enabled_check.rc == 0
+  tags: [firewall, ufw]
+
+- name: Create missing UFW IPv6 secondary chains before reset
+  ansible.builtin.command: ip6tables-restore --noflush
+  args:
+    stdin: |
+      *filter
+      :{{ item.item }} - [0:0]
+      COMMIT
+  changed_when: true
+  become: true
+  loop: "{{ ufw_ipv6_secondary_chain_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - ufw_ipv6_enabled_check.rc == 0
+    - item.rc != 0
+  tags: [firewall, ufw]
+
 - name: Reset UFW to default state
   community.general.ufw:
     state: reset
@@ -147,6 +202,33 @@
     rule: allow
     to_ip: "{{ service_network_cidr }}"
   become: true
+  tags: [firewall, ufw]
+
+- name: Check UFW IPv6 secondary chains before enable
+  ansible.builtin.command: "ip6tables -L {{ item }} -n"
+  register: ufw_ipv6_secondary_chain_checks_before_enable
+  changed_when: false
+  failed_when: false
+  become: true
+  loop: "{{ ufw_ipv6_secondary_chains }}"
+  when: ufw_ipv6_enabled_check.rc == 0
+  tags: [firewall, ufw]
+
+- name: Create missing UFW IPv6 secondary chains before enable
+  ansible.builtin.command: ip6tables-restore --noflush
+  args:
+    stdin: |
+      *filter
+      :{{ item.item }} - [0:0]
+      COMMIT
+  changed_when: true
+  become: true
+  loop: "{{ ufw_ipv6_secondary_chain_checks_before_enable.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - ufw_ipv6_enabled_check.rc == 0
+    - item.rc != 0
   tags: [firewall, ufw]
 
 - name: Enable UFW (forced, non-interactive)

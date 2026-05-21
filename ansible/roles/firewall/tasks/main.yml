@@ -50,6 +50,33 @@
   when: not (ansible_distribution == "Debian" and ansible_distribution_release == "trixie")
   tags: [firewall, ufw]
 
+- name: Check whether UFW IPv6 is enabled
+  ansible.builtin.command: grep -qs ^IPV6=yes /etc/default/ufw
+  register: ufw_ipv6_enabled_check
+  changed_when: false
+  failed_when: false
+  become: true
+  tags: [firewall, ufw]
+
+- name: Check UFW IPv6 user chain
+  ansible.builtin.command: ip6tables -L ufw6-user-input -n
+  register: ufw_ipv6_user_chain_check
+  changed_when: false
+  failed_when: false
+  become: true
+  when: ufw_ipv6_enabled_check.rc == 0
+  tags: [firewall, ufw]
+
+- name: Restore UFW IPv6 user chains when missing
+  ansible.builtin.command: ip6tables-restore --noflush /etc/ufw/user6.rules
+  register: ufw_ipv6_user_chain_restore
+  changed_when: ufw_ipv6_user_chain_restore.rc == 0
+  become: true
+  when:
+    - ufw_ipv6_enabled_check.rc == 0
+    - ufw_ipv6_user_chain_check.rc | default(0) != 0
+  tags: [firewall, ufw]
+
 - name: Reset UFW to default state
   community.general.ufw:
     state: reset

@@ -1,5 +1,7 @@
 module "argo-cd" {
-  source     = "../terraform-modules/argo-cd"
+  source              = "../terraform-modules/argo-cd"
+  sops_age_secret_key = var.sops_age_secret_key
+
   depends_on = [module.cert-manager]
 }
 

@@ -151,9 +151,12 @@ repoServer:
         - |
           ARCH=$$(uname -m | sed 's/aarch64/arm64/' | sed 's/x86_64/amd64/')
           AVP_VERSION=1.18.1
+          SOPS_VERSION=3.13.0
           wget -O /custom-tools/argocd-vault-plugin \
             "https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v$${AVP_VERSION}/argocd-vault-plugin_$${AVP_VERSION}_linux_$${ARCH}"
-          chmod +x /custom-tools/argocd-vault-plugin
+          wget -O /custom-tools/sops \
+            "https://github.com/getsops/sops/releases/download/v$${SOPS_VERSION}/sops-v$${SOPS_VERSION}.linux.$${ARCH}"
+          chmod +x /custom-tools/argocd-vault-plugin /custom-tools/sops
       volumeMounts:
         - name: custom-tools
           mountPath: /custom-tools
@@ -179,6 +182,9 @@ repoServer:
         - name: custom-tools
           mountPath: /usr/local/bin/argocd-vault-plugin
           subPath: argocd-vault-plugin
+        - name: custom-tools
+          mountPath: /usr/local/bin/sops
+          subPath: sops
         - name: sops-age
           mountPath: /sops/age
 

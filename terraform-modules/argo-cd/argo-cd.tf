@@ -30,6 +30,8 @@ resource "kubernetes_config_map_v1" "argocd_cmp" {
             - sh
             - "-c"
             - |
+              set -eu
+
               # Output non-encrypted yamls (recursive)
               find . -name '*.yaml' -type f | while read -r f; do
                 case "$f" in
@@ -51,6 +53,23 @@ resource "kubernetes_config_map_v1" "argocd_cmp" {
   ]
 }
 
+resource "kubernetes_secret_v1" "sops_age_key" {
+  metadata {
+    name      = "sops-age-key"
+    namespace = kubernetes_namespace_v1.argo-cd.metadata[0].name
+  }
+
+  data = {
+    "keys.txt" = var.sops_age_secret_key
+  }
+
+  type = "Opaque"
+
+  depends_on = [
+    kubernetes_namespace_v1.argo-cd
+  ]
+}
+
 resource "helm_release" "argo-cd" {
   name       = "argo-cd"
   namespace  = "argo-cd"
@@ -61,7 +80,8 @@ resource "helm_release" "argo-cd" {
   values = [templatefile("${path.module}/values.yaml", {})]
 
   depends_on = [
-    kubernetes_namespace_v1.argo-cd
+    kubernetes_namespace_v1.argo-cd,
+    kubernetes_secret_v1.sops_age_key
   ]
 }
 

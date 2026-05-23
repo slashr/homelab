@@ -849,6 +849,8 @@ jobs:
           tags: tag:k3s
 
       - name: Decrypt secrets
+        env:
+          SOPS_AGE_SECRET_KEY: ${{ secrets.SOPS_AGE_SECRET_KEY }}
         run: |
           cd ${{ github.workspace }}
           # Decrypt secrets - use printf %b to convert \n to actual newlines
@@ -864,9 +866,10 @@ jobs:
           TF_VAR_velero_s3_secret_key="$(sops -d --extract '["velero_s3_secret_key"]' secrets/terraform.yaml)"
           TF_VAR_openai_api_key="$(sops -d --extract '["openai_api_key"]' secrets/terraform.yaml)"
           TF_VAR_homelab_map_interactive_password="$(sops -d --extract '["homelab_map_interactive_password"]' secrets/terraform.yaml)"
+          TF_VAR_sops_age_secret_key="$SOPS_AGE_SECRET_KEY"
           TF_API_TOKEN="$(sops -d --extract '["api_token"]' secrets/terraform.yaml)"
           # Mask each line of multiline secrets
-          for secret in "$TF_VAR_kube_client_cert" "$TF_VAR_kube_client_key" "$TF_VAR_kube_cluster_ca_cert"; do
+          for secret in "$TF_VAR_kube_client_cert" "$TF_VAR_kube_client_key" "$TF_VAR_kube_cluster_ca_cert" "$TF_VAR_sops_age_secret_key"; do
             while IFS= read -r line; do
               [ -n "$line" ] && echo "::add-mask::$line"
             done <<< "$secret"
@@ -888,6 +891,9 @@ jobs:
           echo "TF_VAR_kube_cluster_ca_cert<<EOFCA" >> $GITHUB_ENV
           echo "$TF_VAR_kube_cluster_ca_cert" >> $GITHUB_ENV
           echo "EOFCA" >> $GITHUB_ENV
+          echo "TF_VAR_sops_age_secret_key<<EOFSOPSAGE" >> $GITHUB_ENV
+          echo "$TF_VAR_sops_age_secret_key" >> $GITHUB_ENV
+          echo "EOFSOPSAGE" >> $GITHUB_ENV
           echo "TF_VAR_cloudflare_api_token=$TF_VAR_cloudflare_api_token" >> $GITHUB_ENV
           echo "TF_VAR_tailscale_oauth_client_secret=$TF_VAR_tailscale_oauth_client_secret" >> $GITHUB_ENV
           echo "TF_VAR_velero_s3_access_key=$TF_VAR_velero_s3_access_key" >> $GITHUB_ENV

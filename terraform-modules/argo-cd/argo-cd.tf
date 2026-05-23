@@ -37,9 +37,9 @@ resource "kubernetes_config_map_v1" "argocd_cmp" {
                   *) cat "$f"; echo "---" ;;
                 esac
               done
-              # Decrypt and output encrypted files via AVP (recursive)
+              # Decrypt and output encrypted files via SOPS (recursive)
               find . -name '*.enc.yaml' -type f | while read -r f; do
-                argocd-vault-plugin generate "$f"
+                sops -d "$f"
                 echo "---"
               done
         lockRepo: false

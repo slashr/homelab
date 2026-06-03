@@ -3,7 +3,7 @@ applications:
     namespace: argo-cd
     project: default
     source:
-      repoURL: https://github.com/slashr/app-manifests.git
+      repoURL: https://github.com/slashr/homelab-deployments.git
       targetRevision: "main"
       path: "argo"
       directory:

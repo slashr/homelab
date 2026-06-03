@@ -201,6 +201,6 @@ configs:
       url: https://stefanprodan.github.io/podinfo
       name: podinfo
       type: helm
-    app-manifests-repo:
-      url: https://github.com/slashr/app-manifests.git
-      name: app-manifests
+    homelab-deployments-repo:
+      url: https://github.com/slashr/homelab-deployments.git
+      name: homelab-deployments

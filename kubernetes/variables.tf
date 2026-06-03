@@ -113,6 +113,16 @@ variable "homelab_map_interactive_password" {
   }
 }
 
+variable "argocd_github_token" {
+  description = "GitHub token used by Argo CD to read private slashr repositories"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.argocd_github_token) > 0
+    error_message = "Argo CD GitHub token cannot be empty."
+  }
+}
+
 variable "sops_age_secret_key" {
   description = "AGE private key used by Argo CD to decrypt SOPS-encrypted manifests"
   type        = string

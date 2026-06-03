@@ -70,6 +70,29 @@ resource "kubernetes_secret_v1" "sops_age_key" {
   ]
 }
 
+resource "kubernetes_secret_v1" "github_repo_creds" {
+  metadata {
+    name      = "argocd-repo-creds-github-slashr"
+    namespace = kubernetes_namespace_v1.argo-cd.metadata[0].name
+    labels = {
+      "argocd.argoproj.io/secret-type" = "repo-creds"
+    }
+  }
+
+  data = {
+    type     = "git"
+    url      = "https://github.com/slashr"
+    username = "slashr"
+    password = var.github_token
+  }
+
+  type = "Opaque"
+
+  depends_on = [
+    kubernetes_namespace_v1.argo-cd
+  ]
+}
+
 resource "helm_release" "argo-cd" {
   name       = "argo-cd"
   namespace  = "argo-cd"

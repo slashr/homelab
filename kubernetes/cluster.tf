@@ -1,8 +1,14 @@
 module "argo-cd" {
   source              = "../terraform-modules/argo-cd"
+  github_token        = var.argocd_github_token
   sops_age_secret_key = var.sops_age_secret_key
 
   depends_on = [module.cert-manager]
+}
+
+import {
+  to = module.argo-cd.kubernetes_secret_v1.github_repo_creds
+  id = "argo-cd/argocd-repo-creds-github-slashr"
 }
 
 module "cert-manager" {

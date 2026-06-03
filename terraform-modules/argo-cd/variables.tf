@@ -8,3 +8,14 @@ variable "sops_age_secret_key" {
     error_message = "sops_age_secret_key cannot be empty."
   }
 }
+
+variable "github_token" {
+  description = "GitHub token used by Argo CD to read private slashr repositories."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.github_token) > 0
+    error_message = "github_token cannot be empty."
+  }
+}

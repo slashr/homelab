@@ -161,6 +161,7 @@ jobs:
             ansible/tailscale.yml
             ansible/k3s.yml
             ansible/playbooks/pis.yml
+            ansible/playbooks/openclaw.yml
             ansible/playbooks/security.yml
             ansible/playbooks/swap.yml
           )
@@ -433,7 +434,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/pis\.yml|roles/(common|network)/|group_vars/pis\.yml)'; then
+          if git diff --name-only origin/main...HEAD | grep -E '^ansible/(playbooks/(pis|openclaw)\.yml|roles/(common|network|openclaw_direct)/|group_vars/pis\.yml|host_vars/jim-pi\.yml)'; then
             PIS_CHANGED=true
           fi
 

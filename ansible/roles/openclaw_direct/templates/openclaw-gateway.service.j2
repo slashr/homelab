@@ -1,0 +1,29 @@
+[Unit]
+Description=OpenClaw Gateway (v{{ openclaw_version }})
+After=network-online.target
+Wants=network-online.target
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+ExecStart=/usr/bin/node {{ openclaw_npm_prefix }}/lib/node_modules/openclaw/dist/index.js gateway --port {{ openclaw_gateway_port }}
+Restart=always
+RestartSec=5
+RestartPreventExitStatus=78
+TimeoutStopSec=30
+TimeoutStartSec=30
+SuccessExitStatus=0 143
+KillMode=control-group
+Environment=OPENCLAW_SERVICE_MANAGED_ENV_KEYS={{ openclaw_gateway_managed_env_keys | join(',') }}
+Environment=HOME={{ openclaw_home }}
+Environment=TMPDIR=/tmp
+Environment=PATH={{ openclaw_path_entries | join(':') }}
+Environment=OPENCLAW_GATEWAY_PORT={{ openclaw_gateway_port }}
+Environment=OPENCLAW_SYSTEMD_UNIT={{ openclaw_gateway_service_name }}
+Environment="OPENCLAW_WINDOWS_TASK_NAME=OpenClaw Gateway"
+Environment=OPENCLAW_SERVICE_MARKER=openclaw
+Environment=OPENCLAW_SERVICE_KIND=gateway
+Environment=OPENCLAW_SERVICE_VERSION={{ openclaw_version }}
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,139 @@
+---
+- name: Manage OpenClaw direct server
+  when: openclaw_enabled | bool
+  tags: [openclaw]
+  block:
+    - name: Get OpenClaw user uid
+      ansible.builtin.command: "id -u {{ openclaw_user }}"
+      changed_when: false
+      check_mode: false
+      register: openclaw_user_uid
+
+    - name: Enable lingering for OpenClaw user services
+      ansible.builtin.command: "loginctl enable-linger {{ openclaw_user }}"
+      become: true
+      args:
+        creates: "/var/lib/systemd/linger/{{ openclaw_user }}"
+
+    - name: Ensure OpenClaw user directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "{{ item.mode }}"
+      become: true
+      loop:
+        - path: "{{ openclaw_home }}/.config/systemd/user"
+          mode: "0755"
+        - path: "{{ openclaw_home }}/.local/bin"
+          mode: "0755"
+        - path: "{{ openclaw_state_dir }}"
+          mode: "0700"
+        - path: "{{ openclaw_workspace_dir }}"
+          mode: "0755"
+        - path: "{{ openclaw_npm_prefix }}"
+          mode: "0755"
+
+    - name: Check npm availability
+      ansible.builtin.command: npm --version
+      changed_when: false
+      check_mode: false
+      register: openclaw_npm_version
+
+    - name: Install OpenClaw npm package
+      community.general.npm:
+        name: openclaw
+        version: "{{ openclaw_version }}"
+        global: true
+      become: true
+      become_user: "{{ openclaw_user }}"
+      environment:
+        NPM_CONFIG_PREFIX: "{{ openclaw_npm_prefix }}"
+        PATH: "{{ openclaw_path_entries | join(':') }}"
+      notify: Restart OpenClaw gateway
+
+    - name: Link OpenClaw into /usr/bin for host scripts
+      ansible.builtin.file:
+        src: "{{ openclaw_npm_prefix }}/lib/node_modules/openclaw/openclaw.mjs"
+        dest: /usr/bin/openclaw
+        state: link
+        owner: root
+        group: root
+        force: true
+      become: true
+
+    - name: Deploy OpenClaw gateway user service
+      ansible.builtin.template:
+        src: openclaw-gateway.service.j2
+        dest: "{{ openclaw_home }}/.config/systemd/user/{{ openclaw_gateway_service_name }}"
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0644"
+      become: true
+      notify:
+        - Reload user systemd
+        - Restart OpenClaw gateway
+
+    - name: Deploy OpenClaw WhatsApp watchdog script
+      ansible.builtin.template:
+        src: openclaw-whatsapp-watchdog.py.j2
+        dest: "{{ openclaw_watchdog_script }}"
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0755"
+      become: true
+      when: openclaw_watchdog_enabled | bool
+      notify: Restart OpenClaw watchdog timer
+
+    - name: Deploy OpenClaw watchdog service
+      ansible.builtin.template:
+        src: openclaw-watchdog.service.j2
+        dest: "{{ openclaw_home }}/.config/systemd/user/openclaw-watchdog.service"
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0644"
+      become: true
+      when: openclaw_watchdog_enabled | bool
+      notify:
+        - Reload user systemd
+        - Restart OpenClaw watchdog timer
+
+    - name: Deploy OpenClaw watchdog timer
+      ansible.builtin.template:
+        src: openclaw-watchdog.timer.j2
+        dest: "{{ openclaw_home }}/.config/systemd/user/openclaw-watchdog.timer"
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0644"
+      become: true
+      when: openclaw_watchdog_enabled | bool
+      notify:
+        - Reload user systemd
+        - Restart OpenClaw watchdog timer
+
+    - name: Flush OpenClaw handlers before enabling units
+      ansible.builtin.meta: flush_handlers
+
+    - name: Enable and start OpenClaw gateway
+      ansible.builtin.systemd:
+        name: "{{ openclaw_gateway_service_name }}"
+        enabled: true
+        state: started
+        scope: user
+      become: true
+      become_user: "{{ openclaw_user }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ openclaw_user_uid.stdout }}"
+
+    - name: Enable and start OpenClaw watchdog timer
+      ansible.builtin.systemd:
+        name: openclaw-watchdog.timer
+        enabled: true
+        state: started
+        scope: user
+      become: true
+      become_user: "{{ openclaw_user }}"
+      environment:
+        XDG_RUNTIME_DIR: "/run/user/{{ openclaw_user_uid.stdout }}"
+      when: openclaw_watchdog_enabled | bool

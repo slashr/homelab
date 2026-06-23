@@ -1,0 +1,31 @@
+---
+- name: Reload user systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+    scope: user
+  become: true
+  become_user: "{{ openclaw_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ openclaw_user_uid.stdout }}"
+
+- name: Restart OpenClaw gateway
+  ansible.builtin.systemd:
+    name: "{{ openclaw_gateway_service_name }}"
+    state: restarted
+    scope: user
+  become: true
+  become_user: "{{ openclaw_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ openclaw_user_uid.stdout }}"
+  when: openclaw_gateway_restart | bool
+
+- name: Restart OpenClaw watchdog timer
+  ansible.builtin.systemd:
+    name: openclaw-watchdog.timer
+    state: restarted
+    scope: user
+  become: true
+  become_user: "{{ openclaw_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ openclaw_user_uid.stdout }}"
+  when: openclaw_watchdog_enabled | bool

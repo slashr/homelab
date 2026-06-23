@@ -1,0 +1,30 @@
+---
+openclaw_enabled: false
+openclaw_user: "{{ ansible_user }}"
+openclaw_home: "/home/{{ openclaw_user }}"
+openclaw_state_dir: "{{ openclaw_home }}/.openclaw"
+openclaw_workspace_dir: "{{ openclaw_home }}/openclaw"
+openclaw_npm_prefix: "{{ openclaw_home }}/.npm-global"
+openclaw_version: "2026.5.18"
+openclaw_gateway_port: 18789
+openclaw_gateway_service_name: openclaw-gateway.service
+openclaw_gateway_restart: true
+openclaw_gateway_managed_env_keys:
+  - BRAVE_API_KEY
+  - TAVILY_API_KEY
+openclaw_path_entries:
+  - /usr/bin
+  - "{{ openclaw_home }}/.local/bin"
+  - "{{ openclaw_npm_prefix }}/bin"
+  - "{{ openclaw_home }}/bin"
+  - "{{ openclaw_home }}/.bun/bin"
+  - "{{ openclaw_home }}/.nix-profile/bin"
+  - /usr/local/bin
+  - /bin
+
+openclaw_watchdog_enabled: true
+openclaw_watchdog_interval: 5m
+openclaw_watchdog_on_boot: 2m
+openclaw_watchdog_accuracy: 30s
+openclaw_watchdog_script: "{{ openclaw_home }}/.local/bin/openclaw-whatsapp-watchdog.py"
+openclaw_watchdog_log_path: "{{ openclaw_state_dir }}/watchdog.log"

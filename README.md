@@ -39,8 +39,11 @@ This Homelab is a k3s cluster made up of of Oracle Cloud Infrastructure VMs, a G
 * K3S installs by default the Traefik networking and ingress controller. Traefik exposes Services of type
   LoadBalancer on the RPi private IP and routes HTTP traffic to the right Ingress. It effectively replaces
   ingress-nginx and MetalLB, simplifying the setup.
-* Tailscale creates a mesh network between all servers. The auth key is stored as `TAILSCALE_JOIN_KEY` in GitHub
-  Secrets, exported for the Ansible job in `actions.yml`, and referenced in `k3s.yaml` via the `--vpn-auth` flag
+* Tailscale creates a mesh network between all servers. `TAILSCALE_JOIN_KEY` is a Tailscale **OAuth client secret**
+  (`tskey-client-…`, `auth_keys` write scope, tag `tag:k3s`) stored in GitHub Secrets, exported for the Ansible job
+  in `actions.yml`, and referenced in `k3s.yaml` via the `--vpn-auth` flag (with `--advertise-tags=tag:k3s`). An OAuth
+  secret is used instead of a static auth key because auth keys expire (≤90 days), which wedges k3s on the next reboot;
+  OAuth secrets don't expire and k3s mints a fresh key from it on every start
   when initializing k3s on the master and worker nodes.
 
 ## Notes

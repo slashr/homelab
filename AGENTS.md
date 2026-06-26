@@ -89,7 +89,7 @@ Configures SSH for Tailscale SSH connections. Verifies Tailscale is connected an
 ### GitHub Actions Secrets (Required)
 
 * `SOPS_AGE_SECRET_KEY` — AGE private key for decrypting SOPS-encrypted secrets
-* `TAILSCALE_JOIN_KEY` — Auth key for node registration (used by Ansible k3s playbook)
+* `TAILSCALE_JOIN_KEY` — Tailscale OAuth client secret (`tskey-client-…`, `auth_keys` write, tag `tag:k3s`) for node registration; non-expiring (replaces the static auth key that wedged k3s on reboot)
 
 ### SOPS-Encrypted Secrets
 
